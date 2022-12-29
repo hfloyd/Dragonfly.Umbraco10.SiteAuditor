@@ -25,6 +25,7 @@
 
     using Dragonfly.SiteAuditor.Models;
     using Dragonfly.SiteAuditor.Services;
+    
     //  /umbraco/backoffice/Dragonfly/SiteAuditor/
     [PluginController("Dragonfly")]
     [IsBackOffice]
@@ -37,7 +38,8 @@
         public SiteAuditorController(
             ILogger<SiteAuditorController> logger,
             SiteAuditorService siteAuditorService,
-            IViewRenderService viewRenderService)
+            IViewRenderService viewRenderService
+            )
         {
             _logger = logger;
             _siteAuditorService = siteAuditorService;
