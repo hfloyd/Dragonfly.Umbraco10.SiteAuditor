@@ -17,7 +17,12 @@ This package is designed to work with Umbraco 10. [View all available versions](
 ```
 PM>   Install-Package Dragonfly.Umbraco10.SiteAuditor
 
+
+dotnet add package Dragonfly.Umbraco10.SiteAuditor
+
 ```
+
+
 
 ## Usage ##
 The Tools are accessed via the Dashboard added to the back-office Settings section.
