@@ -224,24 +224,30 @@
 
                 //Get Property
                 //var content = umbContentService.GetById(Node.Id);
-                dtInfo.Property = ContentNode.Properties.First(n => n.Alias == PropertyAlias);
-                dtInfo.PropertyData = ContentNode.GetValue(PropertyAlias);
+                var propMatches = ContentNode.Properties.Where(n => n.Alias == PropertyAlias);
+                if (propMatches != null && propMatches.Any())
+                {
+                    dtInfo.Property = propMatches.First();
+                    dtInfo.PropertyData = ContentNode.GetValue(PropertyAlias);
+                }
+                else
+                {
+                    dtInfo.ErrorMessage =
+                        $"No property found for alias '{PropertyAlias}' in ContentNode '{ContentNode.Name}'";
+                }
 
                 //Find datatype of property
                 IDataType dataType = null;
 
                 var docType = umbContentTypeService.Get(ContentNode.ContentType.Id);
-                var matchingProperties = docType.PropertyTypes.Where(n => n.Alias == PropertyAlias).ToList();
+                dtInfo.DocTypeAlias = ContentNode.ContentType.Alias;
 
+                IPropertyType propertyType = null;
+
+                var matchingProperties = docType.PropertyTypes.Where(n => n.Alias == PropertyAlias).ToList();
                 if (matchingProperties.Any())
                 {
-                    var propertyType = matchingProperties.First();
-                    dataType = umbDataTypeService.GetDataType(propertyType.DataTypeId);
-
-                    dtInfo.DataType = dataType;
-                    dtInfo.PropertyEditorAlias = dataType.EditorAlias;
-                    dtInfo.DatabaseType = dataType.DatabaseType.ToString();
-                    dtInfo.DocTypeAlias = ContentNode.ContentType.Alias;
+                    propertyType = matchingProperties.First();
                 }
                 else
                 {
@@ -250,12 +256,7 @@
                         docType.CompositionPropertyTypes.Where(n => n.Alias == PropertyAlias).ToList();
                     if (matchingCompProperties.Any())
                     {
-                        var propertyType = matchingCompProperties.First();
-                        dataType = umbDataTypeService.GetDataType(propertyType.DataTypeId);
-
-                        dtInfo.DataType = dataType;
-                        dtInfo.PropertyEditorAlias = dataType.EditorAlias;
-                        dtInfo.DatabaseType = dataType.DatabaseType.ToString();
+                        propertyType = matchingCompProperties.First();
 
                         if (docType.ContentTypeComposition.Any())
                         {
@@ -275,9 +276,31 @@
                     }
                     else
                     {
-                        dtInfo.ErrorMessage =
-                            $"No property found for alias '{PropertyAlias}' in DocType '{docType.Name}'";
+                        //Look at NoGroupPropertyTypes for prop data
+                        var matchingNoGroupProperties =
+                            docType.NoGroupPropertyTypes.Where(n => n.Alias == PropertyAlias).ToList();
+                        if (matchingNoGroupProperties.Any())
+                        {
+                            propertyType = matchingNoGroupProperties.First();
+                        }
+                        else
+                        {
+                            dtInfo.ErrorMessage =
+                                $"No property found for alias '{PropertyAlias}' in DocType '{docType.Name}'";
+                        }
                     }
+                }
+
+                if (propertyType != null)
+                {
+                    dataType = umbDataTypeService.GetDataType(propertyType.DataTypeId);
+
+                    dtInfo.DataType = dataType;
+                    dtInfo.PropertyEditorAlias = dataType.EditorAlias;
+                    dtInfo.DatabaseType = dataType.DatabaseType.ToString();
+
+
+
                 }
             }
 

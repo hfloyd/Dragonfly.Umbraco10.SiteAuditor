@@ -4,6 +4,7 @@
     IPublishedContent iPubMedia = Model;
     var fancyFormat = Mvc.GetSafeViewDataBool(ViewData, "FancyFormat", true);
     var imageWidth = Mvc.GetSafeViewDataInt(ViewData, "ImageWidth", 300);
+    var imageHeight = Mvc.GetSafeViewDataInt(ViewData, "ImageHeight", 300);
     
     if (iPubMedia.Url() != "")
     {
@@ -13,7 +14,8 @@
             var mediaPath = Development.MediaPath(iPubMedia,MediaService, out errMedia);
             if (IsImage(iPubMedia))
             {
-                <img src="@iPubMedia.Url()" width="@imageWidth" />
+                var mediaUrl = $"{iPubMedia.Url()}?width={imageWidth}&height={imageHeight}&rmode=max";
+                <img src="@mediaUrl" />
             }
             <div>@mediaPath</div>
             <div><small>@iPubMedia.Url()</small></div>
@@ -35,11 +37,11 @@
     {
         var imgTypes = new List<string>()
     {
-            {".png"}
-            ,{".jpg"}
-            ,{".jpeg"}
-            ,{".gif"}
-            ,{".svg"}
+            {"png"}
+            ,{"jpg"}
+            ,{"jpeg"}
+            ,{"gif"}
+            ,{"svg"}
         };
 
         var extension = IPub.Value<string>("umbracoExtension");

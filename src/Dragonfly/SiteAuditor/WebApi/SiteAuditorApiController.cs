@@ -31,6 +31,7 @@
     [IsBackOffice]
     public class SiteAuditorController : UmbracoAuthorizedApiController
     {
+        #region ctor & DI
         private readonly ILogger<SiteAuditorController> _logger;
         private readonly SiteAuditorService _siteAuditorService;
         private readonly IViewRenderService _viewRenderService;
@@ -47,6 +48,7 @@
 
         }
 
+        #endregion
         private string RazorFilesPath()
         {
             return SiteAuditorService.PluginPath() + "RazorViews/";
@@ -275,8 +277,20 @@
 
         /// /umbraco/backoffice/Dragonfly/SiteAuditor/GetContentForDoctypeHtml?DocTypeAlias=X
         [HttpGet]
-        public IActionResult GetContentForDoctypeHtml(string DocTypeAlias)
+        public IActionResult GetContentForDoctypeHtml(string DocTypeAlias = "")
         {
+	        if (DocTypeAlias != "")
+	        {
+		        return ContentForDoctypeHtml(DocTypeAlias);
+	        }
+	        else
+	        {
+		        return DoctypesForContentForDoctypeHtml();
+	        }
+        }
+
+        private IActionResult ContentForDoctypeHtml(string DocTypeAlias)
+	        {
             //Setup
             var pvPath = RazorFilesPath() + "AllContentAsHtmlTable.cshtml";
             var saService = GetSiteAuditorService();
@@ -307,10 +321,8 @@
 
             return new HttpResponseMessageResult(result);
         }
-
-        /// /umbraco/backoffice/Dragonfly/SiteAuditor/GetContentForDoctypeHtml
-        [HttpGet]
-        public IActionResult GetContentForDoctypeHtml()
+        
+        private IActionResult DoctypesForContentForDoctypeHtml()
         {
             //Setup
             //  var pvPath = RazorFilesPath() + "Start.cshtml";
@@ -573,7 +585,19 @@
 
         // /umbraco/backoffice/Dragonfly/SiteAuditor/GetPropertiesForDoctypeHtml?DocTypeAlias=xxx
         [HttpGet]
-        public IActionResult GetPropertiesForDoctypeHtml(string DocTypeAlias)
+        public IActionResult GetPropertiesForDoctypeHtml(string DocTypeAlias="")
+        {
+	        if (DocTypeAlias != "")
+	        {
+		        return PropsForDoctypeHtml(DocTypeAlias);
+	        }
+	        else
+	        {
+		        return DoctypesForPropertiesForDoctypeHtml();
+	        }
+        }
+
+        private IActionResult PropsForDoctypeHtml(string DocTypeAlias)
         {
             //Setup
             var pvPath = RazorFilesPath() + "AllPropertiesAsHtmlTable.cshtml";
@@ -611,9 +635,7 @@
 
         }
 
-        /// /umbraco/backoffice/Dragonfly/SiteAuditor/GetPropertiesForDoctypeHtml
-        [HttpGet]
-        public IActionResult GetPropertiesForDoctypeHtml()
+        private IActionResult DoctypesForPropertiesForDoctypeHtml()
         {
             //Setup
             var pvPath = RazorFilesPath() + "Start.cshtml";
