@@ -37,11 +37,11 @@
 	<PropertyGroup>
 		<RootNamespace>Dragonfly</RootNamespace>
 		<AssemblyName>Dragonfly.UmbracoSiteAuditor</AssemblyName>
-		<Version>1.1.3</Version>
+		<Version>1.2.0</Version>
 		<AssemblyVersion>$(Version)</AssemblyVersion>
 		<FileVersion>$(Version)</FileVersion>
 		<IncludeSymbols>True</IncludeSymbols>
-		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+		<SymbolPackageFormat>symbols.nupkg</SymbolPackageFormat>
 	</PropertyGroup>
 
   <!-- Include Package Items -->
