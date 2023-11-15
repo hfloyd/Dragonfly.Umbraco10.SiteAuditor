@@ -413,6 +413,8 @@
 			}
 
 			ac.NodePath = _auditorInfoService.NodePath(ThisIContent);
+			ac.CreateUser = _auditorInfoService.GetUser(ThisIContent.CreatorId);
+			ac.UpdateUser = _auditorInfoService.GetUser(ThisIContent.WriterId);
 
 			return ac;
 		}

@@ -58,8 +58,8 @@
 					<th>Sort Order</th>
 					<th>Assigned Template</th>
 					<th>Create Date</th>
-					<th>Update Date</th>
 					<th>Create User</th>
+					<th>Update Date</th>
 					<th>Update User</th>
 					<th>UDI</th>
 				</tr>
@@ -131,16 +131,18 @@
 							}
 						</td>
 
+						@* //Create User *@
+						<td>@(node.CreateUser!=null? node.CreateUser.Username: "UNKNOWN") </td>
+
 						@*//Date Last Updated*@
 						<td>
 							@{
 								Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/DateValue.cshtml", node.UmbContentNode.UpdateDate);
 							}
 						</td>
-						@* //Create User *@
-						<td>@node.UmbContentNode.CreatorId</td>
+					
 						@* //Update User *@
-						<td>@node.UmbContentNode.WriterId</td>
+						<td>@(node.UpdateUser != null ? node.UpdateUser.Username : "UNKNOWN") </td>
 						
 						@* //Node UDI*@
 						<td><small>@node.UmbContentNode.GetUdi()</small></td>
