@@ -7,6 +7,11 @@
 	HtmlString formattedValue = new HtmlString("");
 	var renderingDone = false;
 
+	var viewDD = new ViewDataDictionary(ViewData);
+
+	var paramHighlights = Mvc.GetSafeViewData(ViewData, "HighlightText", new StatusMessage()) as List<string>;
+
+
 	try
 	{
 		var editor = nodePropertyDataTypeInfo.DataType.EditorAlias;
@@ -16,27 +21,27 @@
 		switch (editor)
 		{
 			case "Umbraco.NestedContent":
-				Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/NestedContent.cshtml", nodePropertyDataTypeInfo.Property);
+				Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/NestedContent.cshtml", nodePropertyDataTypeInfo.Property, viewDD);
 				renderingDone = true;
 				break;
 
 			case "Our.Umbraco.NestedContent":
-				Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/NestedContent.cshtml", nodePropertyDataTypeInfo.Property);
+				Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/NestedContent.cshtml", nodePropertyDataTypeInfo.Property, viewDD);
 				renderingDone = true;
 				break;
 
 			case "Umbraco.MultiNodeTreePicker":
-				Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/Mntp.cshtml", nodePropertyDataTypeInfo.Property);
+				Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/Mntp.cshtml", nodePropertyDataTypeInfo.Property, viewDD);
 				renderingDone = true;
 				break;
 
 			case "Umbraco.ContentPicker":
-				Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/ContentPicker.cshtml", nodePropertyDataTypeInfo.Property);
+				Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/ContentPicker.cshtml", nodePropertyDataTypeInfo.Property, viewDD);
 				renderingDone = true;
 				break;
 
 			case "Tags": //TODO: Fix such that Node Tags data is passed-in.
-				Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/Tags.cshtml", nodePropertyDataTypeInfo.PropertyData);
+				Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/Tags.cshtml", nodePropertyDataTypeInfo.PropertyData, viewDD);
 				renderingDone = true;
 				break;
 
@@ -77,7 +82,7 @@
 			switch (dbType)
 			{
 				case ValueStorageType.Date:
-					Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/DateValue.cshtml", nodePropertyDataTypeInfo.Property.GetValue());
+					Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/DateValue.cshtml", nodePropertyDataTypeInfo.Property.GetValue(), viewDD);
 					renderingDone = true;
 					break;
 
@@ -99,7 +104,8 @@
 
 				default:
 					//Default rendering
-					<span>@nodePropertyDataTypeInfo.Property.GetValue()</span>
+					var valueString = nodePropertyDataTypeInfo.Property.GetValue().ToString();
+					<span class="highlighted">@AuditorInfoService.HighlightText(valueString, paramHighlights)</span>
 					renderingDone = true;
 					break;
 			}

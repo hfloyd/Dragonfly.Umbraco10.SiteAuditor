@@ -7,6 +7,8 @@
 	using System.Threading.Tasks;
 	using Dragonfly.SiteAuditor.Models;
 	using Dragonfly.UmbracoServices;
+	using Lucene.Net.Analysis.CharFilters;
+	using Microsoft.AspNetCore.Html;
 	using Microsoft.AspNetCore.Http;
 	using Microsoft.Extensions.Logging;
 	using Umbraco.Cms.Core;
@@ -212,6 +214,27 @@
 			}
 
 			return dtInfo;
+		}
+
+		public IContentType? GetContentType(string Alias)
+		{
+			var umbContentTypeService = _services.ContentTypeService;
+
+			var docType = umbContentTypeService.Get(Alias);
+
+			return docType;
+		}
+
+		public HtmlString HighlightText(string Text, List<string> Highlights)
+		{
+			var highlightedText = Text;
+
+			foreach (var term in Highlights)
+			{
+				highlightedText = highlightedText.Replace(term, $"<mark>{term}</mark>");
+			}
+			
+			return new HtmlString( highlightedText);
 		}
 
 		/// <summary>

@@ -1,4 +1,4 @@
-@inherits UmbracoViewPage<IEnumerable<AuditableContent>>
+@inherits UmbracoViewPage<List<KeyValuePair<AuditableContent, NodePropertyDataTypeInfo>>>
 @*
 	Expected View Data:
 	-------------------
@@ -12,11 +12,23 @@
 	var propertyAlias = Dragonfly.UmbracoHelpers.Mvc.GetSafeViewDataString(ViewData, "PropertyAlias");
 	var includeUnpublished = Dragonfly.UmbracoHelpers.Mvc.GetSafeViewDataBool(ViewData, "IncludeUnpublished");
 
-	IEnumerable<AuditableContent> contentList = Model.ToList();
+	List<KeyValuePair<AuditableContent, NodePropertyDataTypeInfo>> contentList = Model.ToList();
 
 	var counter = 0;
 	var requestUri = Dragonfly.NetHelpers.Urls.CurrentRequestUri(Context.Request);
 	var filterdByDoctype = Dragonfly.NetHelpers.Urls.GetSafeQueryStringValue<string>(requestUri, "DocTypeAlias", "");
+
+
+	var viewDD = new ViewDataDictionary(ViewData);
+	if (filterdByDoctype != "")
+	{
+		var elementType = AuditorInfoService.GetContentType(filterdByDoctype);
+
+		var highlightText = new List<string>();
+		highlightText.Add(elementType.Key.ToString());
+		
+		viewDD.Add("HighlightText", highlightText);
+	}
 }
 
 <!DOCTYPE html>
@@ -35,10 +47,10 @@
 <body>
 	<div class="container-full" style="margin: 0 10px;">
 
-		<h1>All Content</h1>
+		<h1>All Content Using Element</h1>
 		@if (filterdByDoctype != "")
 		{
-			<h2>Pages of type '@filterdByDoctype' Only</h2>
+			<h2>Pages using type '@filterdByDoctype' Only</h2>
 		}
 		<p>Total Nodes Returned: @contentList.Count()</p>
 
@@ -51,26 +63,26 @@
 					<th>NodeID</th>
 					<th>Node Path</th>
 					<th>DocType</th>
-					<th>ParentID</th>
-					<th>Full URL</th>
-					<th>Level</th>
-					<th>Sort Order</th>
-					<th>Assigned Template</th>
-					<th>Create Date</th>
-					<th>Create User</th>
+					<th>Is Published?</th>
+					<th>Property</th>
+					<th>Property Value</th>
+					<th>Value Length</th>
+					@* <th>Has Value</th> *@
 					<th>Update Date</th>
 					<th>Update User</th>
 					<th>UDI</th>
 				</tr>
 			</thead>
 			<tbody>
-				@foreach (var node in contentList)
+				@foreach (var item in contentList)
 				{
+					var node = item.Key;
+					var propInfo = item.Value;
+
 					counter++;
 					//var dtInfo = AuditorInfoService.GetPropertyDataTypeInfo( propertyAlias, node.UmbPublishedNode);
 
 					<tr>
-
 						@*  // # *@
 						<td>@counter</td>
 
@@ -99,52 +111,43 @@
 						@* //DocType*@
 						<td>@node.UmbContentNode.ContentType.Alias</td>
 
-						@* //ParentID*@
-						<td>@node.UmbContentNode.ParentId</td>
+						@* //Is Published?*@
+						<td>@node.IsPublished</td>
 
-						@* //Full URL*@
+						@* //Property*@
+						<td>@propInfo.Property.Alias</td>
+
+						@*//Property Value*@
+						@if (propInfo.DataType != null)
+						{
+							<td>
+								@{
+									Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/PropertyDataValue.cshtml", propInfo, viewDD);
+								}
+							</td>
+						}
+						else
+						{
+							var propVal = node.UmbContentNode.GetValue<string>(propertyAlias);
+							<td>@propVal</td>
+						}
+
+						@*//Value Length*@
 						<td>
-							@if (node.IsPublished)
+							@if (node.UmbContentNode.HasPropertyValue(propertyAlias) & propInfo.PropertyData != null)
 							{
-								<small><a href="@node.FullNiceUrl" target="_blank">@node.FullNiceUrl</a></small>
+								@propInfo.PropertyData.ToString().Length
 							}
-							else
-							{
-								<span>UNPUBLISHED</span>
-							}
-						</td>
+						    else
+						    {
+							    <text>0</text>
+						    }</td>
+						
 
-						@* //Level*@
-						<td>@node.UmbContentNode.Level</td>
+						@*//Has Value*@
+						@* <td>@PropertyHasValue(propInfo,node, propertyAlias)</td> *@
 
-						@* //Sort Order*@
-						<td>@node.UmbContentNode.SortOrder</td>
-
-						@* //Template Name*@
-						<td>@node.TemplateAlias</td>
-
-						@* //Create Date*@
-						<td>
-							@{
-								Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/DateValue.cshtml", node.UmbContentNode.CreateDate);
-							}
-						</td>
-
-						@* //Create User *@
-						<td>
-							@if (node.CreateUser != null)
-							{
-								<text>@node.CreateUser.Name</text>
-								<br />
-								<small>@node.CreateUser.Username</small>
-							}
-							else
-							{
-								<text>UNKNOWN</text>
-							}
-						</td>
-
-						@*//Date Last Updated*@
+					@*//Date Last Updated*@
 						<td>
 							@{
 								Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/DateValue.cshtml", node.UmbContentNode.UpdateDate);
@@ -178,13 +181,11 @@
 					<th>ID</th>
 					<th>Path</th>
 					<th>DocType</th>
-					<th>ParentID</th>
-					<td>URL</td>
-					<td>Level</td>
-					<td>Order</td>
-					<th>Template</th>
-					<th>Create Date</th>
-					<th>Create User</th>
+					<th>Is Published?</th>
+					<th>Property</th>
+					<th>Property Value</th>
+					<th>Value Length</th>
+					@* <th>Has Value</th> *@
 					<th>Update Date</th>
 					<th>Update User</th>
 					<td>UDI</td>

@@ -1,46 +1,47 @@
-﻿namespace Dragonfly.SiteAuditor.Models
+﻿namespace Dragonfly.SiteAuditor.Models;
+
+using System;
+using System.Collections.Generic;
+using Umbraco.Cms.Core.Models;
+
+
+public class AuditableDataType
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
-    using Umbraco.Cms.Core.Models;
-    using Umbraco.Cms.Core.Models.PublishedContent;
+	public string Name { get; set; } = "";
+	public string EditorAlias { get; set; } = "";
+	public Guid Guid { get; set; }
+	public int Id { get; set; }
 
-    public class AuditableDataType
-    {
-        public string Name { get; set; }
-        public string EditorAlias { get; set; }
-        public Guid Guid { get; set; }
-        public int Id { get; set; }
-        public IEnumerable<KeyValuePair<IPropertyType, string>> UsedOnProperties { get; set; }
-        public string ConfigurationJson { get; set; }
-        public List<string> FolderPath { get; set; }
+	public IEnumerable<KeyValuePair<IPropertyType, string>> UsedOnProperties { get; set; } = new List<KeyValuePair<IPropertyType, string>>();
+	public string ConfigurationJson { get; set; } = "";
+	public List<string> FolderPath { get; set; } = new List<string>();
 
-        /// <summary>
-        /// Default string used for NodePathAsText
-        /// ' » ' unless explicitly changed
-        /// </summary>
-        public string DefaultDelimiter
-        {
-            get { return _defaultDelimiter; }
-            internal set { _defaultDelimiter = value; }
-        }
-        private string _defaultDelimiter = " » ";
+	public IEnumerable<string> UsesElementsDirectly { get; set; } = new List<string>();
 
-        /// <summary>
-        /// Full path to node in a single delimited string using object's default delimiter
-        /// </summary>
-        public string PathAsText
-        {
-            get
-            {
-                var path = string.Join(this.DefaultDelimiter, this.FolderPath);
-                return path;
-            }
-        }
+	public IEnumerable<string> UsesElementsAll { get; set; } = new List<string>();
 
+	/// <summary>
+	/// Default string used for NodePathAsText
+	/// ' » ' unless explicitly changed
+	/// </summary>
+	public string DefaultDelimiter
+	{
+		get { return _defaultDelimiter; }
+		internal set { _defaultDelimiter = value; }
+	}
+	private string _defaultDelimiter = " » ";
 
-    }
+	/// <summary>
+	/// Full path to node in a single delimited string using object's default delimiter
+	/// </summary>
+	public string PathAsText
+	{
+		get
+		{
+			var path = string.Join(this.DefaultDelimiter, this.FolderPath);
+			return path;
+		}
+	}
+
 }
+

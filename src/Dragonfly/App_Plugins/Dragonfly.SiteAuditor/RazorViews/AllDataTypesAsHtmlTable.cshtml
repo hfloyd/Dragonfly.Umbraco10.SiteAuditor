@@ -24,62 +24,74 @@
 	<link href="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.12/css/dataTables.bootstrap.min.css" rel="stylesheet" />
 
 	@*<style>
-		{
+	{
 
-		}
-		</style>*@
+	}
+	</style>*@
 	@*<!--<script src="/scripts/snippet-javascript-console.min.js?v=1"></script>-->*@
 </head>
 <body>
-<div class="container-full" style="margin: 0 10px;">
+	<div class="container-full" style="margin: 0 10px;">
 
-	<h1>All DataTypes</h1>
-	<p>Total DataTypes Returned: @dataTypes.Count()</p>
+		<h1>All DataTypes</h1>
+		<p>Total DataTypes Returned: @dataTypes.Count()</p>
 
-	<table id="umbracodata" class="table table-striped table-bordered table-hover table-sm" cellspacing="0" style="width:100%">
-		<thead>
-		<tr>
-			<th>#</th>
-			<th>Actions</th>
-			<th>DataType Name</th>
-			<th>Folder Path</th>
-			<th>Property Editor Alias</th>
-			<th>Configuration</th>
-			<th>Used On Properties</th>
-			<th>Qty of Properties</th>
-			<th>Id</th>
-			<th>Guid Key</th>
-		</tr>
-		</thead>
-		<tbody>
+		<table id="umbracodata" class="table table-striped table-bordered table-hover table-sm" cellspacing="0" style="width:100%">
+			<thead>
+				<tr>
+					<th>#</th>
+					<th>Actions</th>
+					<th>DataType Name</th>
+					<th>Folder Path</th>
+					<th>Property Editor Alias</th>
+					<th>Configuration</th>
+					<th>Uses Content Types</th>
+					<th>Used On Properties</th>
+					<th>Qty of Properties</th>
+					<th>Id</th>
+					<th>Guid Key</th>
+				</tr>
+			</thead>
+			<tbody>
 				@foreach (var dt in dataTypes)
 				{
 					counter++;
 
-				<tr>
+					<tr>
 						@*// #*@
-					<td>@counter</td>
+						<td>@counter</td>
 
 						@*//Actions*@
-					<td>@{
+						<td>
+							@{
 								Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/SchemaActions.cshtml", dt.Id, new ViewDataDictionary(ViewData)
-					   {
-						   {"EntityType", "DataType" }
-					   });
+								{
+								{"EntityType", "DataType" }
+								});
 							}
-					</td>
+						</td>
 
 						@*//Name*@
-					<td>@dt.Name</td>
+						<td>@dt.Name</td>
 
 						@*//Path*@
-					<td>@dt.PathAsText</td>
+						<td>@dt.PathAsText</td>
 
 						@*//Property Editor Alias*@
-					<td>@dt.EditorAlias</td>
+						<td>@dt.EditorAlias</td>
 
 						@*//Configuration*@
-					<td>@dt.ConfigurationJson.Replace(",",", ")</td>
+						<td>@dt.ConfigurationJson.Replace(",",", ")</td>
+
+						@* //Uses Content Types *@
+						@if (dt.UsesElements.Any())
+						{
+							<td>@Html.Raw(string.Join(" <br/> ", dt.UsesElements.Select(n => $"{n}")))</td>
+						}
+						else
+						{
+							<td>~NONE~</td>
+						}
 
 						@*//Used On Properties*@
 						@if (dt.UsedOnProperties.Any())
@@ -92,65 +104,66 @@
 						}
 
 						@*//Qty of Properties*@
-					<td>@dt.UsedOnProperties.Count()</td>
+						<td>@dt.UsedOnProperties.Count()</td>
 
 						@*// ID*@
-					<td>@dt.Id</td>
+						<td>@dt.Id</td>
 
 						@*// GUID*@
-					<td>@dt.Guid.ToString()</td>
-				</tr>
+						<td>@dt.Guid.ToString()</td>
+					</tr>
 				}
 
-		</tbody>
-		<tfoot>
-		<tr>
-			<td>#</td>
-			<td>Actions</td>
-			<th>DataType Name</th>
-			<th>Folder Path</th>
-			<th>Property Editor Alias</th>
-			<th>Configuration</th>
-			<th>Used On Properties</th>
-			<th>Qty of Properties</th>
-			<th>Id</th>
-			<th>Guid Key</th>
-		</tr>
-		</tfoot>
-	</table>
+			</tbody>
+			<tfoot>
+				<tr>
+					<td>#</td>
+					<td>Actions</td>
+					<th>DataType Name</th>
+					<th>Folder Path</th>
+					<th>Property Editor Alias</th>
+					<th>Configuration</th>
+					<th>Uses Content Types</th>
+					<th>Used On Properties</th>
+					<th>Qty of Properties</th>
+					<th>Id</th>
+					<th>Guid Key</th>
+				</tr>
+			</tfoot>
+		</table>
 
-</div>
+	</div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.12/js/jquery.dataTables.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.12/js/dataTables.bootstrap.min.js"></script>
-<script type="text/javascript">
-	$(document).ready(function () {
-		// Setup - add a text input to each footer cell
-		$('#umbracodata tfoot th').each( function () {
-			var title = $(this).text();
-			$(this).html( '<input type="text" style="font-size:10px; width:100%;" placeholder="Search '+title+'" />' );
-		} );
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.12/js/jquery.dataTables.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.12/js/dataTables.bootstrap.min.js"></script>
+	<script type="text/javascript">
+		$(document).ready(function () {
+			// Setup - add a text input to each footer cell
+			$('#umbracodata tfoot th').each(function () {
+				var title = $(this).text();
+				$(this).html('<input type="text" style="font-size:10px; width:100%;" placeholder="Search ' + title + '" />');
+			});
 
-		// DataTable
-		$('#umbracodata').DataTable({
-			initComplete: function () {
-				// Apply the search
-				this.api().columns().every( function () {
-					var that = this;
+			// DataTable
+			$('#umbracodata').DataTable({
+				initComplete: function () {
+					// Apply the search
+					this.api().columns().every(function () {
+						var that = this;
 
-					$( 'input', this.footer() ).on( 'keyup change clear', function () {
-						if ( that.search() !== this.value ) {
-							that
-								.search( this.value )
-								.draw();
-						}
-					} );
-				} );
-			}
+						$('input', this.footer()).on('keyup change clear', function () {
+							if (that.search() !== this.value) {
+								that
+									.search(this.value)
+									.draw();
+							}
+						});
+					});
+				}
+			});
+
 		});
-
-	});
-</script>
+	</script>
 </body>
 </html>
