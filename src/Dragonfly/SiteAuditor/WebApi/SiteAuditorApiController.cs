@@ -27,6 +27,7 @@
 	using Dragonfly.SiteAuditor.Models;
 	using Dragonfly.SiteAuditor.Services;
 	using System.Net;
+	using Umbraco.Cms.Infrastructure.PublishedCache;
 
 	//  /umbraco/backoffice/Dragonfly/SiteAuditor/
 	[PluginController("Dragonfly")]
@@ -166,21 +167,25 @@
 			}
 			returnSB.Append(tableData);
 
-			
+
 			//RETURN AS CSV FILE
-			var contentDispositionHeader = new System.Net.Mime.ContentDisposition()
-			{
-				FileName = "AllContentNodes.csv",
-				DispositionType = "attachment"
-			};
-			HttpContext.Response.Headers.Add("Content-Disposition", contentDispositionHeader.ToString());
-			return new ContentResult()
-			{
-				Content = returnSB.ToString(),
-				StatusCode = (int)HttpStatusCode.OK,
-				ContentType = "text/csv; charset=utf-8",
-			};
-		
+			var fileName = "AllContentNodes.csv";
+			var fileContent = Encoding.UTF8.GetBytes(returnSB.ToString());
+			var result = Encoding.UTF8.GetPreamble().Concat(fileContent).ToArray();
+			return File(result, "text/csv", fileName);
+
+			//var contentDispositionHeader = new System.Net.Mime.ContentDisposition()
+			//{
+			//	FileName = "AllContentNodes.csv",
+			//	DispositionType = "attachment"
+			//};
+			//HttpContext.Response.Headers.Add("Content-Disposition", contentDispositionHeader.ToString());
+			//return Content(
+			//	returnSB.ToString(),
+			//	"text/csv",
+			//	Encoding.UTF8
+			//);
+			
 		}
 
 		/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetContentForDoctypeHtml?DocTypeAlias=X
@@ -219,26 +224,43 @@
 
 			//GET DATA TO DISPLAY
 			var status = new StatusMessage(true);
-			var allSiteDocTypes = saService.GetAllDocTypes().OrderBy(n => n.Alias).ToList();
-			//var allAliases = allSiteDocTypes.Select(n => n.Alias).OrderBy(n => n).ToList();
+			var allSiteDocTypes = saService.GetAllDocTypes().ToList();
+			var allNodeTypes = allSiteDocTypes.Where(n => n.IsElement == false).OrderBy(n => n.Alias).ToList();
+			var allElementTypes = allSiteDocTypes.Where(n => n.IsElement == true).OrderBy(n => n.Alias).ToList();
 
 
 			//BUILD HTML
 			var returnSB = new StringBuilder();
 			returnSB.AppendLine($"<h1>Get Content for a Selected Document Type</h1>");
-			returnSB.AppendLine($"<h3>Available Document Types</h3>");
-			//returnSB.AppendLine("<p>Note: Choosing the 'All' option will take significantly longer to load than the 'Published' option because we need to bypass the cache and query the database directly.</p>");
+			returnSB.AppendLine($"<p id=\"Nav\"><a href=\"#ContentNodes\">Content Node Document Types</a> | <a href=\"#Elements\">Element Types</a></p>");
 
+
+			returnSB.AppendLine($"<h3 id=\"ContentNodes\">Available Content Node Document Types</h3>");
 			returnSB.AppendLine("<ul>");
-			foreach (var docType in allSiteDocTypes)
+			foreach (var docType in allNodeTypes)
 			{
 				var type = docType.IsElement ? "Nodes Using Element" : "Content Nodes of Type";
 				var api = docType.IsElement ? "GetContentForElementHtml" : "GetContentForDoctypeHtml";
 				var url = $"/umbraco/backoffice/Dragonfly/SiteAuditor/{api}?DocTypeAlias={docType.Alias}";
 
-				returnSB.AppendLine($"<li>{docType.Alias} <a target=\"_blank\" href=\"{url}\">View {type}</a></li>");
+				returnSB.AppendLine($"<li>{docType.Alias} <a target=\"_blank\" href=\"{url}\">View</a></li>");
 			}
 			returnSB.AppendLine("</ul>");
+			returnSB.AppendLine($"<p><a href=\"#Nav\">Top Nav</a></p>");
+
+			returnSB.AppendLine($"<h3 id=\"Elements\">Available Element Document Types</h3>");
+			returnSB.AppendLine("<p>Note: These options will take longer to load because they have to recursively check the content property values.</p>");
+			returnSB.AppendLine("<ul>");
+			foreach (var docType in allElementTypes)
+			{
+				var type = docType.IsElement ? "Nodes Using Element" : "Content Nodes of Type";
+				var api = docType.IsElement ? "GetContentForElementHtml" : "GetContentForDoctypeHtml";
+				var url = $"/umbraco/backoffice/Dragonfly/SiteAuditor/{api}?DocTypeAlias={docType.Alias}";
+
+				returnSB.AppendLine($"<li>{docType.Alias} <a target=\"_blank\" href=\"{url}\">View</a></li>");
+			}
+			returnSB.AppendLine("</ul>");
+			returnSB.AppendLine($"<p><a href=\"#Nav\">Top Nav</a></p>");
 
 			var displayHtml = returnSB.ToString();
 
@@ -482,22 +504,26 @@
 
 			returnSB.Append(tableData);
 
-			//return Dragonfly.NetHelpers.Http.StringBuilderToFile(returnSB, "AllProperties.csv");
 
 			//RETURN AS CSV FILE
-			var contentDispositionHeader = new System.Net.Mime.ContentDisposition()
-			{
-				FileName = "AllProperties.csv",
-				DispositionType = "attachment"
-			};
-			HttpContext.Response.Headers.Add("Content-Disposition", contentDispositionHeader.ToString());
-			return new ContentResult()
-			{
-				Content = returnSB.ToString(),
-				StatusCode = (int)HttpStatusCode.OK,
-				ContentType = "text/csv; charset=utf-8",
-			};
-		
+			var fileName = "AllProperties.csv";
+			var fileContent = Encoding.UTF8.GetBytes(returnSB.ToString());
+			var result = Encoding.UTF8.GetPreamble().Concat(fileContent).ToArray();
+			return File(result, "text/csv", fileName);
+
+			//var contentDispositionHeader = new System.Net.Mime.ContentDisposition()
+			//{
+			//	FileName = "AllProperties.csv",
+			//	DispositionType = "attachment"
+			//};
+			//HttpContext.Response.Headers.Add("Content-Disposition", contentDispositionHeader.ToString());
+			//return new ContentResult()
+			//{
+			//	Content = returnSB.ToString(),
+			//	StatusCode = (int)HttpStatusCode.OK,
+			//	ContentType = "text/csv; charset=utf-8",
+			//};
+
 		}
 
 		// /umbraco/backoffice/Dragonfly/SiteAuditor/GetPropertiesForDoctypeHtml?DocTypeAlias=xxx
@@ -683,22 +709,25 @@
 
 			returnSB.Append(tableData);
 
-			// return Dragonfly.NetHelpers.Http.StringBuilderToFile(returnSB, "AllDataTypes.csv");
-
 			//RETURN AS CSV FILE
-			var contentDispositionHeader = new System.Net.Mime.ContentDisposition()
-			{
-				FileName = "AllDataTypes.csv",
-				DispositionType = "attachment"
-			};
-			HttpContext.Response.Headers.Add("Content-Disposition", contentDispositionHeader.ToString());
-			return new ContentResult()
-			{
-				Content = returnSB.ToString(),
-				StatusCode = (int)HttpStatusCode.OK,
-				ContentType = "text/csv; charset=utf-8",
-			};
-			
+			var fileName = "AllDataTypes.csv";
+			var fileContent = Encoding.UTF8.GetBytes(returnSB.ToString());
+			var result = Encoding.UTF8.GetPreamble().Concat(fileContent).ToArray();
+			return File(result, "text/csv", fileName);
+
+			//var contentDispositionHeader = new System.Net.Mime.ContentDisposition()
+			//{
+			//	FileName = "AllDataTypes.csv",
+			//	DispositionType = "attachment"
+			//};
+			//HttpContext.Response.Headers.Add("Content-Disposition", contentDispositionHeader.ToString());
+			//return new ContentResult()
+			//{
+			//	Content = returnSB.ToString(),
+			//	StatusCode = (int)HttpStatusCode.OK,
+			//	ContentType = "text/csv; charset=utf-8",
+			//};
+
 		}
 
 
@@ -780,22 +809,25 @@
 			}
 			returnSB.Append(tableData);
 
-			//     return Dragonfly.NetHelpers.Http.StringBuilderToFile(returnSB, "AllDoctypes.csv");
-
 			//RETURN AS CSV FILE
-			var contentDispositionHeader = new System.Net.Mime.ContentDisposition()
-			{
-				FileName = "AllDoctypes.csv",
-				DispositionType = "attachment"
-			};
-			HttpContext.Response.Headers.Add("Content-Disposition", contentDispositionHeader.ToString());
-			return new ContentResult()
-			{
-				Content = returnSB.ToString(),
-				StatusCode = (int)HttpStatusCode.OK,
-				ContentType = "text/csv; charset=utf-8",
-			};
-	
+			var fileName = "AllDoctypes.csv";
+			var fileContent = Encoding.UTF8.GetBytes(returnSB.ToString());
+			var result = Encoding.UTF8.GetPreamble().Concat(fileContent).ToArray();
+			return File(result, "text/csv", fileName);
+
+			//var contentDispositionHeader = new System.Net.Mime.ContentDisposition()
+			//{
+			//	FileName = "AllDoctypes.csv",
+			//	DispositionType = "attachment"
+			//};
+			//HttpContext.Response.Headers.Add("Content-Disposition", contentDispositionHeader.ToString());
+			//return new ContentResult()
+			//{
+			//	Content = returnSB.ToString(),
+			//	StatusCode = (int)HttpStatusCode.OK,
+			//	ContentType = "text/csv; charset=utf-8",
+			//};
+
 		}
 
 		#endregion
@@ -855,43 +887,46 @@
 			var saService = GetSiteAuditorService();
 			var returnSB = new StringBuilder();
 
-			var allDts = saService.GetAuditableDocTypes();
+			var allTemplates = saService.GetAuditableTemplates();
 
 			var tableData = new StringBuilder();
 
 			tableData.AppendLine(
-				"\"Doctype Name\",\"Alias\",\"Default Template\",\"GUID\",\"Create Date\",\"Update Date\"");
+				"\"Template Name\",\"Alias\",\"Code Length\",\"GUID\",\"Create Date\",\"Update Date\"");
 
-			foreach (var item in allDts)
+			foreach (var item in allTemplates)
 			{
 				tableData.AppendFormat(
 					"\"{0}\",\"{1}\",\"{2}\",\"{3}\",{4},{5}{6}",
 					item.Name,
 					item.Alias,
-					item.DefaultTemplateName,
+					item.CodeLength,
 					item.Guid,
-					item.ContentType.CreateDate,
-					item.ContentType.UpdateDate,
+					item.CreateDate,
+					item.UpdateDate,
 					Environment.NewLine);
 			}
 			returnSB.Append(tableData);
 
-			//    return Dragonfly.NetHelpers.Http.StringBuilderToFile(returnSB, "AllDoctypes.csv");
-
 			//RETURN AS CSV FILE
-			var contentDispositionHeader = new System.Net.Mime.ContentDisposition()
-			{
-				FileName = "AllDoctypes.csv",
-				DispositionType = "attachment"
-			};
-			HttpContext.Response.Headers.Add("Content-Disposition", contentDispositionHeader.ToString());
-			return new ContentResult()
-			{
-				Content = returnSB.ToString(),
-				StatusCode = (int)HttpStatusCode.OK,
-				ContentType = "text/csv; charset=utf-8",
-			};
-		
+			var fileName = "AllTemplates.csv";
+			var fileContent = Encoding.UTF8.GetBytes(returnSB.ToString());
+			var result = Encoding.UTF8.GetPreamble().Concat(fileContent).ToArray();
+			return File(result, "text/csv", fileName);
+
+			//var contentDispositionHeader = new System.Net.Mime.ContentDisposition()
+			//{
+			//	FileName = "AllDoctypes.csv",
+			//	DispositionType = "attachment"
+			//};
+			//HttpContext.Response.Headers.Add("Content-Disposition", contentDispositionHeader.ToString());
+			//return new ContentResult()
+			//{
+			//	Content = returnSB.ToString(),
+			//	StatusCode = (int)HttpStatusCode.OK,
+			//	ContentType = "text/csv; charset=utf-8",
+			//};
+
 		}
 
 		#endregion
@@ -1074,7 +1109,7 @@
 
 		#region Tests & Examples
 
-		/// /umbraco/backoffice/Dragonfly/AuthorizedApi/TestJson?DocTypeAlias=xxx
+		/// /umbraco/backoffice/Dragonfly/SiteAuditor/TestJson?DocTypeAlias=xxx
 		[HttpGet]
 		public IActionResult TestJson(string DocTypeAlias)
 		{
@@ -1086,21 +1121,39 @@
 			try
 			{
 				var contentNodes = saService.GetContentNodesUsingElement(DocTypeAlias);
-				status.RelatedObject=contentNodes;
+				status.RelatedObject = contentNodes;
 			}
 			catch (Exception e)
 			{
-				status.Success=false;
+				status.Success = false;
 				status.SetRelatedException(e);
 			}
-			
+
 
 			//Return JSON
 			return new JsonResult(status);
 		}
 
+		/// /umbraco/backoffice/Dragonfly/SiteAuditor/TestData?DocTypeAlias=xxx
+		[HttpGet]
+		public List<KeyValuePair<AuditableContent, NodePropertyDataTypeInfo>> TestData(string DocTypeAlias)
+		{
+			_logger.LogInformation($"SiteAuditor.TestData STARTING...");
 
-		
+			//Setup
+			var saService = GetSiteAuditorService();
+
+			//GET DATA TO DISPLAY
+			var status = new StatusMessage(true);
+
+			var contentNodes = saService.GetContentNodesUsingElement(DocTypeAlias);
+			status.RelatedObject = contentNodes;
+
+			_logger.LogInformation($"SiteAuditor.TestData COMPLETED");
+			return contentNodes;
+
+		}
+
 
 
 		/// /umbraco/backoffice/Dragonfly/AuthorizedApi/Test
@@ -1225,7 +1278,7 @@
 				StatusCode = (int)HttpStatusCode.OK,
 				ContentType = "text/csv; charset=utf-8",
 			};
-			
+
 		}
 
 		#endregion

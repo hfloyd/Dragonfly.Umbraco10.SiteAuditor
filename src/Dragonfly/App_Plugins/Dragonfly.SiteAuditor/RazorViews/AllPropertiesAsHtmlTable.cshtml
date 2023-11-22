@@ -35,7 +35,7 @@
 	@*<!--<script src="/scripts/snippet-javascript-console.min.js?v=1"></script>-->*@
 </head>
 <body>
-	<div class="container">
+	<div class="container-full" style="margin: 0 10px;">
 
 		<h1>@Title</h1>
 		<p>Total Returned: @propsList.Count()</p>
@@ -91,11 +91,13 @@
 						<td>
 							@foreach (var docType in prop.AllDocTypes)
 							{
-								Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/SchemaActions.cshtml", docType.Id, new ViewDataDictionary(ViewData)
-						{
-						{"EntityType", "DataType" },
-						{"LinkTitle", string.Format("{0}", docType.DocTypeAlias) }
-						});
+								Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/SchemaActions.cshtml", docType.Id, 
+									new ViewDataDictionary(ViewData)
+									{
+									{"EntityType", "DocType" },
+									{"LinkTitle", $"{docType.DocTypeAlias}" }
+									});
+								<br/>
 							}
 						</td>
 

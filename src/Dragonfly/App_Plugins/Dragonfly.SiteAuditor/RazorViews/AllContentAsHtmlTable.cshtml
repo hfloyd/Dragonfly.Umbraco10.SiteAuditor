@@ -17,11 +17,13 @@
 	var counter = 0;
 	var requestUri = Dragonfly.NetHelpers.Urls.CurrentRequestUri(Context.Request);
 	var filterdByDoctype = Dragonfly.NetHelpers.Urls.GetSafeQueryStringValue<string>(requestUri, "DocTypeAlias", "");
+	var Title = Dragonfly.UmbracoHelpers.Mvc.GetSafeViewDataString(ViewData, "Title", "All Content");
 }
 
 <!DOCTYPE html>
 <html>
 <head>
+<title>@Title</title>
 	<link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" />
 	<link href="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.12/css/dataTables.bootstrap.min.css" rel="stylesheet" />
 
@@ -35,7 +37,7 @@
 <body>
 	<div class="container-full" style="margin: 0 10px;">
 
-		<h1>All Content</h1>
+			<h1>@Title</h1>
 		@if (filterdByDoctype != "")
 		{
 			<h2>Pages of type '@filterdByDoctype' Only</h2>

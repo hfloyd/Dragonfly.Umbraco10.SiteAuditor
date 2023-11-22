@@ -23,17 +23,24 @@
 	if (filterdByDoctype != "")
 	{
 		var elementType = AuditorInfoService.GetContentType(filterdByDoctype);
+		if (elementType != null)
+		{
+			var highlightText = new List<string>();
+			highlightText.Add(elementType.Key.ToString());
+			highlightText.Add(elementType.Alias);
 
-		var highlightText = new List<string>();
-		highlightText.Add(elementType.Key.ToString());
-		
-		viewDD.Add("HighlightText", highlightText);
+			viewDD.Add("HighlightText", highlightText);
+		}
 	}
+	
+	var Title = Dragonfly.UmbracoHelpers.Mvc.GetSafeViewDataString(ViewData, "Title", "All Content Using Element");
+
 }
 
 <!DOCTYPE html>
 <html>
 <head>
+<title>@Title</title>
 	<link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" />
 	<link href="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.12/css/dataTables.bootstrap.min.css" rel="stylesheet" />
 
@@ -47,10 +54,10 @@
 <body>
 	<div class="container-full" style="margin: 0 10px;">
 
-		<h1>All Content Using Element</h1>
+			<h1>@Title</h1>
 		@if (filterdByDoctype != "")
 		{
-			<h2>Pages using type '@filterdByDoctype' Only</h2>
+			<h2>Pages using type '@filterdByDoctype'</h2>
 		}
 		<p>Total Nodes Returned: @contentList.Count()</p>
 

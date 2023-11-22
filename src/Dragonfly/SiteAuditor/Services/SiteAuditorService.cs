@@ -20,25 +20,12 @@ using Umbraco.Cms.Web.Common;
 using Umbraco.Extensions;
 
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 
 public class SiteAuditorService
 {
-	#region Dependencies
-	private readonly UmbracoHelper _umbracoHelper;
-	private readonly ILogger _logger;
-	private readonly IUmbracoContextAccessor _umbracoContextAccessor;
-	private readonly IUmbracoContext _umbracoContext;
-	private readonly ServiceContext _services;
-	private readonly FileHelperService _FileHelperService;
-	private readonly HttpContext _Context;
-	private readonly IHostingEnvironment _HostingEnvironment;
-	private readonly DependencyLoader _Dependencies;
 
-	private readonly AuditorInfoService _auditorInfoService;
-
-	private bool _HasUmbracoContext;
-	#endregion
 
 	#region Private & Internal Variables
 
@@ -51,6 +38,7 @@ public class SiteAuditorService
 	/// </summary>
 	private IEnumerable<IContentTypeComposition> _AllContentTypeComps = new List<IContentType>();
 
+	private IEnumerable<AuditableDataType> _AllDataTypes = new List<AuditableDataType>();
 	internal static string DataPath()
 	{
 		//var config = Config.GetConfig();
@@ -83,7 +71,21 @@ public class SiteAuditorService
 
 	#endregion
 
-	#region ctor
+	#region CTOR & DI
+	private readonly UmbracoHelper _umbracoHelper;
+	private readonly ILogger<SiteAuditorService> _logger;
+	private readonly IUmbracoContextAccessor _umbracoContextAccessor;
+	private readonly IUmbracoContext? _umbracoContext;
+	private readonly ServiceContext _services;
+	private readonly FileHelperService _FileHelperService;
+	private readonly HttpContext _Context;
+	private readonly IHostingEnvironment _HostingEnvironment;
+	private readonly DependencyLoader _Dependencies;
+
+	private readonly AuditorInfoService _auditorInfoService;
+
+	private bool _HasUmbracoContext;
+
 
 	public SiteAuditorService(
 		DependencyLoader dependencies,
@@ -334,16 +336,18 @@ public class SiteAuditorService
 		return nodesList;
 	}
 
-	//TODO: HLF IMPLEMENT
+	
 	public List<KeyValuePair<AuditableContent, NodePropertyDataTypeInfo>> GetContentNodesUsingElement(
 		string DocTypeAlias)
 	{
+		_logger.LogDebug($"~~DocTypeAlias: {DocTypeAlias}");
 		//DataTypes using the Element
-		var dataTypes = AllDataTypesUsingElement(DocTypeAlias);
-		
+		var dataTypes = AllDataTypesUsingElement(DocTypeAlias).ToList();
+		_logger.LogDebug($"~~DocTypeAlias: {DocTypeAlias} - DataTypes Using: {dataTypes.Count()}");
+
 		//Properties which might use the element type
 		var possibleProperties = new List<KeyValuePair<IPropertyType, string>>();
-		foreach (var auditableDataType in dataTypes)
+		foreach (AuditableDataType auditableDataType in dataTypes)
 		{
 			possibleProperties.AddRange(auditableDataType.UsedOnProperties);
 		}
@@ -358,16 +362,55 @@ public class SiteAuditorService
 			//Nodes where the property IS using the Element
 			foreach (var content in allContentWithProp)
 			{
-				var info = _auditorInfoService.GetPropertyDataTypeInfo(property.Key.Alias,
-					content.UmbContentNode);
-				var valueString = info.PropertyData.ToString() is not null ? info.PropertyData.ToString() : "";
+				_logger.LogDebug($"1. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}'");
+				
+				var info = _auditorInfoService.GetPropertyDataTypeInfo(property.Key.Alias, content.UmbContentNode);
+				_logger.LogDebug($"2. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}' - Info.DocType='{info.DocTypeAlias}'");
 
-				if (valueString.Contains("DocTypeAlias"))
+				if (info.PropertyData != null)
 				{
-				}
+					var valueString = info.PropertyData.ToString();
+					_logger.LogDebug($"3A. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}' - Value='{(valueString == null ? "NULL" : valueString)}'");
 
-				var match = new KeyValuePair<AuditableContent, NodePropertyDataTypeInfo>(content, info);
-				finalContentList.Add(match);
+					var elementContentType = _services.ContentTypeService.Get(DocTypeAlias);
+					_logger.LogDebug($"4. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}' - elementContentType='{(elementContentType == null ? "NULL" : elementContentType.Alias)}'");
+
+					if (elementContentType != null)
+					{
+						var elementGuid = elementContentType.Key;
+						_logger.LogInformation($"5. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}' - elementGuid='{(elementGuid == null ? "NULL" : elementGuid.ToString())}'");
+
+						if (valueString.Contains(elementGuid.ToString()))
+						{
+							_logger.LogInformation($"6A. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}' - Value Includes GUID!");
+
+							var match = new KeyValuePair<AuditableContent, NodePropertyDataTypeInfo>(content, info);
+							finalContentList.Add(match);
+						}
+						else
+						{
+							var elementAlias = elementContentType.Alias;
+							_logger.LogInformation($"6B. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}' - elementAlias='{(elementAlias == null ? "NULL" : elementAlias.ToString())}'");
+
+							if (valueString.Contains(elementAlias.ToString()))
+							{
+								_logger.LogInformation($"7A. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}' - Value Includes Alias!");
+
+								var match = new KeyValuePair<AuditableContent, NodePropertyDataTypeInfo>(content, info);
+								finalContentList.Add(match);
+							}
+							else
+							{
+								_logger.LogInformation($"7B. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}' - Value DOES NOT include Alias!");
+							}
+						}
+					}
+				}
+				else
+				{
+					_logger.LogDebug($"3B. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}' - PropertyData IS NULL'");
+
+				}
 			}
 		}
 
@@ -792,8 +835,7 @@ public class SiteAuditorService
 		ap.UmbPropertyType = UmbPropertyType;
 
 		ap.DataType = _services.DataTypeService.GetDataType(UmbPropertyType.DataTypeId);
-		ap.DataTypeElementTypes =
-			ap.DataType != null ? GetDataTypeElementsList(ap.DataType) : new List<string>();
+		ap.DataTypeElementTypes = ap.DataType != null ? GetAllDataTypeElementsList(ap.DataType) : new List<string>();
 		ap.DataTypeConfigType = ap.DataType.Configuration.GetType();
 		try
 		{
@@ -880,6 +922,12 @@ public class SiteAuditorService
 
 	public IEnumerable<AuditableDataType> AllDataTypes()
 	{
+
+		if (_AllDataTypes.Any())
+		{
+			return _AllDataTypes;
+		}
+
 		var list = new List<AuditableDataType>();
 		var datatypes = _services.DataTypeService.GetAll();
 
@@ -907,6 +955,9 @@ public class SiteAuditorService
 			list.Add(adt);
 		}
 
+		//cache
+		_AllDataTypes = list;
+
 		return list;
 	}
 
@@ -914,6 +965,12 @@ public class SiteAuditorService
 	{
 		var allDatatypes = AllDataTypes();
 		return allDatatypes.Where(n => n.UsesElementsAll.Contains(ElementTypeAlias));
+	}
+
+	public IEnumerable<AuditableDataType> AllDataTypesUsingElementDirectly(string ElementTypeAlias)
+	{
+		var allDatatypes = AllDataTypes();
+		return allDatatypes.Where(n => n.UsesElementsDirectly.Contains(ElementTypeAlias));
 	}
 
 
@@ -991,13 +1048,14 @@ public class SiteAuditorService
 	private IEnumerable<string> GetAllDataTypeElementsList(IDataType dt)
 	{
 		var allElementsList = new List<string>();
-		var directTypes = GetDirectDataTypeElementsList(dt);
+
+		var directTypes = GetDirectDataTypeElementsList(dt).ToList();
 		allElementsList.AddRange(directTypes);
 
 		//Recursive testing - build up a list of all possible related elements
-		foreach (var element in directTypes)
+		foreach (var elementTypeAlias in directTypes)
 		{
-			allElementsList.AddRange(LoopElements(element));
+			allElementsList.AddRange(LoopElements(elementTypeAlias));
 		}
 
 		return allElementsList.Distinct();
@@ -1006,12 +1064,16 @@ public class SiteAuditorService
 	private IEnumerable<string> LoopElements(string ElementAlias)
 	{
 		var elementsList = new List<string>();
-		var relatedDataTypes = AllDataTypesUsingElement(ElementAlias).ToList();
-		foreach (var rdt in relatedDataTypes)
-		{
-			elementsList.AddRange(rdt.UsesElements);
+		var docType = _services.ContentTypeService.Get(ElementAlias);
+		var properties = docType.PropertyTypes;
 
-			foreach (var element in rdt.UsesElements.ToList())
+		foreach (var property in properties)
+		{
+			var dt = _services.DataTypeService.GetDataType(property.DataTypeId);
+			var dtElements = GetDirectDataTypeElementsList(dt);
+			elementsList.AddRange(dtElements);
+
+			foreach (var element in dtElements)
 			{
 				elementsList.AddRange(LoopElements(element));
 			}
@@ -1158,22 +1220,31 @@ public class SiteAuditorService
 						break;
 
 					//Packages
-					//case "SimpleTreeMenu":
-					/*public partial class SimpleTreeMenuConfig
+					case "SimpleTreeMenu":
+						JsonNode stmConfig = JsonSerializer.Deserialize<JsonNode>(configJson);
+						if (stmConfig != null)
 						{
-							[JsonPropertyName("doctype")]
-							public string Doctype { get; set; }
+							if (stmConfig["doctype"] != null)
+							{
+								var docType = stmConfig["doctype"].GetValue<string>();
+								elementTypesList.Add(docType);
+							}
+						}
+						/*public partial class SimpleTreeMenuConfig
+							{
+								[JsonPropertyName("doctype")]
+								public string Doctype { get; set; }
 
-							[JsonPropertyName("nameTemplate")]
-							public string NameTemplate { get; set; }
+								[JsonPropertyName("nameTemplate")]
+								public string NameTemplate { get; set; }
 
-							[JsonPropertyName("levels")]
-							public long Levels { get; set; }
-						}*/
-					//{"doctype":"ElementNavItem", "nameTemplate":"{{$index + 1}}. {{DisplayTitle ? DisplayTitle : Link[0][\"name\"] ? Link[0][\"name\"]: \"NONE\"}}", "levels":3}
+								[JsonPropertyName("levels")]
+								public long Levels { get; set; }
+							}*/
+						//{"doctype":"ElementNavItem", "nameTemplate":"{{$index + 1}}. {{DisplayTitle ? DisplayTitle : Link[0][\"name\"] ? Link[0][\"name\"]: \"NONE\"}}", "levels":3}
 
-					//elementTypesList.Add(doctype);
-					//	break;
+						
+						break;
 
 					default:
 						//If not a standard prop editor... or known editor

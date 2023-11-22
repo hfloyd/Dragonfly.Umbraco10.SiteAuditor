@@ -15,13 +15,13 @@
 	var templatesNotUsedOnContent = Dragonfly.UmbracoHelpers.Mvc.GetSafeViewData(ViewData, "TemplatesNotUsedOnContent") as List<string>;
 
 	var counter = 0;
+	var Title = Dragonfly.UmbracoHelpers.Mvc.GetSafeViewDataString(ViewData, "Title", "Template Usage Report");
 }
 
 <!DOCTYPE html>
 <html>
 <head>
-	<title>Template Usage Report</title>
-
+<title>@Title</title>
 	<link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" />
 	<link href="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.12/css/dataTables.bootstrap.min.css" rel="stylesheet" />
 
@@ -35,7 +35,7 @@
 <body>
 	<div class="container-full" style="margin: 0 10px;">
 
-		<h1>Template Usage Report</h1>
+			<h1>@Title</h1>
 
 		@if (templatesNotUsedOnContent != null)
 		{

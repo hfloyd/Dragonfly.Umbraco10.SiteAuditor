@@ -9,15 +9,15 @@
     switch (type)
     {
         case "DataType":
-            url = string.Format("/umbraco/#/settings/dataTypes/edit/{0}", entityId);
+            url = $"/umbraco/#/settings/dataTypes/edit/{entityId}";
             break;
 
         case "DocType":
-            url = string.Format("/umbraco/#/settings/documentTypes/edit/{0}", entityId);
+            url = $"/umbraco/#/settings/documentTypes/edit/{entityId}";
             break;
             
         case "Template":
-            url = string.Format("/umbraco/#/settings/templates/edit/{0}", entityId);
+            url = $"/umbraco/#/settings/templates/edit/{entityId}";
             break;
     }
     

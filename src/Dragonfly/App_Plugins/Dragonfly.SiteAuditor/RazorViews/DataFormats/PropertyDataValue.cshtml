@@ -9,13 +9,12 @@
 
 	var viewDD = new ViewDataDictionary(ViewData);
 
-	var paramHighlights = Mvc.GetSafeViewData(ViewData, "HighlightText", new StatusMessage()) as List<string>;
-
+	var paramHighlights = Mvc.GetSafeViewData(ViewData, "HighlightText", new List<string>()) as List<string>;
 
 	try
 	{
-		var editor = nodePropertyDataTypeInfo.DataType.EditorAlias;
-		var dbType = nodePropertyDataTypeInfo.DataType.DatabaseType;
+		var editor = nodePropertyDataTypeInfo.DataType != null ? nodePropertyDataTypeInfo.DataType.EditorAlias : "";
+		var dbType = nodePropertyDataTypeInfo.DataType != null ? nodePropertyDataTypeInfo.DataType.DatabaseType : ValueStorageType.Ntext;
 
 		//Special handling based on editor
 		switch (editor)
@@ -35,7 +34,17 @@
 				renderingDone = true;
 				break;
 
+			case "Umbraco.MultiNodeTreePicker2":
+				Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/Mntp.cshtml", nodePropertyDataTypeInfo.Property, viewDD);
+				renderingDone = true;
+				break;
+
 			case "Umbraco.ContentPicker":
+				Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/ContentPicker.cshtml", nodePropertyDataTypeInfo.Property, viewDD);
+				renderingDone = true;
+				break;
+
+			case "Umbraco.ContentPicker2":
 				Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/ContentPicker.cshtml", nodePropertyDataTypeInfo.Property, viewDD);
 				renderingDone = true;
 				break;
@@ -74,6 +83,11 @@
 				RenderMediaData(medias3, errorMsg3, nodePropertyDataTypeInfo.PropertyData);
 				renderingDone = true;
 				break;
+
+			case "Umbraco.Grid":
+				Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/GridRaw.cshtml", nodePropertyDataTypeInfo.Property, viewDD);
+				renderingDone = true;
+				break;
 		}
 
 		//If we get here, handle based on DB type
@@ -104,8 +118,19 @@
 
 				default:
 					//Default rendering
-					var valueString = nodePropertyDataTypeInfo.Property.GetValue().ToString();
-					<span class="highlighted">@AuditorInfoService.HighlightText(valueString, paramHighlights)</span>
+					if (nodePropertyDataTypeInfo.Property != null)
+					{
+						var valueString = nodePropertyDataTypeInfo.Property.GetValue() != null ? nodePropertyDataTypeInfo.Property.GetValue().ToString() : "";
+
+						if (paramHighlights != null && paramHighlights.Any())
+						{
+							<span class="highlighted">@AuditorInfoService.HighlightText(valueString, paramHighlights)</span>
+						}
+						else
+						{
+							<span>@valueString</span>
+						}
+					}
 					renderingDone = true;
 					break;
 			}
@@ -121,7 +146,7 @@
 	}
 }
 @functions {
-	
+
 	private void RenderMediaData(List<IPublishedContent> MediaItems, string ErrorMsg, object PropertyData)
 	{
 		var mediaImageVdd = new ViewDataDictionary(ViewData);

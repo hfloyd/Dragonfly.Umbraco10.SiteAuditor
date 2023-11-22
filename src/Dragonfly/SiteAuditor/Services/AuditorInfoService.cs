@@ -244,7 +244,7 @@
 		/// <param name="PropertyAlias"></param>
 		/// <param name="Node">IContent Node</param>
 		/// <returns></returns>
-		public NodePropertyDataTypeInfo GetPropertyDataTypeInfo(string PropertyAlias, IContent ContentNode)
+		public NodePropertyDataTypeInfo GetPropertyDataTypeInfo(string PropertyAlias, IContent? ContentNode)
 		{
 			var umbContentService = _services.ContentService;
 			var umbContentTypeService = _services.ContentTypeService;
