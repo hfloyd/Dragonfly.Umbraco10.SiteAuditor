@@ -6,7 +6,7 @@
 	using System.Text;
 	using System.Threading.Tasks;
 	using Dragonfly.SiteAuditor.Models;
-	using Dragonfly.UmbracoServices;
+	using Dragonfly.NetHelperServices;
 	using Lucene.Net.Analysis.CharFilters;
 	using Microsoft.AspNetCore.Html;
 	using Microsoft.AspNetCore.Http;
@@ -38,7 +38,10 @@
 
 		private bool _HasUmbracoContext;
 
-		public AuditorInfoService(DependencyLoader dependencies, ILogger<SiteAuditorService> logger)
+		public AuditorInfoService(
+			DependencyLoader dependencies, 
+			ILogger<SiteAuditorService> logger
+			)
 		{
 			//Services
 			_Dependencies = dependencies;

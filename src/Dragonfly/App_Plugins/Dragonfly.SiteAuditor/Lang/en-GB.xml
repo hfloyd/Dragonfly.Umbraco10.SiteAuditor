@@ -5,7 +5,7 @@
     <key alias="Dragonfly.SiteAuditor">Site Auditor</key>
   </area>
   <area alias="SiteAuditor">
-    <key alias="SiteAuditor">Umbraco 10 Site Auditor</key>
+    <key alias="SiteAuditor">Dragonfly Site Auditor</key>
     <key alias="GetStarted">Get Started</key>
     <key alias="Instructions"></key>
     <key alias="Note">NOTE:</key>

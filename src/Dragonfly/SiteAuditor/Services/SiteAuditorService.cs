@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Dragonfly.NetModels;
 using Dragonfly.SiteAuditor.Models;
-using Dragonfly.UmbracoServices;
+using Dragonfly.NetHelperServices;
 using Microsoft.Extensions.Logging;
 //	using Newtonsoft.Json;
 using Microsoft.AspNetCore.Http;
@@ -1328,17 +1328,18 @@ public class SiteAuditorService
 		return allContentTemplates;//.GroupBy(n => n);
 	}
 
-	public IEnumerable<string> TemplatesNotUsedOnContent()
+	public List<ITemplate> TemplatesNotUsedOnContent()
 	{
-		var allTemplateAliases = _services.FileService.GetTemplates().Select(n => n.Alias).ToList();
+		var allTemplates = _services.FileService.GetTemplates();
+		//var allTemplateAliases = _services.FileService.GetTemplates().Select(n => n.Alias).ToList();
 
 		var allContent = this.GetContentNodes();
 
 		var contentTemplatesInUse = allContent.Select(n => n.TemplateAlias).Distinct().ToList();
 
-		var templatesWithoutContent = allTemplateAliases.Except(contentTemplatesInUse);
+		var templatesWithoutContent = allTemplates.Where(t=> !contentTemplatesInUse.Contains(t.Alias)).ToList();
 
-		return templatesWithoutContent.OrderBy(n => n).ToList();
+		return templatesWithoutContent.OrderBy(n => n.Alias).ToList();
 
 	}
 

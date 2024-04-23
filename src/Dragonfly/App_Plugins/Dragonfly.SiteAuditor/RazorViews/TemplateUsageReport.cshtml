@@ -12,7 +12,7 @@
 
 	StatusMessage message = Model;
 	var templatesUsedOnContent = Dragonfly.UmbracoHelpers.Mvc.GetSafeViewData(ViewData, "TemplatesUsedOnContent") as GroupingCollection<AuditableContent>;
-	var templatesNotUsedOnContent = Dragonfly.UmbracoHelpers.Mvc.GetSafeViewData(ViewData, "TemplatesNotUsedOnContent") as List<string>;
+	var templatesNotUsedOnContent = Dragonfly.UmbracoHelpers.Mvc.GetSafeViewData(ViewData, "TemplatesNotUsedOnContent") as List<ITemplate>;
 
 	var counter = 0;
 	var Title = Dragonfly.UmbracoHelpers.Mvc.GetSafeViewDataString(ViewData, "Title", "Template Usage Report");
@@ -21,7 +21,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>@Title</title>
+	<title>@Title</title>
 	<link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" />
 	<link href="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.12/css/dataTables.bootstrap.min.css" rel="stylesheet" />
 
@@ -35,7 +35,7 @@
 <body>
 	<div class="container-full" style="margin: 0 10px;">
 
-			<h1>@Title</h1>
+		<h1>@Title</h1>
 
 		@if (templatesNotUsedOnContent != null)
 		{
@@ -45,7 +45,14 @@
 				<ul>
 					@foreach (var template in templatesNotUsedOnContent)
 					{
-						<li>@template</li>
+						var editUrl = "/umbraco#/settings/templates/edit/" + template.Id;
+						<li>
+							<a href="@editUrl" target="_blank"> @template.Alias</a>
+							@if(template.IsMasterTemplate)
+							{
+								<span style="color: red;">(Master)</span>
+							}
+						</li>
 					}
 				</ul>
 			}

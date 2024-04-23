@@ -6,12 +6,15 @@
 	using System.Net.Http;
 	using System.Net.Http.Headers;
 	using System.Text;
+	using System.Net;
+	
 
 	using Microsoft.AspNetCore.Mvc;
 	using Microsoft.AspNetCore.Mvc.ViewFeatures;
 	using Microsoft.Extensions.Logging;
 
 	using System.Text.Json;
+	using Umbraco.Cms.Infrastructure.PublishedCache;
 	using Umbraco.Cms.Web.Common.Attributes;
 	using Umbraco.Cms.Web.Common.UmbracoContext;
 	using Umbraco.Cms.Core.Services;
@@ -26,8 +29,7 @@
 
 	using Dragonfly.SiteAuditor.Models;
 	using Dragonfly.SiteAuditor.Services;
-	using System.Net;
-	using Umbraco.Cms.Infrastructure.PublishedCache;
+
 
 	//  /umbraco/backoffice/Dragonfly/SiteAuditor/
 	[PluginController("Dragonfly")]
@@ -914,19 +916,6 @@
 			var result = Encoding.UTF8.GetPreamble().Concat(fileContent).ToArray();
 			return File(result, "text/csv", fileName);
 
-			//var contentDispositionHeader = new System.Net.Mime.ContentDisposition()
-			//{
-			//	FileName = "AllDoctypes.csv",
-			//	DispositionType = "attachment"
-			//};
-			//HttpContext.Response.Headers.Add("Content-Disposition", contentDispositionHeader.ToString());
-			//return new ContentResult()
-			//{
-			//	Content = returnSB.ToString(),
-			//	StatusCode = (int)HttpStatusCode.OK,
-			//	ContentType = "text/csv; charset=utf-8",
-			//};
-
 		}
 
 		#endregion
@@ -1231,18 +1220,11 @@
 			returnSB.Append(tableData);
 
 			//RETURN AS CSV FILE
-			var contentDispositionHeader = new System.Net.Mime.ContentDisposition()
-			{
-				FileName = "Example.csv",
-				DispositionType = "attachment"
-			};
-			HttpContext.Response.Headers.Add("Content-Disposition", contentDispositionHeader.ToString());
-			return new ContentResult()
-			{
-				Content = returnSB.ToString(),
-				StatusCode = (int)HttpStatusCode.OK,
-				ContentType = "text/csv; charset=utf-8",
-			};
+			var fileName = "Example.csv";
+			var fileContent = Encoding.UTF8.GetBytes(returnSB.ToString());
+			var result = Encoding.UTF8.GetPreamble().Concat(fileContent).ToArray();
+			return File(result, "text/csv", fileName);
+			
 		}
 
 		/// /umbraco/backoffice/Dragonfly/SiteAuditor/TestCSV
@@ -1265,19 +1247,12 @@
 			}
 			returnSB.Append(tableData);
 
+			
 			//RETURN AS CSV FILE
-			var contentDispositionHeader = new System.Net.Mime.ContentDisposition()
-			{
-				FileName = "Test.csv",
-				DispositionType = "attachment"
-			};
-			HttpContext.Response.Headers.Add("Content-Disposition", contentDispositionHeader.ToString());
-			return new ContentResult()
-			{
-				Content = returnSB.ToString(),
-				StatusCode = (int)HttpStatusCode.OK,
-				ContentType = "text/csv; charset=utf-8",
-			};
+			var fileName = "Test.csv";
+			var fileContent = Encoding.UTF8.GetBytes(returnSB.ToString());
+			var result = Encoding.UTF8.GetPreamble().Concat(fileContent).ToArray();
+			return File(result, "text/csv", fileName);
 
 		}
 
