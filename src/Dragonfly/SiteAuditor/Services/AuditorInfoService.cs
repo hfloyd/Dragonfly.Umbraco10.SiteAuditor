@@ -7,7 +7,7 @@
 	using System.Threading.Tasks;
 	using Dragonfly.SiteAuditor.Models;
 	using Dragonfly.NetHelperServices;
-	using Lucene.Net.Analysis.CharFilters;
+
 	using Microsoft.AspNetCore.Html;
 	using Microsoft.AspNetCore.Http;
 	using Microsoft.Extensions.Logging;
