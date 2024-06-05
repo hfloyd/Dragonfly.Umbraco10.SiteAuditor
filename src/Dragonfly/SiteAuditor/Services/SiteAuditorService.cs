@@ -39,6 +39,8 @@ public class SiteAuditorService
 	private IEnumerable<IContentTypeComposition> _AllContentTypeComps = new List<IContentType>();
 
 	private IEnumerable<AuditableDataType> _AllDataTypes = new List<AuditableDataType>();
+
+	private IEnumerable<DataTypesWithElements> _AllDataTypesWithElements = new List<DataTypesWithElements>();
 	internal static string DataPath()
 	{
 		//var config = Config.GetConfig();
@@ -336,7 +338,7 @@ public class SiteAuditorService
 		return nodesList;
 	}
 
-	
+
 	public List<KeyValuePair<AuditableContent, NodePropertyDataTypeInfo>> GetContentNodesUsingElement(
 		string DocTypeAlias)
 	{
@@ -363,7 +365,7 @@ public class SiteAuditorService
 			foreach (var content in allContentWithProp)
 			{
 				_logger.LogDebug($"1. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}'");
-				
+
 				var info = _auditorInfoService.GetPropertyDataTypeInfo(property.Key.Alias, content.UmbContentNode);
 				_logger.LogDebug($"2. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}' - Info.DocType='{info.DocTypeAlias}'");
 
@@ -941,7 +943,7 @@ public class SiteAuditorService
 			adt.Guid = dt.Key;
 			adt.Id = dt.Id;
 			adt.FolderPath = GetFolderContainerPath(dt);
-			adt.UsesElementsDirectly = GetDirectDataTypeElementsList(dt);
+			adt.UsesElementsDirectly = GetDirectDataTypeElements(dt);
 			adt.UsesElementsAll = GetAllDataTypeElementsList(dt);
 
 			//adt.ConfigurationJson = dt.Configuration!=null? JsonSerializer.Serialize(dt.Configuration): "";
@@ -961,6 +963,37 @@ public class SiteAuditorService
 		return list;
 	}
 
+	private IEnumerable<DataTypesWithElements> GetAllDataTypesWithElements()
+	{
+		if (_AllDataTypesWithElements.Any())
+		{
+			return _AllDataTypesWithElements;
+		}
+
+		var list = new List<DataTypesWithElements>();
+		var datatypes = _services.DataTypeService.GetAll();
+
+		foreach (var dt in datatypes)
+		{
+			var directTypes = GetDirectElementsForDataType(dt);
+			foreach (var type in directTypes)
+			{
+				var x = new DataTypesWithElements();
+				x.DataTypeName = dt.Name;
+				x.DataTypeId = dt.Id;
+				x.ElementTypeAlias = type;
+
+				list.Add(x);
+			}
+		}
+
+		//cache
+		_AllDataTypesWithElements = list;
+
+		return list;
+
+	}
+
 	public IEnumerable<AuditableDataType> AllDataTypesUsingElement(string ElementTypeAlias)
 	{
 		var allDatatypes = AllDataTypes();
@@ -971,6 +1004,69 @@ public class SiteAuditorService
 	{
 		var allDatatypes = AllDataTypes();
 		return allDatatypes.Where(n => n.UsesElementsDirectly.Contains(ElementTypeAlias));
+	}
+
+
+	private IEnumerable<string> GetAllDataTypeElementsList(IDataType dt)
+	{
+		var allElementsList = new List<string>();
+
+		var allTypes = GetAllDataTypesWithElements().ToList();
+
+		var directTypes = allTypes.Where(n => n.DataTypeId == dt.Id).Select(n => n.ElementTypeAlias).ToList();
+		allElementsList.AddRange(directTypes);
+
+		//Recursive testing - build up a list of all possible related elements
+		foreach (var elementTypeAlias in directTypes)
+		{
+			allElementsList.AddRange(LoopElements(elementTypeAlias, allTypes, new HashSet<string>()));
+		}
+
+		return allElementsList.Distinct();
+	}
+
+	private IEnumerable<string> GetDirectDataTypeElements(IDataType dt)
+	{
+		var allElementsList = new List<string>();
+
+		var allTypes = GetAllDataTypesWithElements().ToList();
+
+		var directTypes = allTypes.Where(n => n.DataTypeId == dt.Id).Select(n => n.ElementTypeAlias).ToList();
+		allElementsList.AddRange(directTypes);
+
+		return allElementsList.Distinct();
+	}
+
+	private IEnumerable<string> LoopElements(string ElementAlias, List<DataTypesWithElements> AllTypes, HashSet<string> VisitedElements)
+	{
+		var elementsList = new List<string>();
+
+		// Check if the element has been visited
+		if (VisitedElements.Contains(ElementAlias))
+		{
+			return elementsList;
+		}
+
+		// Mark the element as visited
+		VisitedElements.Add(ElementAlias);
+
+		// Process the element
+		var docType = _services.ContentTypeService.Get(ElementAlias);
+		var properties = docType.PropertyTypes;
+
+		foreach (var property in properties)
+		{
+			//var dt = _services.DataTypeService.GetDataType();
+			var dtElements = AllTypes.Where( n=> n.DataTypeId== property.DataTypeId).Select(n => n.ElementTypeAlias).ToList();
+			elementsList.AddRange(dtElements);
+
+			foreach (var element in dtElements)
+			{
+				elementsList.AddRange(LoopElements(element, AllTypes, VisitedElements));
+			}
+		}
+
+		return elementsList;
 	}
 
 
@@ -1045,44 +1141,8 @@ public class SiteAuditorService
 				};
 	}
 
-	private IEnumerable<string> GetAllDataTypeElementsList(IDataType dt)
-	{
-		var allElementsList = new List<string>();
-
-		var directTypes = GetDirectDataTypeElementsList(dt).ToList();
-		allElementsList.AddRange(directTypes);
-
-		//Recursive testing - build up a list of all possible related elements
-		foreach (var elementTypeAlias in directTypes)
-		{
-			allElementsList.AddRange(LoopElements(elementTypeAlias));
-		}
-
-		return allElementsList.Distinct();
-	}
-
-	private IEnumerable<string> LoopElements(string ElementAlias)
-	{
-		var elementsList = new List<string>();
-		var docType = _services.ContentTypeService.Get(ElementAlias);
-		var properties = docType.PropertyTypes;
-
-		foreach (var property in properties)
-		{
-			var dt = _services.DataTypeService.GetDataType(property.DataTypeId);
-			var dtElements = GetDirectDataTypeElementsList(dt);
-			elementsList.AddRange(dtElements);
-
-			foreach (var element in dtElements)
-			{
-				elementsList.AddRange(LoopElements(element));
-			}
-		}
-
-		return elementsList;
-	}
-
-	private IEnumerable<string> GetDirectDataTypeElementsList(IDataType dt)
+	
+	private IEnumerable<string> GetDirectElementsForDataType(IDataType dt)
 	{
 		var elementTypesList = new List<string>();
 
@@ -1093,195 +1153,197 @@ public class SiteAuditorService
 
 		try
 		{
-			if (dt.Configuration is Dictionary<string, object>)
+			var configJson = JsonSerializer.Serialize(dt.Configuration);
+			List<string> keyStrGuids = new List<string>();
+			List<Guid> keyGuids = new List<Guid>();
+
+			//Known PropertyEditors with Config Models representing DocTypes
+			switch (dt.EditorAlias)
 			{
-				var configDict = (Dictionary<string, object>)dt.Configuration;
+				//Legacy built-in - [Obsolete("The grid is obsolete, will be removed in V13")]
+				case "Umbraco.Grid":
+					//Would need to read the global grideditors.config and recognize doctypealiases
+					//- "IGridConfig config" passed-in via DI (ex: https://github.com/umbraco/Umbraco-CMS/blob/93415a9957f5a0f4dd057de56f0cd9520ac9313e/src/Umbraco.Infrastructure/PropertyEditors/ValueConverters/GridValueConverter.cs#L21)
 
-				//Check for likely key names
-				var keyFound = false;
-				foreach (var keyName in ConfigKeysRepresentingDocType())
-				{
-					if (configDict.ContainsKey(keyName))
+					//	{"Items":{"styles":[], "config":[], "columns":12, "templates":[{"name":"Full", "sections":[{"grid":12}]}], "layouts":[{"name":"2 Columns", "areas":[{"grid":6, "allowAll":false, "allowed":["LinkList", "macro"]}, {"grid":6, "allowAll":false, "allowed":["LinkList", "macro"]}]}, {"name":"3 Columns", "areas":[{"grid":4, "allowAll":false, "allowed":["LinkList", "macro"]}, {"grid":4, "allowAll":false, "allowed":["LinkList", "macro"]}, {"grid":4, "allowAll":false, "allowed":["LinkList", "macro"]}]}, {"name":"4 Columns", "areas":[{"grid":3, "allowAll":false, "allowed":["LinkList", "macro"]}, {"grid":3, "allowAll":false, "allowed":["LinkList", "macro"]}, {"grid":3, "allowAll":false, "allowed":["LinkList", "macro"]}, {"grid":3, "allowAll":false, "allowed":["LinkList", "macro"]}]}, {"name":"6 Columns", "areas":[{"grid":2, "allowAll":false, "allowed":["LinkList", "macro"]}, {"grid":2, "allowAll":false, "allowed":["LinkList", "macro"]}, {"grid":2, "allowAll":false, "allowed":["LinkList", "macro"]}, {"grid":2, "allowAll":false, "allowed":["LinkList", "macro"]}, {"grid":2, "allowAll":false, "allowed":["LinkList", "macro"]}, {"grid":2, "allowAll":false, "allowed":["LinkList", "macro"]}]}]}, "Rte":{"toolbar":[], "stylesheets":["umbraco-rte"], "dimensions":{"height":500}, "maxImageSize":500}, "MediaParentId":null, "IgnoreUserStartNodes":false}
+					//var gridConfig =(Umbraco.Cms.Core.PropertyEditors.NestedContentConfiguration)dt.Configuration; JsonSerializer.Deserialize<UmbracoGridConfig>(configJson);
+					//if (gridConfig != null)
+					//{
+					//	var areas = gridConfig.Items.Layouts.SelectMany(l => l.Areas);
+					//	var x = areas.Select(a=> a.Allowed.)
+					//}
+					break;
+
+				//Legacy built-in [Obsolete("Nested content is obsolete, will be removed in V13")]
+				case "Umbraco.NestedContent":
+					var nestedContentConfig =
+						(Umbraco.Cms.Core.PropertyEditors.NestedContentConfiguration)dt.Configuration; //JsonSerializer.Deserialize<NestedContentConfig>(configJson);
+					if (nestedContentConfig != null && nestedContentConfig.ContentTypes != null)
 					{
-						keyFound = true;
-						var configVal = configDict[keyName];
+						var types = nestedContentConfig.ContentTypes.ToList();
+						elementTypesList.AddRange(types.Select(c => c.Alias));
+					}
+					break;
 
-						var guidVals = new List<Guid>();
+				//Current built-in
+				case "Umbraco.BlockList":
+					var blockListConfig = (Umbraco.Cms.Core.PropertyEditors.BlockListConfiguration)dt.Configuration;//JsonSerializer.Deserialize<UmbracoBlockListConfig>(configJson);
+					if (blockListConfig != null)
+					{
+						keyGuids.AddRange(blockListConfig.Blocks.Select(b => b.ContentElementTypeKey));
+						var settingsKeys = blockListConfig.Blocks.Where(b => b.SettingsElementTypeKey != null)
+							.Select(b => b.SettingsElementTypeKey).ToList();
 
-						if (configVal is IEnumerable<string>)
+						if (settingsKeys.Any())
 						{
-							elementTypesList.AddRange((IEnumerable<string>)configVal);
-						}
-						else if (configVal is string)
-						{
-							elementTypesList.Add((string)configVal);
-						}
-						else if (configVal is IEnumerable<Guid>)
-						{
-							guidVals.AddRange((IEnumerable<Guid>)configVal);
-						}
-						else if (configVal is Guid)
-						{
-							guidVals.Add((Guid)configVal);
-						}
-						else
-						{
-							_logger.LogWarning(
-								$"SiteAuditorService.GetDataTypeElementsList: Unknown Editor '{dt.EditorAlias}' includes config key '{keyName}' of unprocessed type {configVal.GetType().ToString()}");
-						}
-
-						//Lookup any GUIDs
-						if (guidVals.Any())
-						{
-							foreach (var guid in guidVals)
+							foreach (var guid in settingsKeys)
 							{
-								var contentType = _services.ContentTypeService.Get(guid);
-								if (contentType != null)
-								{
-									elementTypesList.Add(contentType.Alias);
-								}
+								keyGuids.Add(guid.Value);
 							}
 						}
 					}
-				}
+					break;
 
-				if (!keyFound)
-				{
-					//If not a standard prop editor... or known prop editor
-					if (!UmbracoStandardPropEditors().Contains(dt.EditorAlias) && !PackagePropEditorsWithoutDocTypeConfig().Contains(dt.EditorAlias))
+				//Current built-in
+				case "Umbraco.BlockGrid":
+					//	var blockGridConfig = (Umbraco.Cms.Core.PropertyEditors.BlockEditorPropertyEditor)dt.Configuration;//JsonSerializer.Deserialize<UmbracoBlockListConfig>(configJson);
+					//if (blockGridConfig != null)
+					//{
+					//}
+					_logger.LogWarning(
+						$"SiteAuditorService.GetDataTypeElementsList: Unknown Editor '{dt.EditorAlias}' with Config Model {dt.Configuration.ToString()} - needs processing?");
+
+					break;
+
+				//Packages
+				case "SimpleTreeMenu":
+					JsonNode stmConfig = JsonSerializer.Deserialize<JsonNode>(configJson);
+					if (stmConfig != null)
 					{
-						_logger.LogWarning(
+						if (stmConfig["doctype"] != null)
+						{
+							var docType = stmConfig["doctype"].GetValue<string>();
+							elementTypesList.Add(docType);
+						}
+					}
+					/*public partial class SimpleTreeMenuConfig
+						{
+							[JsonPropertyName("doctype")]
+							public string Doctype { get; set; }
+
+							[JsonPropertyName("nameTemplate")]
+							public string NameTemplate { get; set; }
+
+							[JsonPropertyName("levels")]
+							public long Levels { get; set; }
+						}*/
+					//{"doctype":"ElementNavItem", "nameTemplate":"{{$index + 1}}. {{DisplayTitle ? DisplayTitle : Link[0][\"name\"] ? Link[0][\"name\"]: \"NONE\"}}", "levels":3}
+
+
+					break;
+
+				default: //Unknown PropertyEditors, look for clues
+
+					if (dt.Configuration is Dictionary<string, object>)
+					{
+						//If there is a dictionary of config keys, look for doc type-related keys
+
+						var configDict = (Dictionary<string, object>)dt.Configuration;
+
+						//Check for likely key names
+						var keyFound = false;
+						foreach (var keyName in ConfigKeysRepresentingDocType())
+						{
+							if (configDict.ContainsKey(keyName))
+							{
+								keyFound = true;
+								var configVal = configDict[keyName];
+
+								var guidVals = new List<Guid>();
+
+								if (configVal is IEnumerable<string>)
+								{
+									elementTypesList.AddRange((IEnumerable<string>)configVal);
+								}
+								else if (configVal is string)
+								{
+									elementTypesList.Add((string)configVal);
+								}
+								else if (configVal is IEnumerable<Guid>)
+								{
+									guidVals.AddRange((IEnumerable<Guid>)configVal);
+								}
+								else if (configVal is Guid)
+								{
+									guidVals.Add((Guid)configVal);
+								}
+								else
+								{
+									_logger.LogWarning(
+										$"SiteAuditorService.GetDataTypeElementsList: Unknown Editor '{dt.EditorAlias}' includes config key '{keyName}' of unprocessed type {configVal.GetType().ToString()}");
+								}
+
+								//Lookup any GUIDs
+								if (guidVals.Any())
+								{
+									foreach (var guid in guidVals)
+									{
+										var contentType = _services.ContentTypeService.Get(guid);
+										if (contentType != null)
+										{
+											elementTypesList.Add(contentType.Alias);
+										}
+									}
+								}
+							}
+						}
+
+						if (!keyFound)
+						{
+							//If not a standard prop editor... or known prop editor
+							if (!UmbracoStandardPropEditors().Contains(dt.EditorAlias) && !PackagePropEditorsWithoutDocTypeConfig().Contains(dt.EditorAlias))
+							{
+								_logger.LogWarning(
 									$"SiteAuditorService.GetDataTypeElementsList: Unknown Editor '{dt.EditorAlias}' includes unprocessed config keys {string.Join(", ", configDict.Keys)}");
-					}
-				}
-
-			}
-			else //some object
-			{
-				var configJson = JsonSerializer.Serialize(dt.Configuration);
-				List<string> keyStrGuids = new List<string>();
-				List<Guid> keyGuids = new List<Guid>();
-
-				switch (dt.EditorAlias)
-				{
-					//Legacy built-in - [Obsolete("The grid is obsolete, will be removed in V13")]
-					case "Umbraco.Grid":
-						//Would need to read the global grideditors.config and recognize doctypealiases
-						//- "IGridConfig config" passed-in via DI (ex: https://github.com/umbraco/Umbraco-CMS/blob/93415a9957f5a0f4dd057de56f0cd9520ac9313e/src/Umbraco.Infrastructure/PropertyEditors/ValueConverters/GridValueConverter.cs#L21)
-
-						//	{"Items":{"styles":[], "config":[], "columns":12, "templates":[{"name":"Full", "sections":[{"grid":12}]}], "layouts":[{"name":"2 Columns", "areas":[{"grid":6, "allowAll":false, "allowed":["LinkList", "macro"]}, {"grid":6, "allowAll":false, "allowed":["LinkList", "macro"]}]}, {"name":"3 Columns", "areas":[{"grid":4, "allowAll":false, "allowed":["LinkList", "macro"]}, {"grid":4, "allowAll":false, "allowed":["LinkList", "macro"]}, {"grid":4, "allowAll":false, "allowed":["LinkList", "macro"]}]}, {"name":"4 Columns", "areas":[{"grid":3, "allowAll":false, "allowed":["LinkList", "macro"]}, {"grid":3, "allowAll":false, "allowed":["LinkList", "macro"]}, {"grid":3, "allowAll":false, "allowed":["LinkList", "macro"]}, {"grid":3, "allowAll":false, "allowed":["LinkList", "macro"]}]}, {"name":"6 Columns", "areas":[{"grid":2, "allowAll":false, "allowed":["LinkList", "macro"]}, {"grid":2, "allowAll":false, "allowed":["LinkList", "macro"]}, {"grid":2, "allowAll":false, "allowed":["LinkList", "macro"]}, {"grid":2, "allowAll":false, "allowed":["LinkList", "macro"]}, {"grid":2, "allowAll":false, "allowed":["LinkList", "macro"]}, {"grid":2, "allowAll":false, "allowed":["LinkList", "macro"]}]}]}, "Rte":{"toolbar":[], "stylesheets":["umbraco-rte"], "dimensions":{"height":500}, "maxImageSize":500}, "MediaParentId":null, "IgnoreUserStartNodes":false}
-						//var gridConfig =(Umbraco.Cms.Core.PropertyEditors.NestedContentConfiguration)dt.Configuration; JsonSerializer.Deserialize<UmbracoGridConfig>(configJson);
-						//if (gridConfig != null)
-						//{
-						//	var areas = gridConfig.Items.Layouts.SelectMany(l => l.Areas);
-						//	var x = areas.Select(a=> a.Allowed.)
-						//}
-						break;
-
-					//Legacy built-in [Obsolete("Nested content is obsolete, will be removed in V13")]
-					case "Umbraco.NestedContent":
-						var nestedContentConfig =
-							(Umbraco.Cms.Core.PropertyEditors.NestedContentConfiguration)dt.Configuration; //JsonSerializer.Deserialize<NestedContentConfig>(configJson);
-						if (nestedContentConfig != null && nestedContentConfig.ContentTypes != null)
-						{
-							var types = nestedContentConfig.ContentTypes.ToList();
-							elementTypesList.AddRange(types.Select(c => c.Alias));
-						}
-						break;
-
-					//Current built-in
-					case "Umbraco.BlockList":
-						var blockListConfig = (Umbraco.Cms.Core.PropertyEditors.BlockListConfiguration)dt.Configuration;//JsonSerializer.Deserialize<UmbracoBlockListConfig>(configJson);
-						if (blockListConfig != null)
-						{
-							keyGuids.AddRange(blockListConfig.Blocks.Select(b => b.ContentElementTypeKey));
-							var settingsKeys = blockListConfig.Blocks.Where(b => b.SettingsElementTypeKey != null)
-								.Select(b => b.SettingsElementTypeKey).ToList();
-
-							if (settingsKeys.Any())
-							{
-								foreach (var guid in settingsKeys)
-								{
-									keyGuids.Add(guid.Value);
-								}
 							}
 						}
-						break;
+					}
+					else if (!UmbracoStandardPropEditors().Contains(dt.EditorAlias) && !PackagePropEditorsWithoutDocTypeConfig().Contains(dt.EditorAlias))
+					{
+						//If not a standard prop editor... or known editor
 
-					//Current built-in
-					case "Umbraco.BlockGrid":
-						//	var blockGridConfig = (Umbraco.Cms.Core.PropertyEditors.BlockEditorPropertyEditor)dt.Configuration;//JsonSerializer.Deserialize<UmbracoBlockListConfig>(configJson);
-						//if (blockGridConfig != null)
-						//{
-						//}
 						_logger.LogWarning(
 							$"SiteAuditorService.GetDataTypeElementsList: Unknown Editor '{dt.EditorAlias}' with Config Model {dt.Configuration.ToString()} - needs processing?");
-
-						break;
-
-					//Packages
-					case "SimpleTreeMenu":
-						JsonNode stmConfig = JsonSerializer.Deserialize<JsonNode>(configJson);
-						if (stmConfig != null)
-						{
-							if (stmConfig["doctype"] != null)
-							{
-								var docType = stmConfig["doctype"].GetValue<string>();
-								elementTypesList.Add(docType);
-							}
-						}
-						/*public partial class SimpleTreeMenuConfig
-							{
-								[JsonPropertyName("doctype")]
-								public string Doctype { get; set; }
-
-								[JsonPropertyName("nameTemplate")]
-								public string NameTemplate { get; set; }
-
-								[JsonPropertyName("levels")]
-								public long Levels { get; set; }
-							}*/
-						//{"doctype":"ElementNavItem", "nameTemplate":"{{$index + 1}}. {{DisplayTitle ? DisplayTitle : Link[0][\"name\"] ? Link[0][\"name\"]: \"NONE\"}}", "levels":3}
-
-						
-						break;
-
-					default:
-						//If not a standard prop editor... or known editor
-						if (!UmbracoStandardPropEditors().Contains(dt.EditorAlias) && !PackagePropEditorsWithoutDocTypeConfig().Contains(dt.EditorAlias))
-						{
-							_logger.LogWarning(
-								$"SiteAuditorService.GetDataTypeElementsList: Unknown Editor '{dt.EditorAlias}' with Config Model {dt.Configuration.ToString()} - needs processing?");
-						}
-						break;
-				}
-
-				if (keyStrGuids.Any())
-				{
-					foreach (var sGuid in keyStrGuids)
-					{
-						var guid = Guid.Parse(sGuid);
-						keyGuids.Add(guid);
 					}
-				}
+					break;
+			}
 
-				if (keyGuids.Any())
+			//Process any located GUIDs into content types
+			if (keyStrGuids.Any())
+			{
+				foreach (var sGuid in keyStrGuids)
 				{
-					foreach (var guid in keyGuids)
+					var guid = Guid.Parse(sGuid);
+					keyGuids.Add(guid);
+				}
+			}
+
+			if (keyGuids.Any())
+			{
+				foreach (var guid in keyGuids)
+				{
+					var contentType = _services.ContentTypeService.Get(guid);
+					if (contentType != null)
 					{
-						var contentType = _services.ContentTypeService.Get(guid);
-						if (contentType != null)
-						{
-							elementTypesList.Add(contentType.Alias);
-						}
+						elementTypesList.Add(contentType.Alias);
 					}
 				}
 			}
+
 		}
 		catch (Exception e)
 		{
-			_logger.LogError(e,
-				$"SiteAuditorService.GetDataTypeElementsList: Error on '{dt.EditorAlias}' with config: {dt.Configuration}");
+			_logger.LogError(e, $"SiteAuditorService.GetDataTypeElementsList: Error on '{dt.EditorAlias}' with config: {dt.Configuration}");
 		}
 
 		return elementTypesList.Distinct();
@@ -1337,7 +1399,7 @@ public class SiteAuditorService
 
 		var contentTemplatesInUse = allContent.Select(n => n.TemplateAlias).Distinct().ToList();
 
-		var templatesWithoutContent = allTemplates.Where(t=> !contentTemplatesInUse.Contains(t.Alias)).ToList();
+		var templatesWithoutContent = allTemplates.Where(t => !contentTemplatesInUse.Contains(t.Alias)).ToList();
 
 		return templatesWithoutContent.OrderBy(n => n.Alias).ToList();
 
@@ -1581,4 +1643,10 @@ public class SiteAuditorService
 
 }
 
+public class DataTypesWithElements
+{
+	public string? DataTypeName { get; set; }
+	public int DataTypeId { get; set; }
 
+	public string ElementTypeAlias { get; set; }
+}
