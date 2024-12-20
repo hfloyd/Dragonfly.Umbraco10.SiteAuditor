@@ -92,23 +92,23 @@ public class AuditableContentExport
 	{
 		this.OverallSort = OverallSortNum;
 
-		this.NodeName = Ac.UmbContentNode.Name != null ? Ac.UmbContentNode.Name : "UNKNOWN";
+		this.NodeName = Ac.UmbContentNode != null && Ac.UmbContentNode.Name != null ? Ac.UmbContentNode.Name : "UNKNOWN";
 		this.NodePath = Ac.NodePath;
-		this.DocTypeAlias = Ac.UmbContentNode.ContentType.Alias;
-		this.ParentId = Ac.UmbContentNode.ParentId;
+		this.DocTypeAlias = Ac.UmbContentNode != null ? Ac.UmbContentNode.ContentType.Alias : "NONE";
+		this.ParentId = Ac.UmbContentNode != null ? Ac.UmbContentNode.ParentId : 0;
 		this.FullUrl = Ac.FullNiceUrl;
 		this.RelativeUrl = Ac.RelativeNiceUrl;
-		this.Level = Ac.UmbContentNode.Level;
-		this.SortOrder = Ac.UmbContentNode.SortOrder;
+		this.Level = Ac.UmbContentNode != null ?  Ac.UmbContentNode.Level:0;
+		this.SortOrder = Ac.UmbContentNode != null ?  Ac.UmbContentNode.SortOrder:0;
 		this.TemplateAlias = Ac.TemplateAlias;
-		this.CreateDate = Ac.UmbContentNode.CreateDate;
+		this.CreateDate = Ac.UmbContentNode != null ?  Ac.UmbContentNode.CreateDate:DateTime.MinValue;
 		this.CreateUser = Ac.CreateUser != null ? Ac.CreateUser.Username : "UNKNOWN";
-		this.UpdateDate = Ac.UmbContentNode.UpdateDate;
+		this.UpdateDate = Ac.UmbContentNode != null ?  Ac.UmbContentNode.UpdateDate:DateTime.MinValue;
 		this.UpdateUser = Ac.UpdateUser != null ? Ac.UpdateUser.Username : "UNKNOWN";
 		this.IsPublished = Ac.IsPublished;
-		this.NodeId = Ac.UmbContentNode.Id;
-		this.NodeGuid = Ac.UmbContentNode.Key;
-		this.Udi = Ac.UmbContentNode.GetUdi().ToString();
+		this.NodeId = Ac.UmbContentNode != null ?  Ac.UmbContentNode.Id:0;
+		this.NodeGuid = Ac.UmbContentNode != null ?  Ac.UmbContentNode.Key:new Guid();
+		this.Udi = Ac.UmbContentNode != null ?  Ac.UmbContentNode.GetUdi().ToString():"";
 	}
 
 

@@ -20,7 +20,7 @@
         /// <summary>
         /// Gets the version of the package.
         /// </summary>
-        public static readonly Version Version = typeof(PackageInfo).Assembly.GetName().Version;
+        public static readonly Version? Version = typeof(PackageInfo).Assembly.GetName().Version;
 
         /// <summary>
         /// Gets the URL of the GitHub repository for this package.

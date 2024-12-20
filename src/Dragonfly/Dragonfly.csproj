@@ -37,10 +37,10 @@
 	<PropertyGroup>
 		<RootNamespace>Dragonfly</RootNamespace>
 		<AssemblyName>Dragonfly.UmbracoSiteAuditor</AssemblyName>
-		<Version>2.2.0</Version>
+		<Version>2.4.0</Version>
 		<AssemblyVersion>$(Version)</AssemblyVersion>
 		<FileVersion>$(Version)</FileVersion>
-		<PackageReleaseNotes>Performance Updates</PackageReleaseNotes>
+		<PackageReleaseNotes>Style updates and addition of buttons to views; fixes to Media property values display</PackageReleaseNotes>
 
 		<IncludeSymbols>True</IncludeSymbols>
 		<SymbolPackageFormat>symbols.nupkg</SymbolPackageFormat>
@@ -65,11 +65,11 @@
 
 	<!-- Packages-->
 	<ItemGroup>
-		<PackageReference Include="Dragonfly.Net6" Version="1.0.0" />
+		<PackageReference Include="Dragonfly.Net6" Version="1.4.0" />
 		<PackageReference Include="Dragonfly.Umbraco10" Version="1.1.0" />
-		<PackageReference Include="Umbraco.Cms.Core" Version="[10.0.1,13.999.999]" />
-		<PackageReference Include="Umbraco.Cms.Web.Website" Version="[10.0.1,13.999.999]" PrivateAssets="All" />
-		<PackageReference Include="Umbraco.Cms.Web.BackOffice" Version="[10.0.1,13.999.999]" PrivateAssets="All" />
+		<PackageReference Include="Umbraco.Cms.Core" Version="[10.0.1,14.0.0)" />
+		<PackageReference Include="Umbraco.Cms.Web.Website" Version="[10.0.1,14.0.0)" PrivateAssets="All" />
+		<PackageReference Include="Umbraco.Cms.Web.BackOffice" Version="[10.0.1,14.0.0)" PrivateAssets="All" />
 
 	</ItemGroup>
 	
@@ -92,6 +92,7 @@
 	</ItemGroup>
 	<ItemGroup>
 		<Content Remove="App_Plugins\Dragonfly.SiteAuditor\RazorViews\DataFormats\xxMediaImage.cshtml" />
+		<Content Remove="C:\Users\Heather\.nuget\packages\dragonfly.net6\1.4.0\contentFiles\any\net6.0\Dragonfly-NetHelpers-128.png" />
 	</ItemGroup>
 	<ItemGroup>
 		<None Remove="App_Plugins\Dragonfly.SiteAuditor\RazorViews\AllElementContentAsHtmlTable.cshtml" />

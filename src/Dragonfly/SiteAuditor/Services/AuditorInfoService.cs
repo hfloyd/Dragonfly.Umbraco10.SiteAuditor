@@ -29,7 +29,7 @@
 		private readonly ILogger _logger;
 
 		private readonly IUmbracoContextAccessor _umbracoContextAccessor;
-		private readonly IUmbracoContext _umbracoContext;
+		private readonly IUmbracoContext? _umbracoContext;
 		private readonly ServiceContext _services;
 		private readonly FileHelperService _FileHelperService;
 		private readonly HttpContext _Context;
@@ -96,9 +96,19 @@
 			{
 				if (sId != "-1")
 				{
-					IContent getNode = _services.ContentService.GetById(Convert.ToInt32(sId));
-					string nodeName = getNode.Name;
-					nodepathList.Add(nodeName);
+					IContent? getNode = _services.ContentService!.GetById(Convert.ToInt32(sId));
+					if (getNode != null)
+					{
+						var nodeName = getNode.Name;
+						if (nodeName != null)
+						{
+							nodepathList.Add(nodeName);
+						}
+					}
+					else
+					{
+						nodepathList.Add($"MISSING [{sId}]");
+					}
 				}
 			}
 
@@ -141,7 +151,7 @@
 		/// <param name="PropertyAlias"></param>
 		/// <param name="Node">IPublishedContent Node</param>
 		/// <returns></returns>
-		public NodePropertyDataTypeInfo GetPropertyDataTypeInfo(string PropertyAlias, IPublishedContent PubNode)
+		public NodePropertyDataTypeInfo GetPropertyDataTypeInfo(string PropertyAlias, IPublishedContent? PubNode)
 		{
 			var umbContentService = _services.ContentService;
 			var umbContentTypeService = _services.ContentTypeService;
@@ -154,60 +164,73 @@
 				dtInfo.NodeId = PubNode.Id;
 
 				//Get Property
-				var content = umbContentService.GetById(PubNode.Id);
-				dtInfo.Property = content.Properties.First(n => n.Alias == PropertyAlias);
-				dtInfo.PropertyData = PubNode.Value(PropertyAlias);
+				var content = umbContentService!.GetById(PubNode.Id);
+				if (content != null)
+				{
+					dtInfo.Property = content.Properties.First(n => n.Alias == PropertyAlias);
+					dtInfo.PropertyData = PubNode.Value(PropertyAlias);
+				}
 
 				//Find datatype of property
-				IDataType dataType = null;
+				IDataType? dataType = null;
 
-				var docType = umbContentTypeService.Get(PubNode.ContentType.Id);
-				var matchingProperties = docType.PropertyTypes.Where(n => n.Alias == PropertyAlias).ToList();
-
-				if (matchingProperties.Any())
+				var docType = umbContentTypeService!.Get(PubNode.ContentType.Id);
+				if (docType != null)
 				{
-					var propertyType = matchingProperties.First();
-					dataType = umbDataTypeService.GetDataType(propertyType.DataTypeId);
+					var matchingProperties = docType.PropertyTypes.Where(n => n.Alias == PropertyAlias).ToList();
 
-					dtInfo.DataType = dataType;
-					dtInfo.PropertyEditorAlias = dataType.EditorAlias;
-					dtInfo.DatabaseType = dataType.DatabaseType.ToString();
-					dtInfo.DocTypeAlias = PubNode.ContentType.Alias;
-				}
-				else
-				{
-					//Look at Compositions for prop data
-					var matchingCompProperties =
-						docType.CompositionPropertyTypes.Where(n => n.Alias == PropertyAlias).ToList();
-					if (matchingCompProperties.Any())
+					if (matchingProperties.Any())
 					{
-						var propertyType = matchingCompProperties.First();
-						dataType = umbDataTypeService.GetDataType(propertyType.DataTypeId);
+						var propertyType = matchingProperties.First();
+						dataType = umbDataTypeService!.GetDataType(propertyType.DataTypeId);
 
 						dtInfo.DataType = dataType;
-						dtInfo.PropertyEditorAlias = dataType.EditorAlias;
-						dtInfo.DatabaseType = dataType.DatabaseType.ToString();
-
-						if (docType.ContentTypeComposition.Any())
+						if (dataType != null)
 						{
-							var compsList = docType.ContentTypeComposition
-								.Where(n => n.PropertyTypeExists(PropertyAlias)).ToList();
-							if (compsList.Any())
-							{
-								dtInfo.DocTypeAlias = PubNode.ContentType.Alias;
-								dtInfo.DocTypeCompositionAlias = compsList.First().Alias;
-							}
-							else
-							{
-								dtInfo.DocTypeAlias = PubNode.ContentType.Alias;
-								dtInfo.DocTypeCompositionAlias = "Unknown Composition";
-							}
+							dtInfo.PropertyEditorAlias = dataType.EditorAlias;
+							dtInfo.DatabaseType = dataType.DatabaseType.ToString();
 						}
+
+						dtInfo.DocTypeAlias = PubNode.ContentType.Alias;
 					}
 					else
 					{
-						dtInfo.ErrorMessage =
-							$"No property found for alias '{PropertyAlias}' in DocType '{docType.Name}'";
+						//Look at Compositions for prop data
+						var matchingCompProperties =
+							docType.CompositionPropertyTypes.Where(n => n.Alias == PropertyAlias).ToList();
+						if (matchingCompProperties.Any())
+						{
+							var propertyType = matchingCompProperties.First();
+							dataType = umbDataTypeService!.GetDataType(propertyType.DataTypeId);
+
+							dtInfo.DataType = dataType;
+							if (dataType != null)
+							{
+								dtInfo.PropertyEditorAlias = dataType.EditorAlias;
+								dtInfo.DatabaseType = dataType.DatabaseType.ToString();
+							}
+
+							if (docType.ContentTypeComposition.Any())
+							{
+								var compsList = docType.ContentTypeComposition
+									.Where(n => n.PropertyTypeExists(PropertyAlias)).ToList();
+								if (compsList.Any())
+								{
+									dtInfo.DocTypeAlias = PubNode.ContentType.Alias;
+									dtInfo.DocTypeCompositionAlias = compsList.First().Alias;
+								}
+								else
+								{
+									dtInfo.DocTypeAlias = PubNode.ContentType.Alias;
+									dtInfo.DocTypeCompositionAlias = "Unknown Composition";
+								}
+							}
+						}
+						else
+						{
+							dtInfo.ErrorMessage =
+								$"No property found for alias '{PropertyAlias}' in DocType '{docType.Name}'";
+						}
 					}
 				}
 			}
@@ -223,7 +246,7 @@
 		{
 			var umbContentTypeService = _services.ContentTypeService;
 
-			var docType = umbContentTypeService.Get(Alias);
+			var docType = umbContentTypeService!.Get(Alias);
 
 			return docType;
 		}
@@ -261,8 +284,8 @@
 
 				//Get Property
 				//var content = umbContentService.GetById(Node.Id);
-				var propMatches = ContentNode.Properties.Where(n => n.Alias == PropertyAlias);
-				if (propMatches != null && propMatches.Any())
+				var propMatches = ContentNode.Properties.Where(n => n.Alias == PropertyAlias).ToList();
+				if ( propMatches.Any())
 				{
 					dtInfo.Property = propMatches.First();
 					dtInfo.PropertyData = ContentNode.GetValue(PropertyAlias);
@@ -274,70 +297,73 @@
 				}
 
 				//Find datatype of property
-				IDataType dataType = null;
+				IDataType? dataType = null;
 
-				var docType = umbContentTypeService.Get(ContentNode.ContentType.Id);
+				var docType = umbContentTypeService!.Get(ContentNode.ContentType.Id);
 				dtInfo.DocTypeAlias = ContentNode.ContentType.Alias;
 
-				IPropertyType propertyType = null;
+				IPropertyType? propertyType = null;
 
-				var matchingProperties = docType.PropertyTypes.Where(n => n.Alias == PropertyAlias).ToList();
-				if (matchingProperties.Any())
+				if (docType != null)
 				{
-					propertyType = matchingProperties.First();
-				}
-				else
-				{
-					//Look at Compositions for prop data
-					var matchingCompProperties =
-						docType.CompositionPropertyTypes.Where(n => n.Alias == PropertyAlias).ToList();
-					if (matchingCompProperties.Any())
+					var matchingProperties = docType.PropertyTypes.Where(n => n.Alias == PropertyAlias).ToList();
+					if (matchingProperties.Any())
 					{
-						propertyType = matchingCompProperties.First();
-
-						if (docType.ContentTypeComposition.Any())
-						{
-							var compsList = docType.ContentTypeComposition
-								.Where(n => n.PropertyTypeExists(PropertyAlias)).ToList();
-							if (compsList.Any())
-							{
-								dtInfo.DocTypeAlias = ContentNode.ContentType.Alias;
-								dtInfo.DocTypeCompositionAlias = compsList.First().Alias;
-							}
-							else
-							{
-								dtInfo.DocTypeAlias = ContentNode.ContentType.Alias;
-								dtInfo.DocTypeCompositionAlias = "Unknown Composition";
-							}
-						}
+						propertyType = matchingProperties.First();
 					}
 					else
 					{
-						//Look at NoGroupPropertyTypes for prop data
-						var matchingNoGroupProperties =
-							docType.NoGroupPropertyTypes.Where(n => n.Alias == PropertyAlias).ToList();
-						if (matchingNoGroupProperties.Any())
+						//Look at Compositions for prop data
+						var matchingCompProperties =
+							docType.CompositionPropertyTypes.Where(n => n.Alias == PropertyAlias).ToList();
+						if (matchingCompProperties.Any())
 						{
-							propertyType = matchingNoGroupProperties.First();
+							propertyType = matchingCompProperties.First();
+
+							if (docType.ContentTypeComposition.Any())
+							{
+								var compsList = docType.ContentTypeComposition
+									.Where(n => n.PropertyTypeExists(PropertyAlias)).ToList();
+								if (compsList.Any())
+								{
+									dtInfo.DocTypeAlias = ContentNode.ContentType.Alias;
+									dtInfo.DocTypeCompositionAlias = compsList.First().Alias;
+								}
+								else
+								{
+									dtInfo.DocTypeAlias = ContentNode.ContentType.Alias;
+									dtInfo.DocTypeCompositionAlias = "Unknown Composition";
+								}
+							}
 						}
 						else
 						{
-							dtInfo.ErrorMessage =
-								$"No property found for alias '{PropertyAlias}' in DocType '{docType.Name}'";
+							//Look at NoGroupPropertyTypes for prop data
+							var matchingNoGroupProperties =
+								docType.NoGroupPropertyTypes.Where(n => n.Alias == PropertyAlias).ToList();
+							if (matchingNoGroupProperties.Any())
+							{
+								propertyType = matchingNoGroupProperties.First();
+							}
+							else
+							{
+								dtInfo.ErrorMessage =
+									$"No property found for alias '{PropertyAlias}' in DocType '{docType.Name}'";
+							}
 						}
 					}
 				}
 
 				if (propertyType != null)
 				{
-					dataType = umbDataTypeService.GetDataType(propertyType.DataTypeId);
+					dataType = umbDataTypeService!.GetDataType(propertyType.DataTypeId);
 
 					dtInfo.DataType = dataType;
-					dtInfo.PropertyEditorAlias = dataType.EditorAlias;
-					dtInfo.DatabaseType = dataType.DatabaseType.ToString();
-
-
-
+					if (dataType != null)
+					{
+						dtInfo.PropertyEditorAlias = dataType.EditorAlias;
+						dtInfo.DatabaseType = dataType.DatabaseType.ToString();
+					}
 				}
 			}
 
@@ -352,7 +378,7 @@
 		{
 			var umbUserService = _services.UserService;
 
-			return umbUserService.GetUserById(UserId);
+			return umbUserService!.GetUserById(UserId);
 		}
 
 		#endregion

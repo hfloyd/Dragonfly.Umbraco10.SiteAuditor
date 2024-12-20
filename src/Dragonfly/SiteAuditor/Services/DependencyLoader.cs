@@ -30,7 +30,7 @@
             HostingEnvironment = hostingEnvironment;
             ContextAccessor = contextAccessor;
             UmbracoContextAccessor = umbracoContextAccessor;
-            UmbHelper = contextAccessor.HttpContext.RequestServices.GetRequiredService<UmbracoHelper>();
+            UmbHelper = contextAccessor.HttpContext!.RequestServices.GetRequiredService<UmbracoHelper>();
             DragonflyFileHelperService = fileHelperService;
             Context = contextAccessor.HttpContext;
             Services = serviceContext;

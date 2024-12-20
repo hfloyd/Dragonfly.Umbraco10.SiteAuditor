@@ -11,28 +11,28 @@
 
     public class AuditableTemplate
     {
-        public string Name { get; set; }
-        public string Alias { get; set; }
+        public string Name { get; set; }= "";
+        public string Alias { get; set; }= "";
         public Guid Guid { get; set; }
         public int Id { get; set; }
-        public GuidUdi Udi { get; set; }
-        public List<string> FolderPath { get; set; }
+        public GuidUdi? Udi { get; set; }
+        public List<string> FolderPath { get; set; } = new List<string>();
         public bool IsMaster { get; set; }
-        public string HasMaster { get; set; }
+        public string HasMaster { get; set; }= "";
         public int CodeLength { get; set; }
         public DateTime CreateDate { get; set; }
         public DateTime UpdateDate { get; set; }
-        public string OriginalPath { get; set; }
+        public string OriginalPath { get; set; }= "";
         public int UsedOnContent { get; set; }
-        public IEnumerable<IContentType> IsAllowedOn { get; set; }
-        public IEnumerable<IContentType> DefaultTemplateFor { get; set; }
+        public IEnumerable<IContentType> IsAllowedOn { get; set; } = new List<IContentType>();
+        public IEnumerable<IContentType> DefaultTemplateFor { get; set; } = new List<IContentType>();
 
 
-        /// <summary>
-        /// Default string used for PathAsText
-        /// ' » ' unless explicitly changed
-        /// </summary>
-        public string DefaultDelimiter
+		/// <summary>
+		/// Default string used for PathAsText
+		/// ' » ' unless explicitly changed
+		/// </summary>
+		public string DefaultDelimiter
         {
             get { return _defaultDelimiter; }
             internal set { _defaultDelimiter = value; }

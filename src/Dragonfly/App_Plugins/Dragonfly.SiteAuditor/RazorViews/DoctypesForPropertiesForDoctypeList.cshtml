@@ -1,0 +1,38 @@
+@inherits UmbracoViewPage<IList<string>>
+@*
+	Expected View Data:
+	-------------------
+	StandardInfo (object - StandardViewInfo)		: Version, Current environment, etc.
+	Status (object - StatusMessage)					: Status of operations
+
+*@
+@{
+	Layout = "_Master.cshtml";
+	var paramStandardInfo = Mvc.GetSafeViewData(ViewData, "StandardInfo", new StandardViewInfo()) as StandardViewInfo;
+	var paramStatus = Mvc.GetSafeViewData(ViewData, "Status", new StatusMessage()) as StatusMessage;
+
+//	IEnumerable<AuditableContent> contentList = Model.ToList();
+//	var propertyAlias = Dragonfly.UmbracoHelpers.Mvc.GetSafeViewDataString(ViewData, "PropertyAlias");
+	// var includeUnpublished = Dragonfly.UmbracoHelpers.Mvc.GetSafeViewDataBool(ViewData, "IncludeUnpublished");
+
+	var allAliases = Model.ToList();
+
+	var counter = 0;
+	var Title = Dragonfly.UmbracoHelpers.Mvc.GetSafeViewDataString(ViewData, "Title", $"Get Properties for a Selected Document Type : Select Document type");
+}
+
+@section Head {
+	<title>@Title</title>
+}
+
+<!--DoctypesForPropertiesForDoctypeList-->
+<h1>Get Properties for a Selected Document Type</h1>
+<h3>Available Document Types</h3>
+<ol>
+@foreach (var alias in allAliases)
+{
+	var url = $"/umbraco/backoffice/Dragonfly/SiteAuditor/GetPropertiesForDoctypeHtml?DocTypeAlias={alias}";
+
+	<li>@alias <a target="_blank" href="@url">View</a></li>
+}
+</ol>

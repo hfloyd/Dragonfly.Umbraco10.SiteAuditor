@@ -7,6 +7,7 @@
 
 *@
 @{
+	Layout = "_Master.cshtml";
 	var paramStandardInfo = Mvc.GetSafeViewData(ViewData, "StandardInfo", new StandardViewInfo()) as StandardViewInfo;
 	var paramStatus = Mvc.GetSafeViewData(ViewData, "Status", new StatusMessage()) as StatusMessage;
 
@@ -19,28 +20,16 @@
 	var Title = Dragonfly.UmbracoHelpers.Mvc.GetSafeViewDataString(ViewData, "Title", $"Nodes with Values for Property '{@propertyAlias}'");
 }
 
-<!DOCTYPE html>
-<html>
-<head>
-<title>@Title</title>
-	<link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" />
-	<link href="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.12/css/dataTables.bootstrap.min.css" rel="stylesheet" />
+@section Head {
+	<title>@Title</title>
+}
 
-	@*<style>
-		{
+<!--ContentWithValuesTable-->
+<h1>@Title</h1>
+<p>Total Nodes Returned: @contentList.Count()</p>
 
-		}
-		</style>*@
-	@*<!--<script src="/scripts/snippet-javascript-console.min.js?v=1"></script>-->*@
-</head>
-<body>
-<div class="container-full" style="margin: 0 10px;">
-
-		<h1>@Title</h1>
-			<p>Total Nodes Returned: @contentList.Count()</p>
-
-	<table id="umbracodata" class="table table-striped table-bordered table-hover table-sm" cellspacing="0" style="width: 100%;">
-		<thead>
+<table id="umbracodata" class="table table-striped table-bordered table-hover table-sm" cellspacing="0" style="width: 100%;">
+	<thead>
 		<tr>
 			<th>#</th>
 			<th>Actions</th>
@@ -55,8 +44,8 @@
 			@* <th>Value Model Type</th>*@
 			<th>Date Last Updated</th>
 		</tr>
-		</thead>
-		<tbody>
+	</thead>
+	<tbody>
 		@foreach (var node in contentList)
 		{
 			counter++;
@@ -72,7 +61,7 @@
 						Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/NodeActions.cshtml", node);
 					}
 				</td>
-						
+
 				@*//PropertyAlias Type*@
 				<td>
 					@{
@@ -104,7 +93,7 @@
 							Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/PropertyDataValue.cshtml", dtInfo);
 						}
 					</td>
-						
+
 				}
 				else
 				{
@@ -113,16 +102,20 @@
 				}
 
 				@*//Value Length*@
-				<td>@if(node.UmbContentNode.HasPropertyValue(propertyAlias) & dtInfo.PropertyData!=null)
-				    { @dtInfo.PropertyData.ToString().Length }
-				    else
-				    {
-					    <text>0</text>
-				    }</td>
-						
+				<td>
+					@if (node.UmbContentNode.HasPropertyValue(propertyAlias) & dtInfo.PropertyData != null)
+					{
+						@dtInfo.PropertyData.ToString().Length
+					}
+					else
+					{
+						<text>0</text>
+					}
+				</td>
+
 
 				@*//Has Value*@
-				<td>@PropertyHasValue(dtInfo,node, propertyAlias)</td>
+				<td>@PropertyHasValue(dtInfo, node, propertyAlias)</td>
 
 				@*//Value Model Type
 							<td>@dtInfo.Property.GetValue().GetType().ToString()</td>*@
@@ -137,8 +130,8 @@
 			</tr>
 		}
 
-		</tbody>
-		<tfoot>
+	</tbody>
+	<tfoot>
 		<tr>
 			<td>#</td>
 			<td>Actions</td>
@@ -153,46 +146,11 @@
 			@* <th>Value Model Type</th>*@
 			<th>Date Last Updated</th>
 		</tr>
-		</tfoot>
-	</table>
+	</tfoot>
+</table>
 
-</div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.12/js/jquery.dataTables.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.12/js/dataTables.bootstrap.min.js"></script>
-<script type="text/javascript">
-	$(document).ready(function () {
-		// Setup - add a text input to each footer cell
-		$('#umbracodata tfoot th').each( function () {
-			var title = $(this).text();
-			$(this).html( '<input type="text" style="font-size:10px; width:100%;" placeholder="Search '+title+'" />' );
-		} );
-
-		// DataTable
-		$('#umbracodata').DataTable({
-			initComplete: function () {
-				// Apply the search
-				this.api().columns().every( function () {
-					var that = this;
-
-					$( 'input', this.footer() ).on( 'keyup change clear', function () {
-						if ( that.search() !== this.value ) {
-							that
-								.search( this.value )
-								.draw();
-						}
-					} );
-				} );
-			}
-		});
-
-	});
-</script>
-</body>
-</html>
-
-@functions{
+@functions {
 	bool PropertyHasValue(NodePropertyDataTypeInfo DtInfo, AuditableContent Node, string PropertyAlias)
 	{
 		if (DtInfo.PropertyData is null)
@@ -216,7 +174,7 @@
 		{
 			return false;
 		}
-		
+
 		//else
 		return true;
 	}

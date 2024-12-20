@@ -4,29 +4,18 @@
 	using System.Collections.Generic;
 	using System.Linq;
 	using System.Net.Http;
-	using System.Net.Http.Headers;
 	using System.Text;
 	using System.Net;
-	
 
 	using Microsoft.AspNetCore.Mvc;
-	using Microsoft.AspNetCore.Mvc.ViewFeatures;
 	using Microsoft.Extensions.Logging;
 
-	using System.Text.Json;
-	using Umbraco.Cms.Infrastructure.PublishedCache;
 	using Umbraco.Cms.Web.Common.Attributes;
-	using Umbraco.Cms.Web.Common.UmbracoContext;
-	using Umbraco.Cms.Core.Services;
-	using Umbraco.Cms.Web.BackOffice;
 	using Umbraco.Cms.Web.BackOffice.Controllers;
-	using Umbraco.Cms.Web.Common.Attributes;
 	using Umbraco.Extensions;
 
 	using Dragonfly.NetHelperServices;
 	using Dragonfly.NetModels;
-	using Dragonfly.UmbracoHelpers;
-
 	using Dragonfly.SiteAuditor.Models;
 	using Dragonfly.SiteAuditor.Services;
 
@@ -151,22 +140,26 @@
 
 			foreach (var auditNode in allNodes)
 			{
-				var nodeLine = $"\"{auditNode.UmbContentNode.Name}\"" +
-							   $",{auditNode.UmbContentNode.Id}" +
-							   $",\"{auditNode.NodePathAsCustomText(" > ")}\"" +
-							   $",\"{auditNode.UmbContentNode.ContentType.Alias}\"" +
-							   $",{auditNode.UmbContentNode.ParentId}" +
-							   $",\"{auditNode.FullNiceUrl}\"" +
-							   $",{auditNode.UmbContentNode.Level}" +
-							   $",{auditNode.UmbContentNode.SortOrder}" +
-							   $",\"{auditNode.TemplateAlias}\"" +
-							   $",\"{auditNode.UmbContentNode.GetUdi()}\"" +
-							   $",{auditNode.UmbContentNode.CreateDate}" +
-							   $",{auditNode.UmbContentNode.UpdateDate}" +
-							   $"{Environment.NewLine}";
+				if (auditNode.UmbContentNode != null)
+				{
+					var nodeLine = $"\"{auditNode.UmbContentNode.Name}\"" +
+								   $",{auditNode.UmbContentNode.Id}" +
+								   $",\"{auditNode.NodePathAsCustomText(" > ")}\"" +
+								   $",\"{auditNode.UmbContentNode.ContentType.Alias}\"" +
+								   $",{auditNode.UmbContentNode.ParentId}" +
+								   $",\"{auditNode.FullNiceUrl}\"" +
+								   $",{auditNode.UmbContentNode.Level}" +
+								   $",{auditNode.UmbContentNode.SortOrder}" +
+								   $",\"{auditNode.TemplateAlias}\"" +
+								   $",\"{auditNode.UmbContentNode.GetUdi()}\"" +
+								   $",{auditNode.UmbContentNode.CreateDate}" +
+								   $",{auditNode.UmbContentNode.UpdateDate}" +
+								   $"{Environment.NewLine}";
 
-				tableData.Append(nodeLine);
+					tableData.Append(nodeLine);
+				}
 			}
+
 			returnSB.Append(tableData);
 
 
@@ -187,7 +180,7 @@
 			//	"text/csv",
 			//	Encoding.UTF8
 			//);
-			
+
 		}
 
 		/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetContentForDoctypeHtml?DocTypeAlias=X
@@ -221,7 +214,7 @@
 		private IActionResult DoctypesForContentForDoctypeHtml()
 		{
 			//Setup
-			//  var pvPath = RazorFilesPath() + "Start.cshtml";
+			var pvPath = RazorFilesPath() + "DoctypesForContentList.cshtml";
 			var saService = GetSiteAuditorService();
 
 			//GET DATA TO DISPLAY
@@ -230,42 +223,55 @@
 			var allNodeTypes = allSiteDocTypes.Where(n => n.IsElement == false).OrderBy(n => n.Alias).ToList();
 			var allElementTypes = allSiteDocTypes.Where(n => n.IsElement == true).OrderBy(n => n.Alias).ToList();
 
+			var data = new DocTypesAndElements();
+			data.AllNodeTypes = allNodeTypes;
+			data.AllElementTypes = allElementTypes;
+
+			//VIEW DATA 
+			var model = data;
+			var viewData = new Dictionary<string, object>();
+			viewData.Add("StandardInfo", GetStandardViewInfo());
+			viewData.Add("Status", status);
 
 			//BUILD HTML
-			var returnSB = new StringBuilder();
-			returnSB.AppendLine($"<h1>Get Content for a Selected Document Type</h1>");
-			returnSB.AppendLine($"<p id=\"Nav\"><a href=\"#ContentNodes\">Content Node Document Types</a> | <a href=\"#Elements\">Element Types</a></p>");
+			//var returnSB = new StringBuilder();
+			//returnSB.AppendLine($"<h1>Get Content for a Selected Document Type</h1>");
+			//returnSB.AppendLine($"<p id=\"Nav\"><a href=\"#ContentNodes\">Content Node Document Types</a> | <a href=\"#Elements\">Element Types</a></p>");
 
 
-			returnSB.AppendLine($"<h3 id=\"ContentNodes\">Available Content Node Document Types</h3>");
-			returnSB.AppendLine("<ul>");
-			foreach (var docType in allNodeTypes)
-			{
-				var type = docType.IsElement ? "Nodes Using Element" : "Content Nodes of Type";
-				var api = docType.IsElement ? "GetContentForElementHtml" : "GetContentForDoctypeHtml";
-				var url = $"/umbraco/backoffice/Dragonfly/SiteAuditor/{api}?DocTypeAlias={docType.Alias}";
+			//returnSB.AppendLine($"<h3 id=\"ContentNodes\">Available Content Node Document Types</h3>");
+			//returnSB.AppendLine("<ul>");
+			//foreach (var docType in allNodeTypes)
+			//{
+			//	var type = docType.IsElement ? "Nodes Using Element" : "Content Nodes of Type";
+			//	var api = docType.IsElement ? "GetContentForElementHtml" : "GetContentForDoctypeHtml";
+			//	var url = $"/umbraco/backoffice/Dragonfly/SiteAuditor/{api}?DocTypeAlias={docType.Alias}";
 
-				returnSB.AppendLine($"<li>{docType.Alias} <a target=\"_blank\" href=\"{url}\">View</a></li>");
-			}
-			returnSB.AppendLine("</ul>");
-			returnSB.AppendLine($"<p><a href=\"#Nav\">Top Nav</a></p>");
+			//	returnSB.AppendLine($"<li>{docType.Alias} <a target=\"_blank\" href=\"{url}\">View</a></li>");
+			//}
+			//returnSB.AppendLine("</ul>");
+			//returnSB.AppendLine($"<p><a href=\"#Nav\">Top Nav</a></p>");
 
-			returnSB.AppendLine($"<h3 id=\"Elements\">Available Element Document Types</h3>");
-			returnSB.AppendLine("<p>Note: These options will take longer to load because they have to recursively check the content property values.</p>");
-			returnSB.AppendLine("<ul>");
-			foreach (var docType in allElementTypes)
-			{
-				var type = docType.IsElement ? "Nodes Using Element" : "Content Nodes of Type";
-				var api = docType.IsElement ? "GetContentForElementHtml" : "GetContentForDoctypeHtml";
-				var url = $"/umbraco/backoffice/Dragonfly/SiteAuditor/{api}?DocTypeAlias={docType.Alias}";
+			//returnSB.AppendLine($"<h3 id=\"Elements\">Available Element Document Types</h3>");
+			//returnSB.AppendLine("<p>Note: These options will take longer to load because they have to recursively check the content property values.</p>");
+			//returnSB.AppendLine("<ul>");
+			//foreach (var docType in allElementTypes)
+			//{
+			//	var type = docType.IsElement ? "Nodes Using Element" : "Content Nodes of Type";
+			//	var api = docType.IsElement ? "GetContentForElementHtml" : "GetContentForDoctypeHtml";
+			//	var url = $"/umbraco/backoffice/Dragonfly/SiteAuditor/{api}?DocTypeAlias={docType.Alias}";
 
-				returnSB.AppendLine($"<li>{docType.Alias} <a target=\"_blank\" href=\"{url}\">View</a></li>");
-			}
-			returnSB.AppendLine("</ul>");
-			returnSB.AppendLine($"<p><a href=\"#Nav\">Top Nav</a></p>");
+			//	returnSB.AppendLine($"<li>{docType.Alias} <a target=\"_blank\" href=\"{url}\">View</a></li>");
+			//}
+			//returnSB.AppendLine("</ul>");
+			//returnSB.AppendLine($"<p><a href=\"#Nav\">Top Nav</a></p>");
 
-			var displayHtml = returnSB.ToString();
+			//var displayHtml = returnSB.ToString();
 
+			//RENDER
+			var htmlTask = _viewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
+			var displayHtml = htmlTask.Result;
+			
 			//RETURN AS HTML
 			return new ContentResult()
 			{
@@ -344,36 +350,44 @@
 		[HttpGet]
 		public IActionResult GetContentWithValues(string PropertyAlias = "")
 		{
+			//GET DATA TO DISPLAY
+			if (PropertyAlias == "")
+			{
+				return GetContentWithValuesList();
+			}
+			else
+			{
+				return GetContentWithValuesTable(PropertyAlias);
+			}
+		}
+
+		private IActionResult GetContentWithValuesList()
+		{
 			//Setup
-			var pvPath = RazorFilesPath() + "ContentWithValuesTable.cshtml";
+			var pvPath = RazorFilesPath() + "ContentWithValuesList.cshtml";
 			var saService = GetSiteAuditorService();
 
 			//GET DATA TO DISPLAY
 			var status = new StatusMessage(true);
 			var displayHtml = "";
 
-			if (PropertyAlias == "")
-			{
-				//Get list of properties
-				displayHtml = HtmlListOfProperties();
-			}
-			else
-			{
-				//Get matching Property data
-				var contentNodes = saService.GetContentWithProperty(PropertyAlias);
 
-				//VIEW DATA 
-				var model = contentNodes;
-				var viewData = new Dictionary<string, object>();
-				viewData.Add("StandardInfo", GetStandardViewInfo());
-				viewData.Add("Status", status);
-				viewData.Add("PropertyAlias", PropertyAlias);
-				// viewData.Add("IncludeUnpublished", IncludeUnpublished);
+			//Get list of properties
+			//displayHtml = HtmlListOfProperties();
+			var allPropsAliases = ListOfProperties();
 
-				//RENDER
-				var htmlTask = _viewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
-				displayHtml = htmlTask.Result;
-			}
+			//VIEW DATA 
+			var model = allPropsAliases;
+			var viewData = new Dictionary<string, object>();
+			viewData.Add("StandardInfo", GetStandardViewInfo());
+			viewData.Add("Status", status);
+			//viewData.Add("PropertyAlias", PropertyAlias);
+			// viewData.Add("IncludeUnpublished", IncludeUnpublished);
+
+			//RENDER
+			var htmlTask = _viewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
+			displayHtml = htmlTask.Result;
+
 
 			//RETURN AS HTML
 			var result = new HttpResponseMessage()
@@ -388,38 +402,92 @@
 			return new HttpResponseMessageResult(result);
 		}
 
-		private string HtmlListOfProperties()
+		private IActionResult GetContentWithValuesTable(string PropertyAlias)
 		{
 			//Setup
-			//    var pvPath = RazorFilesPath() + "Start.cshtml";
+			var pvPath = RazorFilesPath() + "ContentWithValuesTable.cshtml";
 			var saService = GetSiteAuditorService();
 
 			//GET DATA TO DISPLAY
 			var status = new StatusMessage(true);
+			var displayHtml = "";
 
+			//Get matching Property data
+			var contentNodes = saService.GetContentWithProperty(PropertyAlias);
+
+			//VIEW DATA 
+			var model = contentNodes;
+			var viewData = new Dictionary<string, object>();
+			viewData.Add("StandardInfo", GetStandardViewInfo());
+			viewData.Add("Status", status);
+			viewData.Add("PropertyAlias", PropertyAlias);
+			// viewData.Add("IncludeUnpublished", IncludeUnpublished);
+
+			//RENDER
+			var htmlTask = _viewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
+			displayHtml = htmlTask.Result;
+
+
+			//RETURN AS HTML
+			var result = new HttpResponseMessage()
+			{
+				Content = new StringContent(
+					displayHtml,
+					Encoding.UTF8,
+					"text/html"
+				)
+			};
+
+			return new HttpResponseMessageResult(result);
+		}
+
+		private IList<string> ListOfProperties()
+		{
+			//Setup
+			var saService = GetSiteAuditorService();
+
+			//GET DATA
 			var allSiteDocTypes = saService.GetAllDocTypes();
 			var allProps = allSiteDocTypes.SelectMany(n => n.PropertyTypes);
 			var allPropsAliases = allProps.Select(n => n.Alias).Distinct();
 
-			//BUILD HTML
-			var returnSB = new StringBuilder();
-			returnSB.AppendLine($"<h1>Get Content with Values</h1>");
-			returnSB.AppendLine($"<h3>Available Properties</h3>");
-			//returnSB.AppendLine("<p>Note: Choosing the 'All' option will take significantly longer to load than the 'Published' option because we need to bypass the cache and query the database directly.</p>");
-
-			returnSB.AppendLine("<ol>");
-			foreach (var propAlias in allPropsAliases.OrderBy(n => n))
-			{
-				//var url1 =
-				//    $"/umbraco/backoffice/Dragonfly/SiteAuditor/GetContentWithValues?PropertyAlias={propAlias}&IncludeUnpublished=false";
-				var url2 = $"/umbraco/backoffice/Dragonfly/SiteAuditor/GetContentWithValues?PropertyAlias={propAlias}";
-
-				returnSB.AppendLine($"<li>{propAlias} <a target=\"_blank\" href=\"{url2}\">View</a></li>");
-			}
-			returnSB.AppendLine("</ol>");
-
-			return returnSB.ToString();
+			return allPropsAliases.ToList();
 		}
+
+		//private string HtmlListOfProperties()
+		//{
+		//	//Setup
+		//	//    var pvPath = RazorFilesPath() + "Start.cshtml";
+		//	//var saService = GetSiteAuditorService();
+
+		//	//GET DATA TO DISPLAY
+		//	var status = new StatusMessage(true);
+
+		//	//var allSiteDocTypes = saService.GetAllDocTypes();
+		//	//var allProps = allSiteDocTypes.SelectMany(n => n.PropertyTypes);
+		//	//var allPropsAliases = allProps.Select(n => n.Alias).Distinct();
+
+		//	var allPropsAliases = ListOfProperties();
+
+		//	//BUILD HTML
+		//	var returnSB = new StringBuilder();
+		//	returnSB.AppendLine($"<h1>Get Content with Values</h1>");
+		//	returnSB.AppendLine($"<h3>Available Properties</h3>");
+		//	//returnSB.AppendLine("<p>Note: Choosing the 'All' option will take significantly longer to load than the 'Published' option because we need to bypass the cache and query the database directly.</p>");
+
+		//	returnSB.AppendLine("<ol>");
+		//	foreach (var propAlias in allPropsAliases.OrderBy(n => n))
+		//	{
+		//		//var url1 =
+		//		//    $"/umbraco/backoffice/Dragonfly/SiteAuditor/GetContentWithValues?PropertyAlias={propAlias}&IncludeUnpublished=false";
+		//		var url2 = $"/umbraco/backoffice/Dragonfly/SiteAuditor/GetContentWithValues?PropertyAlias={propAlias}";
+
+		//		returnSB.AppendLine($"<li>{propAlias} <a target=\"_blank\" href=\"{url2}\">View</a></li>");
+		//	}
+		//	returnSB.AppendLine("</ol>");
+
+		//	return returnSB.ToString();
+		//}
 
 		#endregion
 
@@ -457,6 +525,7 @@
 			var viewData = new Dictionary<string, object>();
 			viewData.Add("StandardInfo", GetStandardViewInfo());
 			viewData.Add("Status", status);
+			viewData.Add("DocTypeAlias", "");
 
 			//RENDER
 			var htmlTask = _viewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
@@ -492,16 +561,19 @@
 
 			foreach (var prop in propertiesList)
 			{
-				tableData.AppendFormat(
-					"\"{0}\",\"{1}\",\"{2}\",\"{3}\",\"{4}\",\"{5}\",{6}{7}",
-					prop.UmbPropertyType.Name,
-					prop.UmbPropertyType.Alias,
-					prop.DataType.Name,
-					prop.DataType.EditorAlias,
-					prop.DataType.DatabaseType,
-					string.Join(", ", prop.AllDocTypes.Select(n => n.DocTypeAlias)),
-					prop.AllDocTypes.Count(),
-					Environment.NewLine);
+				if (prop.UmbPropertyType != null && prop.DataType != null)
+				{
+					tableData.AppendFormat(
+						"\"{0}\",\"{1}\",\"{2}\",\"{3}\",\"{4}\",\"{5}\",{6}{7}",
+						prop.UmbPropertyType.Name,
+						prop.UmbPropertyType.Alias,
+						prop.DataType.Name,
+						prop.DataType.EditorAlias,
+						prop.DataType.DatabaseType,
+						string.Join(", ", prop.AllDocTypes.Select(n => n.DocTypeAlias)),
+						prop.AllDocTypes.Count(),
+						Environment.NewLine);
+				}
 			}
 
 			returnSB.Append(tableData);
@@ -561,6 +633,7 @@
 			viewData.Add("StandardInfo", GetStandardViewInfo());
 			viewData.Add("Status", status);
 			viewData.Add("Title", $"Properties for Document Type '{DocTypeAlias}'");
+			viewData.Add("DocTypeAlias", DocTypeAlias);
 
 			//RENDER
 			var htmlTask = _viewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
@@ -583,7 +656,7 @@
 		private IActionResult DoctypesForPropertiesForDoctypeHtml()
 		{
 			//Setup
-			var pvPath = RazorFilesPath() + "Start.cshtml";
+			var pvPath = RazorFilesPath() + "DoctypesForPropertiesForDoctypeList.cshtml";
 
 			var saService = GetSiteAuditorService();
 
@@ -593,33 +666,34 @@
 			var allSiteDocTypes = saService.GetAllDocTypes();
 			var allAliases = allSiteDocTypes.Select(n => n.Alias).OrderBy(n => n).ToList();
 
+			//VIEW DATA 
+			var model = allAliases;
+			var viewData = new Dictionary<string, object>();
+			viewData.Add("StandardInfo", GetStandardViewInfo());
+			viewData.Add("Status", status);
+
 
 			//BUILD HTML
-			var returnSB = new StringBuilder();
+			//var returnSB = new StringBuilder();
 
-			returnSB.AppendLine($"<h1>Get Properties for a Selected Document Type</h1>");
-			returnSB.AppendLine($"<h3>Available Document Types</h3>");
+			//returnSB.AppendLine($"<h1>Get Properties for a Selected Document Type</h1>");
+			//returnSB.AppendLine($"<h3>Available Document Types</h3>");
 			//returnSB.AppendLine("<p>Note: Choosing the 'All' option will take significantly longer to load than the 'Published' option because we need to bypass the cache and query the database directly.</p>");
 
-			returnSB.AppendLine("<ul>");
-			foreach (var alias in allAliases)
-			{
-				var url = $"/umbraco/backoffice/Dragonfly/SiteAuditor/GetPropertiesForDoctypeHtml?DocTypeAlias={alias}";
+			//returnSB.AppendLine("<ul>");
+			//foreach (var alias in allAliases)
+			//{
+			//	var url = $"/umbraco/backoffice/Dragonfly/SiteAuditor/GetPropertiesForDoctypeHtml?DocTypeAlias={alias}";
 
-				returnSB.AppendLine($"<li>{alias} <a target=\"_blank\" href=\"{url}\">View</a></li>");
-			}
-			returnSB.AppendLine("</ul>");
-			var displayHtml = returnSB.ToString();
+			//	returnSB.AppendLine($"<li>{alias} <a target=\"_blank\" href=\"{url}\">View</a></li>");
+			//}
+			//returnSB.AppendLine("</ul>");
+			//var displayHtml = returnSB.ToString();
+			
 
-			//VIEW DATA 
-			// var model = XXX;
-			//var viewData = new Dictionary<string, object>();
-			//viewData.Add("StandardInfo", GetStandardViewInfo());
-			//viewData.Add("Status", status);
-
-			////RENDER
-			//var htmlTask = _viewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
-			//var displayHtml = htmlTask.Result;
+			//RENDER
+			var htmlTask = _viewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
+			var displayHtml = htmlTask.Result;
 
 			//RETURN AS HTML
 			var result = new HttpResponseMessage()
@@ -805,8 +879,8 @@
 					item.Alias,
 					item.DefaultTemplateName,
 					item.Guid,
-					item.ContentType.CreateDate,
-					item.ContentType.UpdateDate,
+					item.ContentType != null ? item.ContentType.CreateDate : DateTime.MinValue,
+					item.ContentType != null ? item.ContentType.UpdateDate : DateTime.MinValue,
 					Environment.NewLine);
 			}
 			returnSB.Append(tableData);
@@ -958,144 +1032,6 @@
 		}
 		#endregion
 
-
-		#region Obsolete - Remove in v13
-
-		/// /umbraco/backoffice/Dragonfly/SiteAuditor/Help
-		[HttpGet]
-		[Obsolete("Use the dashboard in the 'Settings' section. 2023-11-15")]
-		public IActionResult Help()
-		{
-			//Setup
-			// var pvPath = RazorFilesPath() + "Start.cshtml";
-
-			//BUILD HTML
-			//TODO: HLF - Convert to Razor View?
-			var returnSB = new StringBuilder();
-			returnSB.AppendLine("<h1>Site Auditor</h1>");
-			returnSB.AppendLine("<h2>Content</h2>");
-			returnSB.AppendLine("<h3>All Content Nodes</h3>");
-			returnSB.AppendLine("<p>These will take a long time to run for large sites. Please be patient.</p>");
-			returnSB.AppendLine("<ul>");
-			returnSB.AppendLine("<li><a target=\"_blank\" href=\"/umbraco/backoffice/Dragonfly/SiteAuditor/GetAllContentAsXml\">Get All Content As Xml</a> [no parameters]</li>");
-			returnSB.AppendLine("<li><a target=\"_blank\" href=\"/umbraco/backoffice/Dragonfly/SiteAuditor/GetAllContentAsJson\">Get All Content As Json</a> [no parameters]</li>");
-			returnSB.AppendLine("<li><a target=\"_blank\" href=\"/umbraco/backoffice/Dragonfly/SiteAuditor/GetAllContentAsHtml\">Get All Content As HtmlTable</a> [no parameters]</li>");
-			returnSB.AppendLine("<li><a target=\"_blank\" href=\"/umbraco/backoffice/Dragonfly/SiteAuditor/GetAllContentAsCsv\">Get All Content As Csv</a> [no parameters]</li>");
-			returnSB.AppendLine("</ul>");
-			returnSB.AppendLine("<h3>Content Nodes with Property Data</h3>");
-			//returnSB.AppendLine("<p>Note</p>");
-			returnSB.AppendLine("<ul>");
-			returnSB.AppendLine("<li><a target=\"_blank\" href=\"/umbraco/backoffice/Dragonfly/SiteAuditor/GetContentWithValues\">Get Content With Values</a></li>");
-			returnSB.AppendLine("</ul>");
-			returnSB.AppendLine("<h2>Document Types</h2>");
-			returnSB.AppendLine("<h3>All DocTypes</h3>");
-			//returnSB.AppendLine("<p>Note</p>");
-			returnSB.AppendLine("<ul>");
-			returnSB.AppendLine("<li><a target=\"_blank\" href=\"/umbraco/backoffice/Dragonfly/SiteAuditor/GetAllDocTypesAsXml\">Get All Doctypes As Xml</a> [no parameters]</li>");
-			returnSB.AppendLine("<li><a target=\"_blank\" href=\"/umbraco/backoffice/Dragonfly/SiteAuditor/GetAllDocTypesAsJson\">Get All Doctypes As Json</a> [no parameters]</li>");
-			returnSB.AppendLine("<li><a target=\"_blank\" href=\"/umbraco/backoffice/Dragonfly/SiteAuditor/GetAllDocTypesAsHtml\">Get All Doctypes As Html</a> [no parameters]</li>");
-			returnSB.AppendLine("<li><a target=\"_blank\" href=\"/umbraco/backoffice/Dragonfly/SiteAuditor/GetAllDocTypesAsCsv\">Get All Doctypes As Csv</a> [no parameters]</li>");
-			returnSB.AppendLine("</ul>");
-			returnSB.AppendLine("<h2>Document Type Properties</h2>");
-			returnSB.AppendLine("<h3>All Properties</h3>");
-			//returnSB.AppendLine("<p>Note</p>");
-			returnSB.AppendLine("<ul>");
-			returnSB.AppendLine("<li><a target=\"_blank\" href=\"/umbraco/backoffice/Dragonfly/SiteAuditor/GetAllPropertiesAsXml\">Get All Properties As Xml</a> [no parameters]</li>");
-			returnSB.AppendLine("<li><a target=\"_blank\" href=\"/umbraco/backoffice/Dragonfly/SiteAuditor/GetAllPropertiesAsJson\">Get All Properties As Json</a> [no parameters]</li>");
-			returnSB.AppendLine("<li><a target=\"_blank\" href=\"/umbraco/backoffice/Dragonfly/SiteAuditor/GetAllPropertiesAsHtml\">Get All Properties As Html</a> [no parameters]</li>");
-			returnSB.AppendLine("<li><a target=\"_blank\" href=\"/umbraco/backoffice/Dragonfly/SiteAuditor/GetAllPropertiesAsCsv\">Get All Properties As Csv</a> [no parameters]</li>");
-			returnSB.AppendLine("</ul>");
-
-			returnSB.AppendLine("<h2>Data Types</h2>");
-
-			returnSB.AppendLine("<h3>All DataTypes</h3>");
-			//returnSB.AppendLine("<p>Note</p>");
-			returnSB.AppendLine("<ul>");
-			returnSB.AppendLine("<li><a target=\"_blank\" href=\"/umbraco/backoffice/Dragonfly/SiteAuditor/GetAllDataTypesAsXml\">Get All DataTypes As Xml</a> [no parameters]</li>");
-			returnSB.AppendLine("<li><a target=\"_blank\" href=\"/umbraco/backoffice/Dragonfly/SiteAuditor/GetAllDataTypesAsJson\">Get All DataTypes As Json</a> [no parameters]</li>");
-			returnSB.AppendLine("<li><a target=\"_blank\" href=\"/umbraco/backoffice/Dragonfly/SiteAuditor/GetAllDataTypesAsHtml\">Get All DataTypes As Html</a> [no parameters]</li>");
-			returnSB.AppendLine("<li><a target=\"_blank\" href=\"/umbraco/backoffice/Dragonfly/SiteAuditor/GetAllDataTypesAsCsv\">Get All DataTypes As Csv</a> [no parameters]</li>");
-			returnSB.AppendLine("</ul>");
-
-			//returnSB.AppendLine("<h3>All Content Nodes</h3>");
-			//returnSB.AppendLine("<p>Note</p>");
-			//returnSB.AppendLine("<ul>");
-			//returnSB.AppendLine("<li><a target=\"_blank\" href=\"\"></a></li>");
-			//returnSB.AppendLine("</ul>");
-
-			//RETURN AS HTML
-			var result = new HttpResponseMessage()
-			{
-				Content = new StringContent(
-					returnSB.ToString(),
-					Encoding.UTF8,
-					"text/html"
-				)
-			};
-
-			return new HttpResponseMessageResult(result);
-		}
-
-
-		/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetAllContentAsXml
-		[HttpGet]
-		[Obsolete("This hasn't worked in the v10+ version. 2023-11-15")]
-		public List<AuditableContent> GetAllContentAsXml()
-		{
-			var saService = GetSiteAuditorService();
-			var allNodes = saService.GetContentNodes();
-
-			return allNodes;
-		}
-
-		// /umbraco/backoffice/Dragonfly/SiteAuditor/GetAllPropertiesAsXml
-		[HttpGet]
-		[Obsolete("This hasn't worked in the v10+ version. 2023-11-15")]
-		public IEnumerable<AuditableProperty> GetAllPropertiesAsXml()
-		{
-			var saService = GetSiteAuditorService();
-			var siteProps = saService.AllProperties();
-			var propertiesList = siteProps.AllProperties;
-			return propertiesList;
-		}
-
-		// /umbraco/backoffice/Dragonfly/SiteAuditor/GetAllDataTypesAsXml
-		[HttpGet]
-		[Obsolete("This hasn't worked in the v10+ version. 2023-11-15")]
-		public IEnumerable<AuditableDataType> GetAllDataTypesAsXml()
-		{
-			var saService = GetSiteAuditorService();
-			var dataTypes = saService.AllDataTypes();
-
-			return dataTypes;
-		}
-
-		/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetAllDocTypesAsXml
-		[HttpGet]
-		[Obsolete("This hasn't worked in the v10+ version. 2023-11-15")]
-		public IEnumerable<AuditableDocType> GetAllDocTypesAsXml()
-		{
-			var saService = GetSiteAuditorService();
-			var allDts = saService.GetAuditableDocTypes();
-
-			return allDts;
-		}
-
-
-		/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetAllTemplatesAsXml
-		[HttpGet]
-		[Obsolete("This hasn't worked in the v10+ version. 2023-11-15")]
-		public IEnumerable<AuditableTemplate> GetAllTemplatesAsXml()
-		{
-			var saService = GetSiteAuditorService();
-			var allTemps = saService.GetAuditableTemplates();
-
-			return allTemps;
-		}
-
-		#endregion
-
-
 		#region Tests & Examples
 
 		/// /umbraco/backoffice/Dragonfly/SiteAuditor/TestJson?DocTypeAlias=xxx
@@ -1224,7 +1160,7 @@
 			var fileContent = Encoding.UTF8.GetBytes(returnSB.ToString());
 			var result = Encoding.UTF8.GetPreamble().Concat(fileContent).ToArray();
 			return File(result, "text/csv", fileName);
-			
+
 		}
 
 		/// /umbraco/backoffice/Dragonfly/SiteAuditor/TestCSV
@@ -1247,7 +1183,7 @@
 			}
 			returnSB.Append(tableData);
 
-			
+
 			//RETURN AS CSV FILE
 			var fileName = "Test.csv";
 			var fileContent = Encoding.UTF8.GetBytes(returnSB.ToString());

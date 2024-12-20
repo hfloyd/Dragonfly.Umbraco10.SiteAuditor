@@ -3,26 +3,29 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Dragonfly.NetModels;
-using Dragonfly.SiteAuditor.Models;
-using Dragonfly.NetHelperServices;
+using System.Text.Json.Nodes;
+using Newtonsoft.Json;
+//using System.Text.Json;
+//using System.Text.Json.Nodes;
+
 using Microsoft.Extensions.Logging;
-//	using Newtonsoft.Json;
 using Microsoft.AspNetCore.Http;
+
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Hosting;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Models.PublishedContent;
-using Umbraco.Cms.Core.PropertyEditors;
 using Umbraco.Cms.Core.Web;
 using Umbraco.Cms.Web.Common;
 using Umbraco.Extensions;
 
-using System.Text.Json;
-using System.Text.Json.Nodes;
-using System.Text.Json.Serialization;
+using Dragonfly.NetModels;
+using Dragonfly.SiteAuditor.Models;
+using Dragonfly.NetHelperServices;
+using Umbraco.Cms.Core.PropertyEditors.ValueConverters;
 
+#pragma warning disable 0168
 public class SiteAuditorService
 {
 
@@ -165,9 +168,9 @@ public class SiteAuditorService
 		{
 			nodesList.Add(ThisNode);
 
-			if (ThisNode.Children().Any())
+			if (ThisNode.Children != null && ThisNode.Children.Any())
 			{
-				foreach (var childNode in ThisNode.Children().OrderBy(n => n.SortOrder))
+				foreach (var childNode in ThisNode.Children.OrderBy(n => n.SortOrder))
 				{
 					nodesList.AddRange(LoopNodes(childNode));
 				}
@@ -214,7 +217,7 @@ public class SiteAuditorService
 	{
 		var nodesList = new List<IContent>();
 
-		var topLevelContentNodes = _services.ContentService.GetRootContent().OrderBy(n => n.SortOrder);
+		var topLevelContentNodes = _services.ContentService!.GetRootContent().OrderBy(n => n.SortOrder);
 
 		foreach (var thisNode in topLevelContentNodes)
 		{
@@ -234,7 +237,7 @@ public class SiteAuditorService
 
 		//figure out num of children
 		long countChildren;
-		var test = _services.ContentService.GetPagedChildren(ThisNode.Id, 0, 1, out countChildren);
+		var test = _services.ContentService!.GetPagedChildren(ThisNode.Id, 0, 1, out countChildren);
 		if (countChildren > 0)
 		{
 			long countTest;
@@ -264,7 +267,7 @@ public class SiteAuditorService
 
 		var nodesList = new List<AuditableContent>();
 
-		var topLevelContentNodes = _services.ContentService.GetRootContent().OrderBy(n => n.SortOrder);
+		var topLevelContentNodes = _services.ContentService!.GetRootContent().OrderBy(n => n.SortOrder);
 
 		foreach (var thisNode in topLevelContentNodes)
 		{
@@ -284,7 +287,7 @@ public class SiteAuditorService
 	{
 		var nodesList = new List<AuditableContent>();
 
-		var topLevelNodes = _services.ContentService.GetByIds(RootNodeId.AsEnumerableOfOne()).OrderBy(n => n.SortOrder);
+		var topLevelNodes = _services.ContentService!.GetByIds(RootNodeId.AsEnumerableOfOne()).OrderBy(n => n.SortOrder);
 
 		foreach (var thisNode in topLevelNodes)
 		{
@@ -304,7 +307,7 @@ public class SiteAuditorService
 		var nodesList = new List<AuditableContent>();
 
 		//var TopLevelNodes = umbHelper.ContentAtRoot();
-		var topLevelNodes = _services.ContentService.GetByIds(RootNodeUdi.AsEnumerableOfOne()).OrderBy(n => n.SortOrder);
+		var topLevelNodes = _services.ContentService!.GetByIds(RootNodeUdi.AsEnumerableOfOne())!.OrderBy(n => n.SortOrder);
 
 		foreach (var thisNode in topLevelNodes)
 		{
@@ -364,54 +367,69 @@ public class SiteAuditorService
 			//Nodes where the property IS using the Element
 			foreach (var content in allContentWithProp)
 			{
-				_logger.LogDebug($"1. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}'");
-
-				var info = _auditorInfoService.GetPropertyDataTypeInfo(property.Key.Alias, content.UmbContentNode);
-				_logger.LogDebug($"2. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}' - Info.DocType='{info.DocTypeAlias}'");
-
-				if (info.PropertyData != null)
+				if (content.UmbContentNode != null)
 				{
-					var valueString = info.PropertyData.ToString();
-					_logger.LogDebug($"3A. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}' - Value='{(valueString == null ? "NULL" : valueString)}'");
+					_logger.LogDebug(
+						$"1. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}'");
 
-					var elementContentType = _services.ContentTypeService.Get(DocTypeAlias);
-					_logger.LogDebug($"4. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}' - elementContentType='{(elementContentType == null ? "NULL" : elementContentType.Alias)}'");
+					var info = _auditorInfoService.GetPropertyDataTypeInfo(property.Key.Alias, content.UmbContentNode);
+					_logger.LogDebug(
+						$"2. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}' - Info.DocType='{info.DocTypeAlias}'");
 
-					if (elementContentType != null)
+					if (info.PropertyData != null)
 					{
-						var elementGuid = elementContentType.Key;
-						_logger.LogInformation($"5. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}' - elementGuid='{(elementGuid == null ? "NULL" : elementGuid.ToString())}'");
+						var valueString = info.PropertyData.ToString();
+						_logger.LogDebug(
+							$"3A. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}' - Value='{(valueString == null ? "NULL" : valueString)}'");
 
-						if (valueString.Contains(elementGuid.ToString()))
+						var elementContentType = _services.ContentTypeService!.Get(DocTypeAlias);
+						_logger.LogDebug(
+							$"4. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}' - elementContentType='{(elementContentType == null ? "NULL" : elementContentType.Alias)}'");
+
+						if (elementContentType != null)
 						{
-							_logger.LogInformation($"6A. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}' - Value Includes GUID!");
+							var elementGuid = elementContentType.Key;
+							_logger.LogInformation(
+								$"5. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}' - elementGuid='{elementGuid.ToString()}'");
 
-							var match = new KeyValuePair<AuditableContent, NodePropertyDataTypeInfo>(content, info);
-							finalContentList.Add(match);
-						}
-						else
-						{
-							var elementAlias = elementContentType.Alias;
-							_logger.LogInformation($"6B. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}' - elementAlias='{(elementAlias == null ? "NULL" : elementAlias.ToString())}'");
-
-							if (valueString.Contains(elementAlias.ToString()))
+							if (valueString != null && valueString.Contains(elementGuid.ToString()))
 							{
-								_logger.LogInformation($"7A. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}' - Value Includes Alias!");
+								_logger.LogInformation(
+									$"6A. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}' - Value Includes GUID!");
 
 								var match = new KeyValuePair<AuditableContent, NodePropertyDataTypeInfo>(content, info);
 								finalContentList.Add(match);
 							}
 							else
 							{
-								_logger.LogInformation($"7B. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}' - Value DOES NOT include Alias!");
+								var elementAlias = elementContentType.Alias;
+								_logger.LogInformation($"6B. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}' - elementAlias='{(elementAlias == null ? "NULL" : elementAlias.ToString())}'");
+								if (elementAlias != null && valueString != null)
+								{
+									if (valueString.Contains(elementAlias.ToString()))
+									{
+										_logger.LogInformation(
+											$"7A. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}' - Value Includes Alias!");
+
+										var match = new KeyValuePair<AuditableContent, NodePropertyDataTypeInfo>(
+											content,
+											info);
+										finalContentList.Add(match);
+									}
+									else
+									{
+										_logger.LogInformation(
+											$"7B. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}' - Value DOES NOT include Alias!");
+									}
+								}
 							}
 						}
 					}
-				}
-				else
-				{
-					_logger.LogDebug($"3B. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}' - PropertyData IS NULL'");
-
+					else
+					{
+						_logger.LogDebug(
+							$"3B. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}' - PropertyData IS NULL'");
+					}
 				}
 			}
 		}
@@ -438,7 +456,7 @@ public class SiteAuditorService
 
 		//figure out num of children
 		long countChildren;
-		var test = _services.ContentService.GetPagedChildren(ThisNode.Id, 0, 1, out countChildren);
+		var test = _services.ContentService!.GetPagedChildren(ThisNode.Id, 0, 1, out countChildren);
 		if (countChildren > 0)
 		{
 			long countTest;
@@ -462,8 +480,8 @@ public class SiteAuditorService
 
 		if (ThisIContent.TemplateId != null)
 		{
-			var template = _services.FileService.GetTemplate((int)ThisIContent.TemplateId);
-			ac.TemplateAlias = template.Alias;
+			var template = _services.FileService!.GetTemplate((int)ThisIContent.TemplateId);
+			ac.TemplateAlias = template != null ? template.Alias : "MISSING";
 		}
 		else
 		{
@@ -482,7 +500,7 @@ public class SiteAuditorService
 			catch (Exception e)
 			{
 				//Get preview - unpublished
-				var iPub = _umbracoContext.Content.GetById(true, ThisIContent.Id);
+				var iPub = _umbracoContext!.Content!.GetById(true, ThisIContent.Id);
 				ac.UmbPublishedNode = iPub;
 			}
 
@@ -530,7 +548,7 @@ public class SiteAuditorService
 
 	private AuditableContent ConvertIPubContentToAuditableContent(IPublishedContent PubContentNode)
 	{
-		var content = _services.ContentService.GetById(PubContentNode.Id);
+		var content = _services.ContentService!.GetById(PubContentNode.Id);
 
 		var ac = new AuditableContent();
 		if (content != null)
@@ -559,9 +577,9 @@ public class SiteAuditorService
 	/// </summary>
 	/// <param name="DocTypeAlias"></param>
 	/// <returns></returns>
-	public IContentType GetContentTypeByAlias(string DocTypeAlias)
+	public IContentType? GetContentTypeByAlias(string DocTypeAlias)
 	{
-		return _services.ContentTypeService.Get(DocTypeAlias);
+		return _services.ContentTypeService!.Get(DocTypeAlias);
 	}
 
 	/// <summary>
@@ -572,14 +590,11 @@ public class SiteAuditorService
 	{
 		var list = new List<IContentType>();
 
-		var doctypes = _services.ContentTypeService.GetAll();
+		var doctypes = _services.ContentTypeService!.GetAll();
 
 		foreach (var type in doctypes)
 		{
-			if (type != null)
-			{
-				list.Add(type);
-			}
+			list.Add(type);
 		}
 
 		return list;
@@ -597,7 +612,7 @@ public class SiteAuditorService
 		}
 		else
 		{
-			var doctypes = _services.ContentTypeService.GetAll();
+			var doctypes = _services.ContentTypeService!.GetAll();
 			var comps = doctypes.SelectMany(n => n.ContentTypeComposition);
 
 			_AllContentTypeComps = comps.DistinctBy(n => n.Id);
@@ -615,14 +630,11 @@ public class SiteAuditorService
 	{
 		var list = new List<AuditableDocType>();
 
-		var doctypes = _services.ContentTypeService.GetAll();
+		var doctypes = _services.ContentTypeService!.GetAll();
 
 		foreach (var type in doctypes)
 		{
-			if (type != null)
-			{
-				list.Add(ConvertIContentTypeToAuditableDocType(type));
-			}
+			list.Add(ConvertIContentTypeToAuditableDocType(type));
 		}
 
 		return list;
@@ -632,7 +644,7 @@ public class SiteAuditorService
 	{
 		var adt = new AuditableDocType();
 		adt.ContentType = ContentType;
-		adt.Name = ContentType.Name;
+		adt.Name = ContentType.Name != null ? ContentType.Name : "UNKNOWN";
 		adt.Alias = ContentType.Alias;
 		adt.Guid = ContentType.Key;
 		adt.Id = ContentType.Id;
@@ -640,7 +652,7 @@ public class SiteAuditorService
 
 		if (ContentType.DefaultTemplate != null)
 		{
-			adt.DefaultTemplateName = ContentType.DefaultTemplate.Name;
+			adt.DefaultTemplateName = ContentType.DefaultTemplate.Name != null ? ContentType.DefaultTemplate.Name : "UNKNOWN";
 		}
 		else
 		{
@@ -648,9 +660,12 @@ public class SiteAuditorService
 		}
 
 		var templates = new Dictionary<int, string>();
-		foreach (var template in ContentType.AllowedTemplates)
+		if (ContentType.AllowedTemplates != null)
 		{
-			templates.Add(template.Id, template.Alias);
+			foreach (var template in ContentType.AllowedTemplates)
+			{
+				templates.Add(template.Id, template.Alias);
+			}
 		}
 
 		adt.AllowedTemplates = templates;
@@ -667,7 +682,7 @@ public class SiteAuditorService
 
 		adt.IsComposition = allCompsIds.Contains(ContentType.Id);
 
-		adt.HasContentNodes = _services.ContentTypeService.HasContentNodes(ContentType.Id);
+		adt.HasContentNodes = _services.ContentTypeService!.HasContentNodes(ContentType.Id);
 
 		adt.FolderPath = GetFolderContainerPath(ContentType);
 
@@ -686,8 +701,8 @@ public class SiteAuditorService
 			{
 				if (sId != "-1")
 				{
-					var container = _services.ContentTypeService.GetContainer(Convert.ToInt32(sId));
-					if (container != null)
+					var container = _services.ContentTypeService!.GetContainer(Convert.ToInt32(sId));
+					if (container != null && container.Name != null)
 					{
 						folders.Add(container.Name);
 					}
@@ -738,7 +753,7 @@ public class SiteAuditorService
 		allProps.PropsForDoctype = "[All]";
 		List<AuditableProperty> propertiesList = new List<AuditableProperty>();
 
-		var allDocTypes = _services.ContentTypeService.GetAll();
+		var allDocTypes = _services.ContentTypeService!.GetAll();
 
 		foreach (var docType in allDocTypes)
 		{
@@ -748,24 +763,25 @@ public class SiteAuditorService
 			{
 				//test for the same property already in list
 				if (propertiesList.Exists(i =>
-						i.UmbPropertyType.Alias == prop.Alias & i.UmbPropertyType.Name == prop.Name &
-						i.UmbPropertyType.DataTypeId == prop.DataTypeId))
+						i.UmbPropertyType != null
+						&& i.UmbPropertyType?.Alias == prop.Alias
+						& i.UmbPropertyType?.Name == prop.Name
+						& i.UmbPropertyType?.DataTypeId == prop.DataTypeId))
 				{
 					//Add current DocType to existing property
-					var info = new PropertyDoctypeInfo();
-					info.Id = docType.Id;
-					info.DocTypeAlias = docType.Alias;
-					info.GroupName = "";
-					propertiesList.Find(i => i.UmbPropertyType.Alias == prop.Alias).AllDocTypes.Add(info);
+					var info = new PropertyDoctypeInfo(docType);
+
+					propertiesList.Find(i =>
+						i.UmbPropertyType?.Alias == prop.Alias
+						)
+						?.AllDocTypes.Add(info);
 				}
 				else
 				{
 					//Add new property
 					AuditableProperty auditProp = PropertyTypeToAuditableProperty(prop);
 
-					var info = new PropertyDoctypeInfo();
-					info.DocTypeAlias = docType.Alias;
-					info.GroupName = "";
+					var info = new PropertyDoctypeInfo(docType);
 
 					auditProp.AllDocTypes.Add(info);
 					propertiesList.Add(auditProp);
@@ -783,42 +799,46 @@ public class SiteAuditorService
 		allProps.PropsForDoctype = DocTypeAlias;
 		List<AuditableProperty> propertiesList = new List<AuditableProperty>();
 
-		var ct = _services.ContentTypeService.Get(DocTypeAlias);
+		var ct = _services.ContentTypeService!.Get(DocTypeAlias);
 		var propsDone = new List<int>();
 
 		//First, compositions
-		foreach (var comp in ct.ContentTypeComposition)
+		if (ct != null)
 		{
-			foreach (var group in comp.CompositionPropertyGroups)
+			foreach (var comp in ct.ContentTypeComposition)
 			{
-				foreach (var prop in group.PropertyTypes)
+				foreach (var group in comp.CompositionPropertyGroups)
 				{
-					AuditableProperty auditProp = PropertyTypeToAuditableProperty(prop);
+					if (group.PropertyTypes != null)
+						foreach (var prop in group.PropertyTypes)
+						{
+							AuditableProperty auditProp = PropertyTypeToAuditableProperty(prop);
 
-					auditProp.InComposition = comp.Name;
-					auditProp.GroupName = group.Name;
+							auditProp.InComposition = comp.Name ?? "";
+							auditProp.GroupName = group.Name ?? "";
 
-					propertiesList.Add(auditProp);
-					propsDone.Add(prop.Id);
-				}
-			}
-		}
-
-		//Next, non-comp properties
-		foreach (var group in ct.CompositionPropertyGroups)
-		{
-			foreach (var prop in group.PropertyTypes)
-			{
-				//check if already added...
-				if (!propsDone.Contains(prop.Id))
-				{
-					AuditableProperty auditProp = PropertyTypeToAuditableProperty(prop);
-					auditProp.GroupName = group.Name;
-					auditProp.InComposition = "~NONE";
-					propertiesList.Add(auditProp);
+							propertiesList.Add(auditProp);
+							propsDone.Add(prop.Id);
+						}
 				}
 			}
 
+			//Next, non-comp properties
+			foreach (var group in ct.CompositionPropertyGroups)
+			{
+				if (group.PropertyTypes != null)
+					foreach (var prop in group.PropertyTypes)
+					{
+						//check if already added...
+						if (!propsDone.Contains(prop.Id))
+						{
+							AuditableProperty auditProp = PropertyTypeToAuditableProperty(prop);
+							auditProp.GroupName = group.Name ?? "";
+							auditProp.InComposition = "~NONE";
+							propertiesList.Add(auditProp);
+						}
+					}
+			}
 		}
 
 		allProps.AllProperties = propertiesList;
@@ -885,8 +905,7 @@ public class SiteAuditorService
 			{
 				foreach (var prop in matchingProps)
 				{
-					var x = new PropertyDoctypeInfo();
-					x.DocTypeAlias = docType.Alias;
+					var x = new PropertyDoctypeInfo(docType);
 
 					var matchingGroups = docType.PropertyGroups.Where(n => n.PropertyTypes.Contains(prop.Alias))
 						.ToList();
@@ -1057,7 +1076,7 @@ public class SiteAuditorService
 		foreach (var property in properties)
 		{
 			//var dt = _services.DataTypeService.GetDataType();
-			var dtElements = AllTypes.Where( n=> n.DataTypeId== property.DataTypeId).Select(n => n.ElementTypeAlias).ToList();
+			var dtElements = AllTypes.Where(n => n.DataTypeId == property.DataTypeId).Select(n => n.ElementTypeAlias).ToList();
 			elementsList.AddRange(dtElements);
 
 			foreach (var element in dtElements)
@@ -1141,7 +1160,7 @@ public class SiteAuditorService
 				};
 	}
 
-	
+
 	private IEnumerable<string> GetDirectElementsForDataType(IDataType dt)
 	{
 		var elementTypesList = new List<string>();
@@ -1153,7 +1172,7 @@ public class SiteAuditorService
 
 		try
 		{
-			var configJson = JsonSerializer.Serialize(dt.Configuration);
+			var configJson = JsonConvert.SerializeObject(dt.Configuration);
 			List<string> keyStrGuids = new List<string>();
 			List<Guid> keyGuids = new List<Guid>();
 
@@ -1217,7 +1236,7 @@ public class SiteAuditorService
 
 				//Packages
 				case "SimpleTreeMenu":
-					JsonNode stmConfig = JsonSerializer.Deserialize<JsonNode>(configJson);
+					JsonNode stmConfig = JsonConvert.DeserializeObject<JsonNode>(configJson);
 					if (stmConfig != null)
 					{
 						if (stmConfig["doctype"] != null)
@@ -1548,16 +1567,17 @@ public class SiteAuditorService
 			}
 			else if (propValueType == typeof(string))
 			{
-				var stringData = propValue.ToString();
+				var stringData =propValue.ToString();
+				stringData=stringData?? "";
 
 				if (stringData.StartsWith("[{") && Editor == "Umbraco.MediaPicker3")
 				{
 					try
 					{
-						var mediaWCrops = JsonSerializer.Deserialize<IEnumerable<RawMediaWithCrops>>(stringData).ToList();
+						var mediaWCrops = JsonConvert.DeserializeObject<IEnumerable<RawMediaWithCrops>>(stringData).ToList();
 						foreach (var item in mediaWCrops)
 						{
-							var media = _umbracoHelper.Media(item.MediaKey);
+							var media = _umbracoHelper.Media(item.GetMediaKey());
 							if (media != null)
 							{
 								multiMedia.Add(media);
@@ -1572,12 +1592,12 @@ public class SiteAuditorService
 					catch (Exception e)
 					{
 						//Error
-						ErrorMessage = $"{e.Message} - Unable to convert '{stringData}' data to MediaWithCrops";
+						ErrorMessage = $"{e.Message} - Unable to convert '{stringData}' data to MediaWithCrops for Umbraco.MediaPicker3";
 					}
 				}
 				else if (stringData.StartsWith("["))
 				{
-					var listOfStrings = JsonSerializer.Deserialize<IEnumerable<string>>(stringData);
+					var listOfStrings = JsonConvert.DeserializeObject<IEnumerable<string>>(stringData);
 					foreach (var s in listOfStrings)
 					{
 						if (s.StartsWith("umb://"))
@@ -1641,6 +1661,61 @@ public class SiteAuditorService
 	#endregion
 
 
+	public IList<string> GetImageSrcFromPropValue(string Editor, IReadOnlyCollection<IPropertyValue> PropertyValues, out string ErrorMessage)
+	{
+		var imgSrcs = new List<string>();
+		ErrorMessage = "";
+
+		if (!PropertyValues.Any())
+		{
+			return imgSrcs;
+		}
+
+		foreach (var propertyValue in PropertyValues)
+		{
+			var propValue = propertyValue.PublishedValue;
+			if (propValue == null || propValue.ToString() == "[]" || propValue.ToString()=="{}")
+			{
+				return imgSrcs;
+			}
+
+			//Values, figure out what type
+			var propValueType = propValue.GetType();
+			if (propValueType == typeof(string))
+			{
+				var stringData =propValue.ToString();
+				stringData=stringData?? "";
+
+				if (stringData.StartsWith("{") && Editor == "Umbraco.ImageCropper")
+				{
+					try
+					{
+						var imgCropper = JsonConvert.DeserializeObject<ImageCropperValue>(stringData);
+						if (imgCropper != null)
+						{
+							if (imgCropper.Src != null)
+							{
+								imgSrcs.Add(imgCropper.Src );
+							}
+							else
+							{
+								//No matching media
+								ErrorMessage = $"No Image Source provided";
+							}
+						}
+					}
+					catch (Exception e)
+					{
+						//Error
+						ErrorMessage =
+							$"{e.Message} - Unable to convert '{stringData}' data to ImageCropperValue for Umbraco.ImageCropper";
+					}
+				}
+			}
+		}
+
+		return imgSrcs;
+	}
 }
 
 public class DataTypesWithElements

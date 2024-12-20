@@ -23,12 +23,12 @@
 		/// <summary>
 		/// Gets or sets the content node as an IContent
 		/// </summary>
-		public IContent UmbContentNode { get; internal set; }
+		public IContent? UmbContentNode { get; internal set; }
 
 		/// <summary>
 		/// Gets or sets the content node and an IPublishedContent
 		/// </summary>
-		public IPublishedContent UmbPublishedNode { get; internal set; }
+		public IPublishedContent? UmbPublishedNode { get; internal set; }
 
 		/// <summary>
 		/// The node path.
@@ -36,7 +36,7 @@
 		/// <returns>
 		/// The <see cref="string"/>.
 		/// </returns>
-		public IEnumerable<string> NodePath { get; internal set; }
+		public IEnumerable<string> NodePath { get; internal set; } = new List<string>();
 
 		/// <summary>
 		/// Default string used for NodePathAsText
@@ -63,19 +63,19 @@
 		/// <summary>
 		/// Alias of the Template assigned to this Content Node. Returns "NONE" if there is no template.
 		/// </summary>
-		public string TemplateAlias { get; internal set; }
+		public string TemplateAlias { get; internal set; }= "";
 
 		/// <summary>
 		/// Url with domain name. Returns "UNPUBLISHED" if there is no public url.
 		/// </summary>
-		public string FullNiceUrl { get; internal set; }
+		public string FullNiceUrl { get; internal set; }= "";
 
 		public bool IsPublished { get; internal set; }
 
 		/// <summary>
 		/// Path-only Url. Returns "UNPUBLISHED" if there is no public url.
 		/// </summary>
-		public string RelativeNiceUrl { get; internal set; }
+		public string RelativeNiceUrl { get; internal set; }= "";
 
 		public IUser? CreateUser { get; set; }
 		public IUser? UpdateUser { get; set; }

@@ -5,10 +5,15 @@
 
 	public class RawMediaWithCrops
 	{
-		[JsonProperty("key")]
-		public Guid Key { get; set; }
+		[JsonProperty("key")] 
+		public string Key { get; set; } = "";
 
 		[JsonProperty("mediaKey")]
-		public Guid MediaKey { get; set; }
+		public string MediaKey { get; set; }= "";
+
+		public Guid GetMediaKey()
+		{
+			return Guid.Parse(MediaKey);
+		}
 	}
 }

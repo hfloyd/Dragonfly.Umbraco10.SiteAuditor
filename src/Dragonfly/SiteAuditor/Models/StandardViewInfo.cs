@@ -7,7 +7,7 @@
         /// <summary>
         /// Current version of Package
         /// </summary>
-        public Version CurrentToolVersion { get; set; }
+        public Version? CurrentToolVersion { get; set; }
 
     }
 }

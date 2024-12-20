@@ -1,0 +1,58 @@
+@inherits UmbracoViewPage<DocTypesAndElements>
+@*
+	Expected View Data:
+	-------------------
+	StandardInfo (object - StandardViewInfo)		: Version, Current environment, etc.
+	Status (object - StatusMessage)					: Status of operations
+
+*@
+@{
+	Layout = "_Master.cshtml";
+	var paramStandardInfo = Mvc.GetSafeViewData(ViewData, "StandardInfo", new StandardViewInfo()) as StandardViewInfo;
+	var paramStatus = Mvc.GetSafeViewData(ViewData, "Status", new StatusMessage()) as StatusMessage;
+
+	//	IEnumerable<AuditableContent> contentList = Model.ToList();
+	//	var propertyAlias = Dragonfly.UmbracoHelpers.Mvc.GetSafeViewDataString(ViewData, "PropertyAlias");
+	// var includeUnpublished = Dragonfly.UmbracoHelpers.Mvc.GetSafeViewDataBool(ViewData, "IncludeUnpublished");
+
+
+
+	var counter = 0;
+	var Title = Dragonfly.UmbracoHelpers.Mvc.GetSafeViewDataString(ViewData, "Title", $"Get Content with Values: Available Properties");
+}
+
+@section Head {
+	<title>@Title</title>
+}
+
+<!--DoctypesForContentList-->
+<h1>Get Content for a Selected Document Type</h1>
+<p id="Nav"><a href="#ContentNodes\">Content Node Document Types</a> | <a href="#Elements">Element Types</a></p>
+
+<h3 id="ContentNodes">Available Content Node Document Types</h3>
+<ol>
+	@foreach (var docType in Model.AllNodeTypes)
+	{
+		var type = docType.IsElement ? "Nodes Using Element" : "Content Nodes of Type";
+		var api = docType.IsElement ? "GetContentForElementHtml" : "GetContentForDoctypeHtml";
+		var url = $"/umbraco/backoffice/Dragonfly/SiteAuditor/{api}?DocTypeAlias={docType.Alias}";
+		<li>@docType.Alias <a target="_blank" href="@url">View</a></li>
+	}
+</ol>
+<p><a href="#Nav">Top Nav</a></p>
+
+<h3 id="Elements">Available Element Document Types</h3>
+<p>Note: These options will take longer to load because they have to recursively check the content property values.</p>
+<ol>
+	@foreach (var docType in Model.AllElementTypes)
+	{
+		var type = docType.IsElement ? "Nodes Using Element" : "Content Nodes of Type";
+		var api = docType.IsElement ? "GetContentForElementHtml" : "GetContentForDoctypeHtml";
+		var url = $"/umbraco/backoffice/Dragonfly/SiteAuditor/{api}?DocTypeAlias={docType.Alias}";
+
+		<li>@docType.Alias <a target="_blank" href="@url">View</a></li>
+	}
+</ol>
+<p><a href="#Nav">Top Nav</a></p>
+
+

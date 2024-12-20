@@ -1,0 +1,95 @@
+@inherits UmbracoViewPage<object>
+@{
+	Layout = null;
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+
+	<link rel="shortcut icon" type="image/x-icon" href="~/app_plugins/dragonfly.siteauditor/dragonfly-siteauditor-128.ico">
+	<link rel="shortcut icon" href="~/app_plugins/dragonfly.siteauditor/dragonfly-siteauditor-128.png">
+
+
+	<link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
+	<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs4/jszip-2.5.0/dt-1.10.20/b-1.6.1/b-colvis-1.6.1/b-html5-1.6.1/b-print-1.6.1/r-2.2.3/datatables.min.css" />
+
+	<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/2.1.8/css/dataTables.bootstrap4.css" />
+	<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/buttons/3.2.0/css/buttons.bootstrap4.css" />
+
+	<script type="text/javascript" src="https://code.jquery.com/jquery-3.7.1.js"></script>
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"></script>
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.2/js/bootstrap.min.js"></script>
+	<script type="text/javascript" src="https://cdn.datatables.net/2.1.8/js/dataTables.js"></script>
+	<script type="text/javascript" src="https://cdn.datatables.net/2.1.8/js/dataTables.bootstrap4.js"></script>
+	<script type="text/javascript" src="https://cdn.datatables.net/buttons/3.2.0/js/dataTables.buttons.js"></script>
+	<script type="text/javascript" src="https://cdn.datatables.net/buttons/3.2.0/js/buttons.bootstrap4.js"></script>
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+	<script type="text/javascript" src="https://cdn.datatables.net/buttons/3.2.0/js/buttons.html5.min.js"></script>
+	<script type="text/javascript" src="https://cdn.datatables.net/buttons/3.2.0/js/buttons.colVis.min.js"></script>
+
+	<style>
+		.dt-length {
+			width: 20rem;
+		}
+
+		#dt-length-0 {
+			width: 5rem;
+		}
+
+		.dt-length label {
+			margin-left: 1rem;
+		}
+	</style>
+
+	@RenderSection("Head")
+</head>
+<body>
+	<div class="container-fluid" style="margin: auto 15px;">
+		@RenderBody()
+	</div>
+
+	@*<!--https://datatables.net/extensions/buttons/examples/styling/bootstrap4.html-->*@
+	<script type="text/javascript">
+		$(document).ready(function () {
+
+			// Setup - add a text input to each footer cell
+			$('#umbracodata tfoot th').each( function () {
+				var title = $(this).text();
+				$(this).html( '<input type="text" style="font-size:10px; width:100%;" placeholder="Search '+title+'" />' );
+			} );
+
+			// DataTable
+			$('#umbracodata').DataTable({
+				pageLength: 10,
+				lengthMenu: [10, 50, 100, 200, 500],
+
+				layout: {
+					topStart: ['pageLength', 'info'],
+					topEnd: ['search',
+						{
+							buttons: ['copy', 'excel', 'csv', 'colvis']
+						}]
+				},
+
+				initComplete: function () {
+					// Apply the search
+					this.api().columns().every( function () {
+						var that = this;
+
+						$( 'input', this.footer() ).on( 'keyup change clear', function () {
+							if ( that.search() !== this.value ) {
+								that
+									.search( this.value )
+									.draw();
+							}
+						} );
+					} );
+				}
+			});
+
+		});
+	</script>
+</body>
+</html>

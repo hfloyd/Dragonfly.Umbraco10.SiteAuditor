@@ -84,6 +84,16 @@
 				renderingDone = true;
 				break;
 
+			case "Umbraco.ImageCropper":
+				var errorMsg4 = "";
+				var mediaSrcs = AuditorService.GetImageSrcFromPropValue("Umbraco.ImageCropper",
+					nodePropertyDataTypeInfo.Property.Values, out errorMsg3);
+
+				//RENDER
+				RenderImagesData(mediaSrcs, errorMsg4, nodePropertyDataTypeInfo.PropertyData);
+				renderingDone = true;
+				break;
+
 			case "Umbraco.Grid":
 				Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/GridRaw.cshtml", nodePropertyDataTypeInfo.Property, viewDD);
 				renderingDone = true;
@@ -181,5 +191,41 @@
 		}
 	}
 
+
+	private void RenderImagesData(IList<string> MediaSrcs, string ErrorMsg, object PropertyData)
+	{
+		var imageWidth = 300;
+		var imageHeight = 300;
+
+		if (!string.IsNullOrEmpty(ErrorMsg))
+		{
+			<div><small>[Error getting Media: @ErrorMsg]</small></div>
+		}
+		if (MediaSrcs.Any())
+		{
+			foreach (var mediaSrc in MediaSrcs)
+			{
+				var srcThumb = $"{mediaSrc}?width={imageWidth}&height={imageHeight}&rmode=max";
+
+				<a href="@mediaSrc" target="_blank"><img src="@srcThumb" /></a>
+				<div><small>@mediaSrc</small></div>
+			}
+		}
+		else
+		{
+			//No values
+			<div><small>[NO IMAGE(S) SELECTED]</small></div>
+		}
+
+		if (PropertyData is not null)
+		{
+			<div><small><i>Raw Data:</i> @PropertyData.ToString()</small></div>
+		}
+		else
+		{
+			<div><small><i>Raw Data:</i> NULL</small></div>
+		}
+
+	}
 }
 
