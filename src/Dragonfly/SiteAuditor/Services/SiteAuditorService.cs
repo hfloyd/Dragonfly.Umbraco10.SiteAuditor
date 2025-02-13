@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text.Json.Nodes;
 using Newtonsoft.Json;
@@ -29,12 +30,15 @@ using Umbraco.Cms.Core.PropertyEditors.ValueConverters;
 public class SiteAuditorService
 {
 
-
 	#region Private & Internal Variables
 
 	private IEnumerable<AuditableContent> _AllAuditableContent = new List<AuditableContent>();
 
+	private IEnumerable<AuditableMedia> _AllAuditableMedia = new List<AuditableMedia>();
+
 	private IEnumerable<IContent> _AllContent = new List<IContent>();
+
+	private IEnumerable<IMedia> _AllMedia = new List<IMedia>();
 
 	/// <summary>
 	/// Use .GetAllCompositions() to return this list
@@ -568,7 +572,187 @@ public class SiteAuditorService
 
 	#endregion
 
+	#region Media 
 
+	public List<IMedia> GetAllMedia()
+	{
+		var nodesList = new List<IMedia>();
+
+		var topLevelNodes = _services.MediaService!.GetRootMedia().OrderBy(n => n.SortOrder);
+
+		foreach (var thisNode in topLevelNodes)
+		{
+			nodesList.AddRange(LoopForMediaNodes(thisNode));
+		}
+
+		_AllMedia = nodesList;
+		return nodesList;
+	}
+
+	internal List<IMedia> LoopForMediaNodes(IMedia ThisNode)
+	{
+		var nodesList = new List<IMedia>();
+
+		//Add current node, then loop for children
+		nodesList.Add(ThisNode);
+
+		//figure out num of children
+		long countChildren;
+		var test = _services.MediaService!.GetPagedChildren(ThisNode.Id, 0, 1, out countChildren);
+		if (countChildren > 0)
+		{
+			long countTest;
+			var allChildren = _services.MediaService.GetPagedChildren(ThisNode.Id, 0, Convert.ToInt32(countChildren), out countTest);
+			foreach (var childNode in allChildren.OrderBy(n => n.SortOrder))
+			{
+				nodesList.AddRange(LoopForMediaNodes(childNode));
+			}
+		}
+
+		return nodesList;
+	}
+	#endregion
+
+	#region AuditableMedia
+	/// <summary>
+	/// Gets all site nodes as AuditableMedia models
+	/// </summary>
+	/// <returns></returns>
+	public List<AuditableMedia> GetMediaNodes()
+	{
+		if (_AllAuditableMedia.Any())
+		{
+			return _AllAuditableMedia.ToList();
+		}
+
+		var nodesList = new List<AuditableMedia>();
+
+		var topLevelNodes = _services.MediaService!.GetRootMedia().OrderBy(n => n.SortOrder);
+
+		foreach (var thisNode in topLevelNodes)
+		{
+			nodesList.AddRange(LoopForAuditableMediaNodes(thisNode));
+		}
+
+		_AllAuditableMedia = nodesList;
+		return nodesList;
+	}
+
+	public List<AuditableMedia> GetMediaNodes(string MediaTypeAlias)
+	{
+		var nodesList = new List<AuditableMedia>();
+
+		IEnumerable<IMedia> allMedia;
+		if (_AllMedia.Any())
+		{
+			allMedia = _AllMedia.ToList();
+		}
+		else
+		{
+			allMedia = GetAllMedia().ToList();
+		}
+
+		var filtered = allMedia.Where(n => n.ContentType.Alias == MediaTypeAlias);
+
+		foreach (var item in filtered)
+		{
+			nodesList.Add(ConvertIMediaToAuditableMedia(item));
+		}
+
+		return nodesList;
+	}
+
+	internal List<AuditableMedia> LoopForAuditableMediaNodes(IMedia ThisNode)
+	{
+		var nodesList = new List<AuditableMedia>();
+
+		//Add current node, then loop for children
+		AuditableMedia auditContent = ConvertIMediaToAuditableMedia(ThisNode);
+		nodesList.Add(auditContent);
+
+		//figure out num of children
+		long countChildren;
+		var test = _services.MediaService!.GetPagedChildren(ThisNode.Id, 0, 1, out countChildren);
+		if (countChildren > 0)
+		{
+			long countTest;
+			var allChildren = _services.MediaService.GetPagedChildren(ThisNode.Id, 0,
+				Convert.ToInt32(countChildren), out countTest);
+			foreach (var childNode in allChildren.OrderBy(n => n.SortOrder))
+			{
+				nodesList.AddRange(LoopForAuditableMediaNodes(childNode));
+			}
+		}
+
+		return nodesList;
+	}
+
+	private AuditableMedia ConvertIMediaToAuditableMedia(IMedia ThisIMedia)
+	{
+		var am = new AuditableMedia();
+
+		am.UmbMediaNode = ThisIMedia;
+
+		var iPub = _umbracoHelper.Media(ThisIMedia.Id);
+		am.UmbPublishedNode = iPub;
+
+		if (iPub != null)
+		{
+			am.WidthPixels = ThisIMedia.GetValue<int>("umbracoWidth");
+			am.HeightPixels = ThisIMedia.GetValue<int>("umbracoHeight");
+			am.FileExtension = iPub.Value<string>("umbracoExtension");
+
+			if (iPub.HasProperty("AltText"))
+			{
+				am.AltText = iPub.Value<string>("AltText");
+			}
+			else if (iPub.HasProperty("altText"))
+			{
+				am.AltText = iPub.Value<string>("altText");
+			}
+
+			am.SizeInBytes = ThisIMedia.GetValue<long>("umbracoBytes");
+			if (am.SizeInBytes > 0)
+			{
+				am.SizeReadable = Dragonfly.NetHelpers.Strings.FileBytesToString(am.SizeInBytes);
+			}
+
+		}
+
+		am.RelativeUrl = am.UmbPublishedNode != null
+			? am.UmbPublishedNode.Url(mode: UrlMode.Relative)
+			: "NONE";
+		am.FullUrl = am.UmbPublishedNode != null
+			? am.UmbPublishedNode.Url(mode: UrlMode.Absolute)
+			: "NONE";
+
+		am.NodePath = _auditorInfoService.NodePath(ThisIMedia);
+		am.CreateUser = _auditorInfoService.GetUser(ThisIMedia.CreatorId);
+		am.UpdateUser = _auditorInfoService.GetUser(ThisIMedia.WriterId);
+
+		return am;
+	}
+
+	private List<AuditableMedia> ConvertIMediaToAuditableMedia(List<IMedia> MediaList)
+	{
+		var nodesList = new List<AuditableMedia>();
+		foreach (var media in MediaList)
+		{
+			nodesList.Add(ConvertIMediaToAuditableMedia(media));
+		}
+
+		return nodesList;
+	}
+
+	public List<AuditableMedia> GetMediaWithProperty(string PropertyAlias)
+	{
+		var allMedia = GetAllMedia();
+		var withProp = allMedia.Where(n => n.HasProperty(PropertyAlias)).ToList();
+
+		return ConvertIMediaToAuditableMedia(withProp);
+	}
+
+	#endregion
 
 	#region DocTypes
 
@@ -721,27 +905,23 @@ public class SiteAuditorService
 	}
 
 
+	#endregion
 
-	///// <summary>
-	///// Gets list of all DocTypes on site as AuditableDoctype models
-	///// </summary>
-	///// <returns></returns>
-	//public static IEnumerable<AuditableDocType> GetAuditableDocTypes()
-	//{
-	//    var list = new List<AuditableDocType>();
+	#region MediaTypes
 
-	//    var doctypes = umbDocTypeService.GetAllContentTypes();
+	public IList<IMediaType> GetAllMediaTypes()
+	{
+		var list = new List<IMediaType>();
 
-	//    foreach (var type in doctypes)
-	//    {
-	//        if (type != null)
-	//        {
-	//            list.Add(new AuditableDocType(type));
-	//        }
-	//    }
+		var types = _services.MediaTypeService!.GetAll();
 
-	//    return list;
-	//}
+		foreach (var type in types)
+		{
+			list.Add(type);
+		}
+
+		return list;
+	}
 
 	#endregion
 
@@ -856,9 +1036,9 @@ public class SiteAuditorService
 		var ap = new AuditableProperty();
 		ap.UmbPropertyType = UmbPropertyType;
 
-		ap.DataType = _services.DataTypeService.GetDataType(UmbPropertyType.DataTypeId);
+		ap.DataType = _services.DataTypeService!.GetDataType(UmbPropertyType.DataTypeId);
 		ap.DataTypeElementTypes = ap.DataType != null ? GetAllDataTypeElementsList(ap.DataType) : new List<string>();
-		ap.DataTypeConfigType = ap.DataType.Configuration.GetType();
+		ap.DataTypeConfigType = ap.DataType != null && ap.DataType.Configuration != null ? ap.DataType.Configuration.GetType() : null;
 		try
 		{
 			var configDict = (Dictionary<string, string>)ap.DataType.Configuration;
@@ -896,7 +1076,7 @@ public class SiteAuditorService
 	{
 		var docTypesList = new List<PropertyDoctypeInfo>();
 
-		var allDocTypes = _services.ContentTypeService.GetAll();
+		var allDocTypes = _services.ContentTypeService!.GetAll();
 
 		foreach (var docType in allDocTypes)
 		{
@@ -909,9 +1089,9 @@ public class SiteAuditorService
 
 					var matchingGroups = docType.PropertyGroups.Where(n => n.PropertyTypes.Contains(prop.Alias))
 						.ToList();
-					if (matchingGroups.Any())
+					if (matchingGroups != null && matchingGroups.Any())
 					{
-						x.GroupName = matchingGroups.First().Name;
+						x.GroupName = matchingGroups.First().Name!;
 					}
 
 					docTypesList.Add(x);
@@ -925,7 +1105,7 @@ public class SiteAuditorService
 	private Dictionary<IPropertyType, string> PropsWithDocTypes()
 	{
 		var properties = new Dictionary<IPropertyType, string>();
-		var docTypes = _services.ContentTypeService.GetAll();
+		var docTypes = _services.ContentTypeService!.GetAll();
 		foreach (var doc in docTypes)
 		{
 			foreach (var prop in doc.PropertyTypes)
@@ -950,14 +1130,14 @@ public class SiteAuditorService
 		}
 
 		var list = new List<AuditableDataType>();
-		var datatypes = _services.DataTypeService.GetAll();
+		var datatypes = _services.DataTypeService!.GetAll();
 
 		var properties = PropsWithDocTypes();
 
 		foreach (var dt in datatypes)
 		{
 			var adt = new AuditableDataType();
-			adt.Name = dt.Name;
+			adt.Name = dt.Name ?? "";
 			adt.EditorAlias = dt.EditorAlias;
 			adt.Guid = dt.Key;
 			adt.Id = dt.Id;
@@ -1172,7 +1352,7 @@ public class SiteAuditorService
 
 		try
 		{
-			var configJson = JsonConvert.SerializeObject(dt.Configuration);
+			string configJson = dt.Configuration != null ? JsonConvert.SerializeObject(dt.Configuration) : "";
 			List<string> keyStrGuids = new List<string>();
 			List<Guid> keyGuids = new List<Guid>();
 
@@ -1236,7 +1416,7 @@ public class SiteAuditorService
 
 				//Packages
 				case "SimpleTreeMenu":
-					JsonNode stmConfig = JsonConvert.DeserializeObject<JsonNode>(configJson);
+					JsonNode? stmConfig = JsonConvert.DeserializeObject<JsonNode>(configJson);
 					if (stmConfig != null)
 					{
 						if (stmConfig["doctype"] != null)
@@ -1445,8 +1625,8 @@ public class SiteAuditorService
 			at.Udi = temp.GetUdi();
 			at.FolderPath = GetFolderContainerPath(temp);
 			at.IsMaster = temp.IsMasterTemplate;
-			at.HasMaster = temp.MasterTemplateAlias;
-			at.CodeLength = temp.Content.Length;
+			at.HasMaster = temp.MasterTemplateAlias ?? "";
+			at.CodeLength = temp.Content != null ? temp.Content.Length : 0;
 			at.CreateDate = temp.CreateDate;
 			at.UpdateDate = temp.UpdateDate;
 			at.OriginalPath = temp.OriginalPath;
@@ -1523,6 +1703,44 @@ public class SiteAuditorService
 	}
 	#endregion
 
+	#region Serilog Items
+
+	internal List<SerilogItem> ProcessSerilogFile(string filePath)
+	{
+		var list = new List<SerilogItem>();
+		string line;
+
+		// Open the file for reading
+		using (StreamReader reader = new StreamReader(filePath))
+		{
+			// Read each line until the end of the file
+			while ((line = reader.ReadLine()) != null)
+			{
+				// Process each line here
+				var serilogItem = SerilogItem.FromJson(line);
+				list.Add(serilogItem);
+			}
+		}
+
+		return list;
+
+		//byte[] result;
+		//using (FileStream stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+		//{
+		//	result = new byte[stream.Length];
+		//	stream.Read(result, 0, (int)stream.Length);
+		//}
+
+		//return File(result, "text/plain", fileName);
+	}
+
+	public static void ProcessFile(string filePath)
+	{
+
+	}
+
+	#endregion
+
 	#region Helpers
 
 	public List<IPublishedContent> GetMediaListFromPropValue(string Editor, IReadOnlyCollection<IPropertyValue> PropertyValues, out string ErrorMessage)
@@ -1567,8 +1785,8 @@ public class SiteAuditorService
 			}
 			else if (propValueType == typeof(string))
 			{
-				var stringData =propValue.ToString();
-				stringData=stringData?? "";
+				var stringData = propValue.ToString();
+				stringData = stringData ?? "";
 
 				if (stringData.StartsWith("[{") && Editor == "Umbraco.MediaPicker3")
 				{
@@ -1658,9 +1876,6 @@ public class SiteAuditorService
 		return multiMedia;
 	}
 
-	#endregion
-
-
 	public IList<string> GetImageSrcFromPropValue(string Editor, IReadOnlyCollection<IPropertyValue> PropertyValues, out string ErrorMessage)
 	{
 		var imgSrcs = new List<string>();
@@ -1674,7 +1889,7 @@ public class SiteAuditorService
 		foreach (var propertyValue in PropertyValues)
 		{
 			var propValue = propertyValue.PublishedValue;
-			if (propValue == null || propValue.ToString() == "[]" || propValue.ToString()=="{}")
+			if (propValue == null || propValue.ToString() == "[]" || propValue.ToString() == "{}")
 			{
 				return imgSrcs;
 			}
@@ -1683,8 +1898,8 @@ public class SiteAuditorService
 			var propValueType = propValue.GetType();
 			if (propValueType == typeof(string))
 			{
-				var stringData =propValue.ToString();
-				stringData=stringData?? "";
+				var stringData = propValue.ToString();
+				stringData = stringData ?? "";
 
 				if (stringData.StartsWith("{") && Editor == "Umbraco.ImageCropper")
 				{
@@ -1695,7 +1910,7 @@ public class SiteAuditorService
 						{
 							if (imgCropper.Src != null)
 							{
-								imgSrcs.Add(imgCropper.Src );
+								imgSrcs.Add(imgCropper.Src);
 							}
 							else
 							{
@@ -1716,6 +1931,8 @@ public class SiteAuditorService
 
 		return imgSrcs;
 	}
+	#endregion
+
 }
 
 public class DataTypesWithElements

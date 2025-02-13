@@ -1,1197 +1,1430 @@
-﻿namespace Dragonfly.SiteAuditor.WebApi
+﻿namespace Dragonfly.SiteAuditor.WebApi;
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
+using System.Text;
+using System.Net;
+
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+
+using Umbraco.Cms.Web.Common.Attributes;
+using Umbraco.Cms.Web.BackOffice.Controllers;
+using Umbraco.Extensions;
+
+using Dragonfly.NetHelperServices;
+using Dragonfly.NetModels;
+using Dragonfly.SiteAuditor.Models;
+using Dragonfly.SiteAuditor.Services;
+
+
+//  /umbraco/backoffice/Dragonfly/SiteAuditor/
+[PluginController("Dragonfly")]
+[IsBackOffice]
+public class SiteAuditorController : UmbracoAuthorizedApiController
 {
-	using System;
-	using System.Collections.Generic;
-	using System.Linq;
-	using System.Net.Http;
-	using System.Text;
-	using System.Net;
+	#region ctor & DI
+	private readonly ILogger<SiteAuditorController> _logger;
+	private readonly SiteAuditorService _siteAuditorService;
+	private readonly IViewRenderService _viewRenderService;
 
-	using Microsoft.AspNetCore.Mvc;
-	using Microsoft.Extensions.Logging;
-
-	using Umbraco.Cms.Web.Common.Attributes;
-	using Umbraco.Cms.Web.BackOffice.Controllers;
-	using Umbraco.Extensions;
-
-	using Dragonfly.NetHelperServices;
-	using Dragonfly.NetModels;
-	using Dragonfly.SiteAuditor.Models;
-	using Dragonfly.SiteAuditor.Services;
-
-
-	//  /umbraco/backoffice/Dragonfly/SiteAuditor/
-	[PluginController("Dragonfly")]
-	[IsBackOffice]
-	public class SiteAuditorController : UmbracoAuthorizedApiController
+	public SiteAuditorController(
+		ILogger<SiteAuditorController> logger,
+		SiteAuditorService siteAuditorService,
+		IViewRenderService viewRenderService
+		)
 	{
-		#region ctor & DI
-		private readonly ILogger<SiteAuditorController> _logger;
-		private readonly SiteAuditorService _siteAuditorService;
-		private readonly IViewRenderService _viewRenderService;
+		_logger = logger;
+		_siteAuditorService = siteAuditorService;
+		_viewRenderService = viewRenderService;
 
-		public SiteAuditorController(
-			ILogger<SiteAuditorController> logger,
-			SiteAuditorService siteAuditorService,
-			IViewRenderService viewRenderService
+	}
+
+	#endregion
+	private string RazorFilesPath()
+	{
+		return SiteAuditorService.PluginPath() + "RazorViews/";
+	}
+
+	private SiteAuditorService GetSiteAuditorService()
+	{
+		return _siteAuditorService;
+		//return new SiteAuditorService(Umbraco, UmbracoContext, Services, Logger<>);
+	}
+
+	internal StandardViewInfo GetStandardViewInfo()
+	{
+		var info = new StandardViewInfo();
+
+		info.CurrentToolVersion = PackageInfo.Version;
+
+		//TODO: Make configurable?
+		info.ThumbnailWidth = 300;
+		info.ThumbnailHeight = 300;
+
+		return info;
+	}
+
+
+	#region Content Nodes
+
+	/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetAllContentAsJson
+	[HttpGet]
+	public IActionResult GetAllContentAsJson()
+	{
+		var saService = GetSiteAuditorService();
+		var allNodes = saService.GetContentNodes();
+		var exportable = allNodes.ConvertToExportable();
+
+		//Return JSON
+		return new JsonResult(exportable);
+	}
+
+	/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetAllContentAsHtmlTable
+	[HttpGet]
+	public IActionResult GetAllContentAsHtmlTable()
+	{
+		//Setup
+		var pvPath = RazorFilesPath() + "AllContentAsHtmlTable.cshtml";
+		var saService = GetSiteAuditorService();
+
+		//GET DATA TO DISPLAY
+		var status = new StatusMessage(true);
+		var contentNodes = saService.GetContentNodes();
+
+		//VIEW DATA 
+		var model = contentNodes;
+		var viewData = new Dictionary<string, object>();
+		viewData.Add("StandardInfo", GetStandardViewInfo());
+		viewData.Add("Status", status);
+
+		//RENDER
+		var htmlTask = _viewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
+		var displayHtml = htmlTask.Result;
+
+		//RETURN AS HTML
+		var result = new HttpResponseMessage()
+		{
+			Content = new StringContent(
+				displayHtml,
+				Encoding.UTF8,
+				"text/html"
 			)
+		};
+
+		return new HttpResponseMessageResult(result);
+	}
+
+	/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetAllContentAsCsv
+	[HttpGet]
+	public IActionResult GetAllContentAsCsv()
+	{
+		var saService = GetSiteAuditorService();
+		var returnSB = new StringBuilder();
+
+		var allNodes = saService.GetContentNodes();
+
+		var tableData = new StringBuilder();
+
+		tableData.AppendLine(
+			"\"Node Name\"" +
+			",\"NodeID\"" +
+			",\"Node Path\"" +
+			",\"DocType\"" +
+			",\"ParentID\"" +
+			",\"Full URL\"" +
+			",\"Level\"" +
+			",\"Sort Order\"" +
+			",\"Template Name\"" +
+			",\"Udi\"" +
+			",\"Create Date\"" +
+			",\"Update Date\"");
+
+		foreach (var auditNode in allNodes)
 		{
-			_logger = logger;
-			_siteAuditorService = siteAuditorService;
-			_viewRenderService = viewRenderService;
-
-		}
-
-		#endregion
-		private string RazorFilesPath()
-		{
-			return SiteAuditorService.PluginPath() + "RazorViews/";
-		}
-
-		private SiteAuditorService GetSiteAuditorService()
-		{
-			return _siteAuditorService;
-			//return new SiteAuditorService(Umbraco, UmbracoContext, Services, Logger<>);
-		}
-
-		internal StandardViewInfo GetStandardViewInfo()
-		{
-			var info = new StandardViewInfo();
-
-			info.CurrentToolVersion = PackageInfo.Version;
-
-			return info;
-		}
-
-
-		#region Content Nodes
-
-		/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetAllContentAsJson
-		[HttpGet]
-		public IActionResult GetAllContentAsJson()
-		{
-			var saService = GetSiteAuditorService();
-			var allNodes = saService.GetContentNodes();
-			var exportable = allNodes.ConvertToExportable();
-
-			//Return JSON
-			return new JsonResult(exportable);
-		}
-
-		/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetAllContentAsHtmlTable
-		[HttpGet]
-		public IActionResult GetAllContentAsHtmlTable()
-		{
-			//Setup
-			var pvPath = RazorFilesPath() + "AllContentAsHtmlTable.cshtml";
-			var saService = GetSiteAuditorService();
-
-			//GET DATA TO DISPLAY
-			var status = new StatusMessage(true);
-			var contentNodes = saService.GetContentNodes();
-
-			//VIEW DATA 
-			var model = contentNodes;
-			var viewData = new Dictionary<string, object>();
-			viewData.Add("StandardInfo", GetStandardViewInfo());
-			viewData.Add("Status", status);
-
-			//RENDER
-			var htmlTask = _viewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
-			var displayHtml = htmlTask.Result;
-
-			//RETURN AS HTML
-			var result = new HttpResponseMessage()
+			if (auditNode.UmbContentNode != null)
 			{
-				Content = new StringContent(
-					displayHtml,
-					Encoding.UTF8,
-					"text/html"
-				)
-			};
+				var nodeLine = $"\"{auditNode.UmbContentNode.Name}\"" +
+							   $",{auditNode.UmbContentNode.Id}" +
+							   $",\"{auditNode.NodePathAsCustomText(" > ")}\"" +
+							   $",\"{auditNode.UmbContentNode.ContentType.Alias}\"" +
+							   $",{auditNode.UmbContentNode.ParentId}" +
+							   $",\"{auditNode.FullNiceUrl}\"" +
+							   $",{auditNode.UmbContentNode.Level}" +
+							   $",{auditNode.UmbContentNode.SortOrder}" +
+							   $",\"{auditNode.TemplateAlias}\"" +
+							   $",\"{auditNode.UmbContentNode.GetUdi()}\"" +
+							   $",{auditNode.UmbContentNode.CreateDate}" +
+							   $",{auditNode.UmbContentNode.UpdateDate}" +
+							   $"{Environment.NewLine}";
 
-			return new HttpResponseMessageResult(result);
-		}
-
-		/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetAllContentAsCsv
-		[HttpGet]
-		public IActionResult GetAllContentAsCsv()
-		{
-			var saService = GetSiteAuditorService();
-			var returnSB = new StringBuilder();
-
-			var allNodes = saService.GetContentNodes();
-
-			var tableData = new StringBuilder();
-
-			tableData.AppendLine(
-				"\"Node Name\"" +
-				",\"NodeID\"" +
-				",\"Node Path\"" +
-				",\"DocType\"" +
-				",\"ParentID\"" +
-				",\"Full URL\"" +
-				",\"Level\"" +
-				",\"Sort Order\"" +
-				",\"Template Name\"" +
-				",\"Udi\"" +
-				",\"Create Date\"" +
-				",\"Update Date\"");
-
-			foreach (var auditNode in allNodes)
-			{
-				if (auditNode.UmbContentNode != null)
-				{
-					var nodeLine = $"\"{auditNode.UmbContentNode.Name}\"" +
-								   $",{auditNode.UmbContentNode.Id}" +
-								   $",\"{auditNode.NodePathAsCustomText(" > ")}\"" +
-								   $",\"{auditNode.UmbContentNode.ContentType.Alias}\"" +
-								   $",{auditNode.UmbContentNode.ParentId}" +
-								   $",\"{auditNode.FullNiceUrl}\"" +
-								   $",{auditNode.UmbContentNode.Level}" +
-								   $",{auditNode.UmbContentNode.SortOrder}" +
-								   $",\"{auditNode.TemplateAlias}\"" +
-								   $",\"{auditNode.UmbContentNode.GetUdi()}\"" +
-								   $",{auditNode.UmbContentNode.CreateDate}" +
-								   $",{auditNode.UmbContentNode.UpdateDate}" +
-								   $"{Environment.NewLine}";
-
-					tableData.Append(nodeLine);
-				}
-			}
-
-			returnSB.Append(tableData);
-
-
-			//RETURN AS CSV FILE
-			var fileName = "AllContentNodes.csv";
-			var fileContent = Encoding.UTF8.GetBytes(returnSB.ToString());
-			var result = Encoding.UTF8.GetPreamble().Concat(fileContent).ToArray();
-			return File(result, "text/csv", fileName);
-
-			//var contentDispositionHeader = new System.Net.Mime.ContentDisposition()
-			//{
-			//	FileName = "AllContentNodes.csv",
-			//	DispositionType = "attachment"
-			//};
-			//HttpContext.Response.Headers.Add("Content-Disposition", contentDispositionHeader.ToString());
-			//return Content(
-			//	returnSB.ToString(),
-			//	"text/csv",
-			//	Encoding.UTF8
-			//);
-
-		}
-
-		/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetContentForDoctypeHtml?DocTypeAlias=X
-		[HttpGet]
-		public IActionResult GetContentForDoctypeHtml(string DocTypeAlias = "")
-		{
-			if (DocTypeAlias != "")
-			{
-				return ContentForDoctypeHtml(DocTypeAlias);
-			}
-			else
-			{
-				return DoctypesForContentForDoctypeHtml();
+				tableData.Append(nodeLine);
 			}
 		}
 
-		/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetContentForDoctypeHtml?DocTypeAlias=X
-		[HttpGet]
-		public IActionResult GetContentForElementHtml(string DocTypeAlias = "")
-		{
-			if (DocTypeAlias != "")
-			{
-				return ContentForElementHtml(DocTypeAlias);
-			}
-			else
-			{
-				return DoctypesForContentForDoctypeHtml();
-			}
-		}
-
-		private IActionResult DoctypesForContentForDoctypeHtml()
-		{
-			//Setup
-			var pvPath = RazorFilesPath() + "DoctypesForContentList.cshtml";
-			var saService = GetSiteAuditorService();
-
-			//GET DATA TO DISPLAY
-			var status = new StatusMessage(true);
-			var allSiteDocTypes = saService.GetAllDocTypes().ToList();
-			var allNodeTypes = allSiteDocTypes.Where(n => n.IsElement == false).OrderBy(n => n.Alias).ToList();
-			var allElementTypes = allSiteDocTypes.Where(n => n.IsElement == true).OrderBy(n => n.Alias).ToList();
-
-			var data = new DocTypesAndElements();
-			data.AllNodeTypes = allNodeTypes;
-			data.AllElementTypes = allElementTypes;
-
-			//VIEW DATA 
-			var model = data;
-			var viewData = new Dictionary<string, object>();
-			viewData.Add("StandardInfo", GetStandardViewInfo());
-			viewData.Add("Status", status);
-
-			//BUILD HTML
-			//var returnSB = new StringBuilder();
-			//returnSB.AppendLine($"<h1>Get Content for a Selected Document Type</h1>");
-			//returnSB.AppendLine($"<p id=\"Nav\"><a href=\"#ContentNodes\">Content Node Document Types</a> | <a href=\"#Elements\">Element Types</a></p>");
+		returnSB.Append(tableData);
 
 
-			//returnSB.AppendLine($"<h3 id=\"ContentNodes\">Available Content Node Document Types</h3>");
-			//returnSB.AppendLine("<ul>");
-			//foreach (var docType in allNodeTypes)
-			//{
-			//	var type = docType.IsElement ? "Nodes Using Element" : "Content Nodes of Type";
-			//	var api = docType.IsElement ? "GetContentForElementHtml" : "GetContentForDoctypeHtml";
-			//	var url = $"/umbraco/backoffice/Dragonfly/SiteAuditor/{api}?DocTypeAlias={docType.Alias}";
+		//RETURN AS CSV FILE
+		var fileName = "AllContentNodes.csv";
+		var fileContent = Encoding.UTF8.GetBytes(returnSB.ToString());
+		var result = Encoding.UTF8.GetPreamble().Concat(fileContent).ToArray();
+		return File(result, "text/csv", fileName);
 
-			//	returnSB.AppendLine($"<li>{docType.Alias} <a target=\"_blank\" href=\"{url}\">View</a></li>");
-			//}
-			//returnSB.AppendLine("</ul>");
-			//returnSB.AppendLine($"<p><a href=\"#Nav\">Top Nav</a></p>");
-
-			//returnSB.AppendLine($"<h3 id=\"Elements\">Available Element Document Types</h3>");
-			//returnSB.AppendLine("<p>Note: These options will take longer to load because they have to recursively check the content property values.</p>");
-			//returnSB.AppendLine("<ul>");
-			//foreach (var docType in allElementTypes)
-			//{
-			//	var type = docType.IsElement ? "Nodes Using Element" : "Content Nodes of Type";
-			//	var api = docType.IsElement ? "GetContentForElementHtml" : "GetContentForDoctypeHtml";
-			//	var url = $"/umbraco/backoffice/Dragonfly/SiteAuditor/{api}?DocTypeAlias={docType.Alias}";
-
-			//	returnSB.AppendLine($"<li>{docType.Alias} <a target=\"_blank\" href=\"{url}\">View</a></li>");
-			//}
-			//returnSB.AppendLine("</ul>");
-			//returnSB.AppendLine($"<p><a href=\"#Nav\">Top Nav</a></p>");
-
-			//var displayHtml = returnSB.ToString();
-
-			//RENDER
-			var htmlTask = _viewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
-			var displayHtml = htmlTask.Result;
-			
-			//RETURN AS HTML
-			return new ContentResult()
-			{
-				Content = displayHtml,
-				StatusCode = (int)HttpStatusCode.OK,
-				ContentType = "text/html; charset=utf-8"
-			};
-
-		}
-
-		private IActionResult ContentForDoctypeHtml(string DocTypeAlias)
-		{
-			//Setup
-			var pvPath = RazorFilesPath() + "AllContentAsHtmlTable.cshtml";
-			var saService = GetSiteAuditorService();
-
-			//GET DATA TO DISPLAY
-			var status = new StatusMessage(true);
-			var contentNodes = saService.GetContentNodes(DocTypeAlias);
-
-			//VIEW DATA 
-			var model = contentNodes;
-			var viewData = new Dictionary<string, object>();
-			viewData.Add("StandardInfo", GetStandardViewInfo());
-			viewData.Add("Status", status);
-
-			//RENDER
-			var htmlTask = _viewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
-			var displayHtml = htmlTask.Result;
-
-			//RETURN AS HTML
-			return new ContentResult()
-			{
-				Content = displayHtml,
-				StatusCode = (int)HttpStatusCode.OK,
-				ContentType = "text/html; charset=utf-8"
-			};
-
-		}
-
-		private IActionResult ContentForElementHtml(string DocTypeAlias)
-		{
-			//Setup
-			var pvPath = RazorFilesPath() + "AllElementContentAsHtmlTable.cshtml";
-			var saService = GetSiteAuditorService();
-
-			//GET DATA TO DISPLAY
-			var status = new StatusMessage(true);
-			var contentNodes = saService.GetContentNodesUsingElement(DocTypeAlias);
-
-			//VIEW DATA 
-			var model = contentNodes;
-			var viewData = new Dictionary<string, object>();
-			viewData.Add("StandardInfo", GetStandardViewInfo());
-			viewData.Add("Status", status);
-
-			//RENDER
-			var htmlTask = _viewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
-			var displayHtml = htmlTask.Result;
-
-			//RETURN AS HTML
-			return new ContentResult()
-			{
-				Content = displayHtml,
-				StatusCode = (int)HttpStatusCode.OK,
-				ContentType = "text/html; charset=utf-8"
-			};
-		}
-
-
-		#endregion
-
-		#region GetContentWithValues
-
-		/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetContentWithValues?PropertyAlias=xxx
-		[HttpGet]
-		public IActionResult GetContentWithValues(string PropertyAlias = "")
-		{
-			//GET DATA TO DISPLAY
-			if (PropertyAlias == "")
-			{
-				return GetContentWithValuesList();
-			}
-			else
-			{
-				return GetContentWithValuesTable(PropertyAlias);
-			}
-		}
-
-		private IActionResult GetContentWithValuesList()
-		{
-			//Setup
-			var pvPath = RazorFilesPath() + "ContentWithValuesList.cshtml";
-			var saService = GetSiteAuditorService();
-
-			//GET DATA TO DISPLAY
-			var status = new StatusMessage(true);
-			var displayHtml = "";
-
-
-			//Get list of properties
-			//displayHtml = HtmlListOfProperties();
-			var allPropsAliases = ListOfProperties();
-
-			//VIEW DATA 
-			var model = allPropsAliases;
-			var viewData = new Dictionary<string, object>();
-			viewData.Add("StandardInfo", GetStandardViewInfo());
-			viewData.Add("Status", status);
-			//viewData.Add("PropertyAlias", PropertyAlias);
-			// viewData.Add("IncludeUnpublished", IncludeUnpublished);
-
-			//RENDER
-			var htmlTask = _viewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
-			displayHtml = htmlTask.Result;
-
-
-			//RETURN AS HTML
-			var result = new HttpResponseMessage()
-			{
-				Content = new StringContent(
-					displayHtml,
-					Encoding.UTF8,
-					"text/html"
-				)
-			};
-
-			return new HttpResponseMessageResult(result);
-		}
-
-		private IActionResult GetContentWithValuesTable(string PropertyAlias)
-		{
-			//Setup
-			var pvPath = RazorFilesPath() + "ContentWithValuesTable.cshtml";
-			var saService = GetSiteAuditorService();
-
-			//GET DATA TO DISPLAY
-			var status = new StatusMessage(true);
-			var displayHtml = "";
-
-			//Get matching Property data
-			var contentNodes = saService.GetContentWithProperty(PropertyAlias);
-
-			//VIEW DATA 
-			var model = contentNodes;
-			var viewData = new Dictionary<string, object>();
-			viewData.Add("StandardInfo", GetStandardViewInfo());
-			viewData.Add("Status", status);
-			viewData.Add("PropertyAlias", PropertyAlias);
-			// viewData.Add("IncludeUnpublished", IncludeUnpublished);
-
-			//RENDER
-			var htmlTask = _viewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
-			displayHtml = htmlTask.Result;
-
-
-			//RETURN AS HTML
-			var result = new HttpResponseMessage()
-			{
-				Content = new StringContent(
-					displayHtml,
-					Encoding.UTF8,
-					"text/html"
-				)
-			};
-
-			return new HttpResponseMessageResult(result);
-		}
-
-		private IList<string> ListOfProperties()
-		{
-			//Setup
-			var saService = GetSiteAuditorService();
-
-			//GET DATA
-			var allSiteDocTypes = saService.GetAllDocTypes();
-			var allProps = allSiteDocTypes.SelectMany(n => n.PropertyTypes);
-			var allPropsAliases = allProps.Select(n => n.Alias).Distinct();
-
-			return allPropsAliases.ToList();
-		}
-
-		//private string HtmlListOfProperties()
+		//var contentDispositionHeader = new System.Net.Mime.ContentDisposition()
 		//{
-		//	//Setup
-		//	//    var pvPath = RazorFilesPath() + "Start.cshtml";
-		//	//var saService = GetSiteAuditorService();
+		//	FileName = "AllContentNodes.csv",
+		//	DispositionType = "attachment"
+		//};
+		//HttpContext.Response.Headers.Add("Content-Disposition", contentDispositionHeader.ToString());
+		//return Content(
+		//	returnSB.ToString(),
+		//	"text/csv",
+		//	Encoding.UTF8
+		//);
 
-		//	//GET DATA TO DISPLAY
-		//	var status = new StatusMessage(true);
+	}
 
-		//	//var allSiteDocTypes = saService.GetAllDocTypes();
-		//	//var allProps = allSiteDocTypes.SelectMany(n => n.PropertyTypes);
-		//	//var allPropsAliases = allProps.Select(n => n.Alias).Distinct();
+	/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetContentForDoctypeHtml?DocTypeAlias=X
+	[HttpGet]
+	public IActionResult GetContentForDoctypeHtml(string DocTypeAlias = "")
+	{
+		if (DocTypeAlias != "")
+		{
+			return ContentForDoctypeHtml(DocTypeAlias);
+		}
+		else
+		{
+			return DoctypesForContentForDoctypeHtml();
+		}
+	}
 
-		//	var allPropsAliases = ListOfProperties();
+	/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetContentForDoctypeHtml?DocTypeAlias=X
+	[HttpGet]
+	public IActionResult GetContentForElementHtml(string DocTypeAlias = "")
+	{
+		if (DocTypeAlias != "")
+		{
+			return ContentForElementHtml(DocTypeAlias);
+		}
+		else
+		{
+			return DoctypesForContentForDoctypeHtml();
+		}
+	}
 
-		//	//BUILD HTML
-		//	var returnSB = new StringBuilder();
-		//	returnSB.AppendLine($"<h1>Get Content with Values</h1>");
-		//	returnSB.AppendLine($"<h3>Available Properties</h3>");
-		//	//returnSB.AppendLine("<p>Note: Choosing the 'All' option will take significantly longer to load than the 'Published' option because we need to bypass the cache and query the database directly.</p>");
+	private IActionResult DoctypesForContentForDoctypeHtml()
+	{
+		//Setup
+		var pvPath = RazorFilesPath() + "DoctypesForContentList.cshtml";
+		var saService = GetSiteAuditorService();
 
-		//	returnSB.AppendLine("<ol>");
-		//	foreach (var propAlias in allPropsAliases.OrderBy(n => n))
-		//	{
-		//		//var url1 =
-		//		//    $"/umbraco/backoffice/Dragonfly/SiteAuditor/GetContentWithValues?PropertyAlias={propAlias}&IncludeUnpublished=false";
-		//		var url2 = $"/umbraco/backoffice/Dragonfly/SiteAuditor/GetContentWithValues?PropertyAlias={propAlias}";
+		//GET DATA TO DISPLAY
+		var status = new StatusMessage(true);
+		var allSiteDocTypes = saService.GetAllDocTypes().ToList();
+		var allNodeTypes = allSiteDocTypes.Where(n => n.IsElement == false).OrderBy(n => n.Alias).ToList();
+		var allElementTypes = allSiteDocTypes.Where(n => n.IsElement == true).OrderBy(n => n.Alias).ToList();
 
-		//		returnSB.AppendLine($"<li>{propAlias} <a target=\"_blank\" href=\"{url2}\">View</a></li>");
-		//	}
-		//	returnSB.AppendLine("</ol>");
+		var data = new DocTypesAndElements();
+		data.AllNodeTypes = allNodeTypes;
+		data.AllElementTypes = allElementTypes;
 
-		//	return returnSB.ToString();
+		//VIEW DATA 
+		var model = data;
+		var viewData = new Dictionary<string, object>();
+		viewData.Add("StandardInfo", GetStandardViewInfo());
+		viewData.Add("Status", status);
+
+		//BUILD HTML
+		//var returnSB = new StringBuilder();
+		//returnSB.AppendLine($"<h1>Get Content for a Selected Document Type</h1>");
+		//returnSB.AppendLine($"<p id=\"Nav\"><a href=\"#ContentNodes\">Content Node Document Types</a> | <a href=\"#Elements\">Element Types</a></p>");
+
+
+		//returnSB.AppendLine($"<h3 id=\"ContentNodes\">Available Content Node Document Types</h3>");
+		//returnSB.AppendLine("<ul>");
+		//foreach (var docType in allNodeTypes)
+		//{
+		//	var type = docType.IsElement ? "Nodes Using Element" : "Content Nodes of Type";
+		//	var api = docType.IsElement ? "GetContentForElementHtml" : "GetContentForDoctypeHtml";
+		//	var url = $"/umbraco/backoffice/Dragonfly/SiteAuditor/{api}?DocTypeAlias={docType.Alias}";
+
+		//	returnSB.AppendLine($"<li>{docType.Alias} <a target=\"_blank\" href=\"{url}\">View</a></li>");
 		//}
+		//returnSB.AppendLine("</ul>");
+		//returnSB.AppendLine($"<p><a href=\"#Nav\">Top Nav</a></p>");
 
-		#endregion
+		//returnSB.AppendLine($"<h3 id=\"Elements\">Available Element Document Types</h3>");
+		//returnSB.AppendLine("<p>Note: These options will take longer to load because they have to recursively check the content property values.</p>");
+		//returnSB.AppendLine("<ul>");
+		//foreach (var docType in allElementTypes)
+		//{
+		//	var type = docType.IsElement ? "Nodes Using Element" : "Content Nodes of Type";
+		//	var api = docType.IsElement ? "GetContentForElementHtml" : "GetContentForDoctypeHtml";
+		//	var url = $"/umbraco/backoffice/Dragonfly/SiteAuditor/{api}?DocTypeAlias={docType.Alias}";
 
-		#region Properties Info
+		//	returnSB.AppendLine($"<li>{docType.Alias} <a target=\"_blank\" href=\"{url}\">View</a></li>");
+		//}
+		//returnSB.AppendLine("</ul>");
+		//returnSB.AppendLine($"<p><a href=\"#Nav\">Top Nav</a></p>");
 
-		/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetAllPropertiesAsJson
-		[HttpGet]
-		public IActionResult GetAllPropertiesAsJson()
+		//var displayHtml = returnSB.ToString();
+
+		//RENDER
+		var htmlTask = _viewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
+		var displayHtml = htmlTask.Result;
+
+		//RETURN AS HTML
+		return new ContentResult()
 		{
-			var saService = GetSiteAuditorService();
+			Content = displayHtml,
+			StatusCode = (int)HttpStatusCode.OK,
+			ContentType = "text/html; charset=utf-8"
+		};
 
-			var siteProps = saService.AllProperties();
-			var propertiesList = siteProps.AllProperties;
+	}
 
-			//Return JSON
-			return new JsonResult(propertiesList);
+	private IActionResult ContentForDoctypeHtml(string DocTypeAlias)
+	{
+		//Setup
+		var pvPath = RazorFilesPath() + "AllContentAsHtmlTable.cshtml";
+		var saService = GetSiteAuditorService();
+
+		//GET DATA TO DISPLAY
+		var status = new StatusMessage(true);
+		var contentNodes = saService.GetContentNodes(DocTypeAlias);
+
+		//VIEW DATA 
+		var model = contentNodes;
+		var viewData = new Dictionary<string, object>();
+		viewData.Add("StandardInfo", GetStandardViewInfo());
+		viewData.Add("Status", status);
+
+		//RENDER
+		var htmlTask = _viewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
+		var displayHtml = htmlTask.Result;
+
+		//RETURN AS HTML
+		return new ContentResult()
+		{
+			Content = displayHtml,
+			StatusCode = (int)HttpStatusCode.OK,
+			ContentType = "text/html; charset=utf-8"
+		};
+
+	}
+
+	private IActionResult ContentForElementHtml(string DocTypeAlias)
+	{
+		//Setup
+		var pvPath = RazorFilesPath() + "AllElementContentAsHtmlTable.cshtml";
+		var saService = GetSiteAuditorService();
+
+		//GET DATA TO DISPLAY
+		var status = new StatusMessage(true);
+		var contentNodes = saService.GetContentNodesUsingElement(DocTypeAlias);
+
+		//VIEW DATA 
+		var model = contentNodes;
+		var viewData = new Dictionary<string, object>();
+		viewData.Add("StandardInfo", GetStandardViewInfo());
+		viewData.Add("Status", status);
+
+		//RENDER
+		var htmlTask = _viewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
+		var displayHtml = htmlTask.Result;
+
+		//RETURN AS HTML
+		return new ContentResult()
+		{
+			Content = displayHtml,
+			StatusCode = (int)HttpStatusCode.OK,
+			ContentType = "text/html; charset=utf-8"
+		};
+	}
+
+
+	#endregion
+
+	#region Media Nodes
+
+	/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetAllMediaAsHtmlTable
+	[HttpGet]
+	public IActionResult GetAllMediaAsHtmlTable()
+	{
+		//Setup
+		var pvPath = RazorFilesPath() + "AllMediaAsHtmlTable.cshtml";
+		var saService = GetSiteAuditorService();
+
+		//GET DATA TO DISPLAY
+		var status = new StatusMessage(true);
+		var nodes = saService.GetMediaNodes();
+
+		//VIEW DATA 
+		var model = nodes;
+		var viewData = new Dictionary<string, object>();
+		viewData.Add("StandardInfo", GetStandardViewInfo());
+		viewData.Add("Status", status);
+
+		//RENDER
+		var htmlTask = _viewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
+		var displayHtml = htmlTask.Result;
+
+		//RETURN AS HTML
+		var result = new HttpResponseMessage()
+		{
+			Content = new StringContent(
+				displayHtml,
+				Encoding.UTF8,
+				"text/html"
+			)
+		};
+
+		return new HttpResponseMessageResult(result);
+	}
+
+	/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetMediaForTypeHtml?MediaTypeAlias=X&ShowImageThumbnails=false
+	[HttpGet]
+	public IActionResult GetMediaForTypeHtml(string MediaTypeAlias = "", bool ShowImageThumbnails = false)
+	{
+		if (MediaTypeAlias != "")
+		{
+			return MediaForTypeHtml(MediaTypeAlias, ShowImageThumbnails);
 		}
-
-		// /umbraco/backoffice/Dragonfly/SiteAuditor/GetAllPropertiesAsHtml
-		[HttpGet]
-		public IActionResult GetAllPropertiesAsHtmlTable()
+		else
 		{
-			//Setup
-			var pvPath = RazorFilesPath() + "AllPropertiesAsHtmlTable.cshtml";
-			var saService = GetSiteAuditorService();
-
-			//GET DATA TO DISPLAY
-			var status = new StatusMessage(true);
-
-			var siteProps = saService.AllProperties();
-			var propertiesList = siteProps.AllProperties;
-
-			//VIEW DATA 
-			var model = propertiesList;
-			var viewData = new Dictionary<string, object>();
-			viewData.Add("StandardInfo", GetStandardViewInfo());
-			viewData.Add("Status", status);
-			viewData.Add("DocTypeAlias", "");
-
-			//RENDER
-			var htmlTask = _viewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
-			var displayHtml = htmlTask.Result;
-
-			//RETURN AS HTML
-			var result = new HttpResponseMessage()
-			{
-				Content = new StringContent(
-					displayHtml,
-					Encoding.UTF8,
-					"text/html"
-				)
-			};
-
-			return new HttpResponseMessageResult(result);
+			return TypesForMediaHtml();
 		}
+	}
 
-		/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetAllPropertiesAsCsv
-		[HttpGet]
-		public IActionResult GetAllPropertiesAsCsv()
+	private IActionResult TypesForMediaHtml()
+	{
+		//Setup
+		var pvPath = RazorFilesPath() + "MediaTypesForMediaList.cshtml";
+		var saService = GetSiteAuditorService();
+
+		//GET DATA TO DISPLAY
+		var status = new StatusMessage(true);
+		var data = saService.GetAllMediaTypes().OrderBy(n => n.Alias).ToList();
+
+		//VIEW DATA 
+		var model = data;
+		var viewData = new Dictionary<string, object>();
+		viewData.Add("StandardInfo", GetStandardViewInfo());
+		viewData.Add("Status", status);
+
+
+		//RENDER
+		var htmlTask = _viewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
+		var displayHtml = htmlTask.Result;
+
+		//RETURN AS HTML
+		return new ContentResult()
 		{
-			var saService = GetSiteAuditorService();
-			var returnSB = new StringBuilder();
+			Content = displayHtml,
+			StatusCode = (int)HttpStatusCode.OK,
+			ContentType = "text/html; charset=utf-8"
+		};
 
-			var siteProps = saService.AllProperties();
-			var propertiesList = siteProps.AllProperties;
+	}
 
-			var tableData = new StringBuilder();
+	private IActionResult MediaForTypeHtml(string MediaTypeAlias, bool ShowImageThumbnails = false)
+	{
+		//Setup
+		var pvPath = RazorFilesPath() + "AllMediaAsHtmlTable.cshtml";
+		var saService = GetSiteAuditorService();
 
-			tableData.AppendLine(
-				"\"Property Name\",\"Property Alias\",\"DataType Name\",\"DataType Property Editor\",\"DataType Database Type\",\"DocumentTypes Used In\",\"Qty of DocumentTypes\"");
+		//GET DATA TO DISPLAY
+		var status = new StatusMessage(true);
+		var nodes = saService.GetMediaNodes(MediaTypeAlias);
 
-			foreach (var prop in propertiesList)
-			{
-				if (prop.UmbPropertyType != null && prop.DataType != null)
-				{
-					tableData.AppendFormat(
-						"\"{0}\",\"{1}\",\"{2}\",\"{3}\",\"{4}\",\"{5}\",{6}{7}",
-						prop.UmbPropertyType.Name,
-						prop.UmbPropertyType.Alias,
-						prop.DataType.Name,
-						prop.DataType.EditorAlias,
-						prop.DataType.DatabaseType,
-						string.Join(", ", prop.AllDocTypes.Select(n => n.DocTypeAlias)),
-						prop.AllDocTypes.Count(),
-						Environment.NewLine);
-				}
-			}
+		//VIEW DATA 
+		var model = nodes;
+		var viewData = new Dictionary<string, object>();
+		viewData.Add("StandardInfo", GetStandardViewInfo());
+		viewData.Add("Status", status);
+		viewData.Add("ShowImageThumbnails", ShowImageThumbnails);
 
-			returnSB.Append(tableData);
+		//RENDER
+		var htmlTask = _viewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
+		var displayHtml = htmlTask.Result;
+
+		//RETURN AS HTML
+		return new ContentResult()
+		{
+			Content = displayHtml,
+			StatusCode = (int)HttpStatusCode.OK,
+			ContentType = "text/html; charset=utf-8"
+		};
+
+	}
 
 
-			//RETURN AS CSV FILE
-			var fileName = "AllProperties.csv";
-			var fileContent = Encoding.UTF8.GetBytes(returnSB.ToString());
-			var result = Encoding.UTF8.GetPreamble().Concat(fileContent).ToArray();
-			return File(result, "text/csv", fileName);
+	#endregion
 
-			//var contentDispositionHeader = new System.Net.Mime.ContentDisposition()
-			//{
-			//	FileName = "AllProperties.csv",
-			//	DispositionType = "attachment"
-			//};
-			//HttpContext.Response.Headers.Add("Content-Disposition", contentDispositionHeader.ToString());
-			//return new ContentResult()
-			//{
-			//	Content = returnSB.ToString(),
-			//	StatusCode = (int)HttpStatusCode.OK,
-			//	ContentType = "text/csv; charset=utf-8",
-			//};
+	#region GetContentWithValues
 
+	/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetContentWithValues?PropertyAlias=xxx
+	[HttpGet]
+	public IActionResult GetContentWithValues(string PropertyAlias = "")
+	{
+		//GET DATA TO DISPLAY
+		if (PropertyAlias == "")
+		{
+			return GetContentWithValuesList();
 		}
-
-		// /umbraco/backoffice/Dragonfly/SiteAuditor/GetPropertiesForDoctypeHtml?DocTypeAlias=xxx
-		[HttpGet]
-		public IActionResult GetPropertiesForDoctypeHtml(string DocTypeAlias = "")
+		else
 		{
-			if (DocTypeAlias != "")
-			{
-				return PropsForDoctypeHtml(DocTypeAlias);
-			}
-			else
-			{
-				return DoctypesForPropertiesForDoctypeHtml();
-			}
+			return GetContentWithValuesTable(PropertyAlias);
 		}
+	}
 
-		private IActionResult PropsForDoctypeHtml(string DocTypeAlias)
+	private IActionResult GetContentWithValuesList()
+	{
+		//Setup
+		var pvPath = RazorFilesPath() + "ContentWithValuesList.cshtml";
+		var saService = GetSiteAuditorService();
+
+		//GET DATA TO DISPLAY
+		var status = new StatusMessage(true);
+		var displayHtml = "";
+
+
+		//Get list of properties
+		//displayHtml = HtmlListOfProperties();
+		var allPropsAliases = ListOfProperties();
+
+		//VIEW DATA 
+		var model = allPropsAliases;
+		var viewData = new Dictionary<string, object>();
+		viewData.Add("StandardInfo", GetStandardViewInfo());
+		viewData.Add("Status", status);
+		//viewData.Add("PropertyAlias", PropertyAlias);
+		// viewData.Add("IncludeUnpublished", IncludeUnpublished);
+
+		//RENDER
+		var htmlTask = _viewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
+		displayHtml = htmlTask.Result;
+
+
+		//RETURN AS HTML
+		var result = new HttpResponseMessage()
 		{
-			//Setup
-			var pvPath = RazorFilesPath() + "AllPropertiesAsHtmlTable.cshtml";
-			var saService = GetSiteAuditorService();
+			Content = new StringContent(
+				displayHtml,
+				Encoding.UTF8,
+				"text/html"
+			)
+		};
 
-			//GET DATA TO DISPLAY
-			var status = new StatusMessage(true);
+		return new HttpResponseMessageResult(result);
+	}
 
-			var siteProps = saService.AllPropertiesForDocType(DocTypeAlias);
-			var propertiesList = siteProps.AllProperties;
+	private IActionResult GetContentWithValuesTable(string PropertyAlias)
+	{
+		//Setup
+		var pvPath = RazorFilesPath() + "ContentWithValuesTable.cshtml";
+		var saService = GetSiteAuditorService();
+
+		//GET DATA TO DISPLAY
+		var status = new StatusMessage(true);
+		var displayHtml = "";
+
+		//Get matching Property data
+		var contentNodes = saService.GetContentWithProperty(PropertyAlias);
+
+		//VIEW DATA 
+		var model = contentNodes;
+		var viewData = new Dictionary<string, object>();
+		viewData.Add("StandardInfo", GetStandardViewInfo());
+		viewData.Add("Status", status);
+		viewData.Add("PropertyAlias", PropertyAlias);
+		// viewData.Add("IncludeUnpublished", IncludeUnpublished);
+
+		//RENDER
+		var htmlTask = _viewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
+		displayHtml = htmlTask.Result;
 
 
-			//VIEW DATA 
-			var model = propertiesList;
-			var viewData = new Dictionary<string, object>();
-			viewData.Add("StandardInfo", GetStandardViewInfo());
-			viewData.Add("Status", status);
-			viewData.Add("Title", $"Properties for Document Type '{DocTypeAlias}'");
-			viewData.Add("DocTypeAlias", DocTypeAlias);
+		//RETURN AS HTML
+		var result = new HttpResponseMessage()
+		{
+			Content = new StringContent(
+				displayHtml,
+				Encoding.UTF8,
+				"text/html"
+			)
+		};
 
-			//RENDER
-			var htmlTask = _viewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
-			var displayHtml = htmlTask.Result;
+		return new HttpResponseMessageResult(result);
+	}
 
-			//RETURN AS HTML
-			var result = new HttpResponseMessage()
-			{
-				Content = new StringContent(
-					displayHtml,
-					Encoding.UTF8,
-					"text/html"
-				)
-			};
+	private IList<string> ListOfProperties()
+	{
+		//Setup
+		var saService = GetSiteAuditorService();
 
-			return new HttpResponseMessageResult(result);
+		//GET DATA
+		var allSiteDocTypes = saService.GetAllDocTypes();
+		var allProps = allSiteDocTypes.SelectMany(n => n.PropertyTypes);
+		var allPropsAliases = allProps.Select(n => n.Alias).Distinct();
 
+		return allPropsAliases.ToList();
+	}
+
+	//private string HtmlListOfProperties()
+	//{
+	//	//Setup
+	//	//    var pvPath = RazorFilesPath() + "Start.cshtml";
+	//	//var saService = GetSiteAuditorService();
+
+	//	//GET DATA TO DISPLAY
+	//	var status = new StatusMessage(true);
+
+	//	//var allSiteDocTypes = saService.GetAllDocTypes();
+	//	//var allProps = allSiteDocTypes.SelectMany(n => n.PropertyTypes);
+	//	//var allPropsAliases = allProps.Select(n => n.Alias).Distinct();
+
+	//	var allPropsAliases = ListOfProperties();
+
+	//	//BUILD HTML
+	//	var returnSB = new StringBuilder();
+	//	returnSB.AppendLine($"<h1>Get Content with Values</h1>");
+	//	returnSB.AppendLine($"<h3>Available Properties</h3>");
+	//	//returnSB.AppendLine("<p>Note: Choosing the 'All' option will take significantly longer to load than the 'Published' option because we need to bypass the cache and query the database directly.</p>");
+
+	//	returnSB.AppendLine("<ol>");
+	//	foreach (var propAlias in allPropsAliases.OrderBy(n => n))
+	//	{
+	//		//var url1 =
+	//		//    $"/umbraco/backoffice/Dragonfly/SiteAuditor/GetContentWithValues?PropertyAlias={propAlias}&IncludeUnpublished=false";
+	//		var url2 = $"/umbraco/backoffice/Dragonfly/SiteAuditor/GetContentWithValues?PropertyAlias={propAlias}";
+
+	//		returnSB.AppendLine($"<li>{propAlias} <a target=\"_blank\" href=\"{url2}\">View</a></li>");
+	//	}
+	//	returnSB.AppendLine("</ol>");
+
+	//	return returnSB.ToString();
+	//}
+
+	#endregion
+
+		#region GetMediaWithValues
+
+	/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetMediaWithValues?PropertyAlias=xxx
+	[HttpGet]
+	public IActionResult GetMediaWithValues(string PropertyAlias = "")
+	{
+		//GET DATA TO DISPLAY
+		if (PropertyAlias == "")
+		{
+			return GetMediaWithValuesList();
 		}
-
-		private IActionResult DoctypesForPropertiesForDoctypeHtml()
+		else
 		{
-			//Setup
-			var pvPath = RazorFilesPath() + "DoctypesForPropertiesForDoctypeList.cshtml";
-
-			var saService = GetSiteAuditorService();
-
-			//GET DATA TO DISPLAY
-			var status = new StatusMessage(true);
-
-			var allSiteDocTypes = saService.GetAllDocTypes();
-			var allAliases = allSiteDocTypes.Select(n => n.Alias).OrderBy(n => n).ToList();
-
-			//VIEW DATA 
-			var model = allAliases;
-			var viewData = new Dictionary<string, object>();
-			viewData.Add("StandardInfo", GetStandardViewInfo());
-			viewData.Add("Status", status);
-
-
-			//BUILD HTML
-			//var returnSB = new StringBuilder();
-
-			//returnSB.AppendLine($"<h1>Get Properties for a Selected Document Type</h1>");
-			//returnSB.AppendLine($"<h3>Available Document Types</h3>");
-			//returnSB.AppendLine("<p>Note: Choosing the 'All' option will take significantly longer to load than the 'Published' option because we need to bypass the cache and query the database directly.</p>");
-
-			//returnSB.AppendLine("<ul>");
-			//foreach (var alias in allAliases)
-			//{
-			//	var url = $"/umbraco/backoffice/Dragonfly/SiteAuditor/GetPropertiesForDoctypeHtml?DocTypeAlias={alias}";
-
-			//	returnSB.AppendLine($"<li>{alias} <a target=\"_blank\" href=\"{url}\">View</a></li>");
-			//}
-			//returnSB.AppendLine("</ul>");
-			//var displayHtml = returnSB.ToString();
-			
-
-			//RENDER
-			var htmlTask = _viewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
-			var displayHtml = htmlTask.Result;
-
-			//RETURN AS HTML
-			var result = new HttpResponseMessage()
-			{
-				Content = new StringContent(
-					displayHtml,
-					Encoding.UTF8,
-					"text/html"
-				)
-			};
-
-			return new HttpResponseMessageResult(result);
+			return GetMediaWithValuesTable(PropertyAlias);
 		}
+	}
 
-		#endregion
+	private IActionResult GetMediaWithValuesList()
+	{
+		//Setup
+		var pvPath = RazorFilesPath() + "MediaWithValuesList.cshtml";
+		var saService = GetSiteAuditorService();
 
-		#region DataType Info
+		//GET DATA TO DISPLAY
+		var status = new StatusMessage(true);
+		var displayHtml = "";
 
-		/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetAllDataTypesAsJson
-		[HttpGet]
-		public IActionResult GetAllDataTypesAsJson()
+
+		//Get list of properties
+		//displayHtml = HtmlListOfProperties();
+		var allPropsAliases = ListOfMediaProperties();
+
+		//VIEW DATA 
+		var model = allPropsAliases;
+		var viewData = new Dictionary<string, object>();
+		viewData.Add("StandardInfo", GetStandardViewInfo());
+		viewData.Add("Status", status);
+		//viewData.Add("PropertyAlias", PropertyAlias);
+		// viewData.Add("IncludeUnpublished", IncludeUnpublished);
+
+		//RENDER
+		var htmlTask = _viewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
+		displayHtml = htmlTask.Result;
+
+
+		//RETURN AS HTML
+		var result = new HttpResponseMessage()
 		{
-			var saService = GetSiteAuditorService();
+			Content = new StringContent(
+				displayHtml,
+				Encoding.UTF8,
+				"text/html"
+			)
+		};
 
-			var dataTypes = saService.AllDataTypes();
+		return new HttpResponseMessageResult(result);
+	}
 
-			//Return JSON
-			return new JsonResult(dataTypes);
-		}
+	private IActionResult GetMediaWithValuesTable(string PropertyAlias)
+	{
+		//Setup
+		var pvPath = RazorFilesPath() + "MediaWithValuesTable.cshtml";
+		var saService = GetSiteAuditorService();
 
-		// /umbraco/backoffice/Dragonfly/SiteAuditor/GetAllDataTypesAsHtmlTable
-		[HttpGet]
-		public IActionResult GetAllDataTypesAsHtmlTable()
+		//GET DATA TO DISPLAY
+		var status = new StatusMessage(true);
+		var displayHtml = "";
+
+		//Get matching Property data
+		var nodes = saService.GetMediaWithProperty(PropertyAlias);
+
+		//VIEW DATA 
+		var model = nodes;
+		var viewData = new Dictionary<string, object>();
+		viewData.Add("StandardInfo", GetStandardViewInfo());
+		viewData.Add("Status", status);
+		viewData.Add("PropertyAlias", PropertyAlias);
+		// viewData.Add("IncludeUnpublished", IncludeUnpublished);
+
+		//RENDER
+		var htmlTask = _viewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
+		displayHtml = htmlTask.Result;
+
+
+		//RETURN AS HTML
+		var result = new HttpResponseMessage()
 		{
-			//Setup
-			var pvPath = RazorFilesPath() + "AllDataTypesAsHtmlTable.cshtml";
-			var saService = GetSiteAuditorService();
+			Content = new StringContent(
+				displayHtml,
+				Encoding.UTF8,
+				"text/html"
+			)
+		};
 
-			//GET DATA TO DISPLAY
-			var status = new StatusMessage(true);
+		return new HttpResponseMessageResult(result);
+	}
 
-			var dataTypes = saService.AllDataTypes();
+	private IList<string> ListOfMediaProperties()
+	{
+		//Setup
+		var saService = GetSiteAuditorService();
 
-			//VIEW DATA 
-			var model = dataTypes;
-			var viewData = new Dictionary<string, object>();
-			viewData.Add("StandardInfo", GetStandardViewInfo());
-			viewData.Add("Status", status);
+		//GET DATA
+		var allTypes = saService.GetAllMediaTypes();
+		var allProps = allTypes.SelectMany(n => n.PropertyTypes);
+		var allPropsAliases = allProps.Select(n => n.Alias).Distinct();
 
-			//RENDER
-			var htmlTask = _viewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
-			var displayHtml = htmlTask.Result;
+		return allPropsAliases.ToList();
+	}
 
-			//RETURN AS HTML
-			return new ContentResult()
-			{
-				Content = displayHtml,
-				StatusCode = (int)HttpStatusCode.OK,
-				ContentType = "text/html; charset=utf-8"
-			};
-		}
 
-		/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetAllDataTypesAsCsv
-		[HttpGet]
-		public IActionResult GetAllDataTypesAsCsv()
+	#endregion
+
+	#region Properties Info
+
+	/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetAllPropertiesAsJson
+	[HttpGet]
+	public IActionResult GetAllPropertiesAsJson()
+	{
+		var saService = GetSiteAuditorService();
+
+		var siteProps = saService.AllProperties();
+		var propertiesList = siteProps.AllProperties;
+
+		//Return JSON
+		return new JsonResult(propertiesList);
+	}
+
+	// /umbraco/backoffice/Dragonfly/SiteAuditor/GetAllPropertiesAsHtml
+	[HttpGet]
+	public IActionResult GetAllPropertiesAsHtmlTable()
+	{
+		//Setup
+		var pvPath = RazorFilesPath() + "AllPropertiesAsHtmlTable.cshtml";
+		var saService = GetSiteAuditorService();
+
+		//GET DATA TO DISPLAY
+		var status = new StatusMessage(true);
+
+		var siteProps = saService.AllProperties();
+		var propertiesList = siteProps.AllProperties;
+
+		//VIEW DATA 
+		var model = propertiesList;
+		var viewData = new Dictionary<string, object>();
+		viewData.Add("StandardInfo", GetStandardViewInfo());
+		viewData.Add("Status", status);
+		viewData.Add("DocTypeAlias", "");
+
+		//RENDER
+		var htmlTask = _viewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
+		var displayHtml = htmlTask.Result;
+
+		//RETURN AS HTML
+		var result = new HttpResponseMessage()
 		{
-			var saService = GetSiteAuditorService();
-			var returnSB = new StringBuilder();
+			Content = new StringContent(
+				displayHtml,
+				Encoding.UTF8,
+				"text/html"
+			)
+		};
 
-			var dataTypes = saService.AllDataTypes();
+		return new HttpResponseMessageResult(result);
+	}
 
-			var tableData = new StringBuilder();
+	/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetAllPropertiesAsCsv
+	[HttpGet]
+	public IActionResult GetAllPropertiesAsCsv()
+	{
+		var saService = GetSiteAuditorService();
+		var returnSB = new StringBuilder();
 
-			tableData.AppendLine(
-				"\"DataType Name\",\"Property Editor Alias\",\"Id\",\"Guid Key\",\"Used On Properties\",\"Qty of Properties\"");
+		var siteProps = saService.AllProperties();
+		var propertiesList = siteProps.AllProperties;
 
-			foreach (var dt in dataTypes)
+		var tableData = new StringBuilder();
+
+		tableData.AppendLine(
+			"\"Property Name\",\"Property Alias\",\"DataType Name\",\"DataType Property Editor\",\"DataType Database Type\",\"DocumentTypes Used In\",\"Qty of DocumentTypes\"");
+
+		foreach (var prop in propertiesList)
+		{
+			if (prop.UmbPropertyType != null && prop.DataType != null)
 			{
 				tableData.AppendFormat(
-					"\"{0}\",\"{1}\",{2},\"{3}\",\"{4}\",{5}{6}",
-					dt.Name,
-					dt.EditorAlias,
-					dt.Id,
-					dt.Guid.ToString(),
-					string.Join(" | ", dt.UsedOnProperties.Select(n => $"{n.Value} [{n.Key.Alias}]")),
-					dt.UsedOnProperties.Count(),
+					"\"{0}\",\"{1}\",\"{2}\",\"{3}\",\"{4}\",\"{5}\",{6}{7}",
+					prop.UmbPropertyType.Name,
+					prop.UmbPropertyType.Alias,
+					prop.DataType.Name,
+					prop.DataType.EditorAlias,
+					prop.DataType.DatabaseType,
+					string.Join(", ", prop.AllDocTypes.Select(n => n.DocTypeAlias)),
+					prop.AllDocTypes.Count(),
 					Environment.NewLine);
 			}
-
-			returnSB.Append(tableData);
-
-			//RETURN AS CSV FILE
-			var fileName = "AllDataTypes.csv";
-			var fileContent = Encoding.UTF8.GetBytes(returnSB.ToString());
-			var result = Encoding.UTF8.GetPreamble().Concat(fileContent).ToArray();
-			return File(result, "text/csv", fileName);
-
-			//var contentDispositionHeader = new System.Net.Mime.ContentDisposition()
-			//{
-			//	FileName = "AllDataTypes.csv",
-			//	DispositionType = "attachment"
-			//};
-			//HttpContext.Response.Headers.Add("Content-Disposition", contentDispositionHeader.ToString());
-			//return new ContentResult()
-			//{
-			//	Content = returnSB.ToString(),
-			//	StatusCode = (int)HttpStatusCode.OK,
-			//	ContentType = "text/csv; charset=utf-8",
-			//};
-
 		}
 
+		returnSB.Append(tableData);
 
-		#endregion
 
-		#region DocTypes Info
+		//RETURN AS CSV FILE
+		var fileName = "AllProperties.csv";
+		var fileContent = Encoding.UTF8.GetBytes(returnSB.ToString());
+		var result = Encoding.UTF8.GetPreamble().Concat(fileContent).ToArray();
+		return File(result, "text/csv", fileName);
 
-		/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetAllDocTypesAsJson
-		[HttpGet]
-		public IActionResult GetAllDocTypesAsJson()
+		//var contentDispositionHeader = new System.Net.Mime.ContentDisposition()
+		//{
+		//	FileName = "AllProperties.csv",
+		//	DispositionType = "attachment"
+		//};
+		//HttpContext.Response.Headers.Add("Content-Disposition", contentDispositionHeader.ToString());
+		//return new ContentResult()
+		//{
+		//	Content = returnSB.ToString(),
+		//	StatusCode = (int)HttpStatusCode.OK,
+		//	ContentType = "text/csv; charset=utf-8",
+		//};
+
+	}
+
+	// /umbraco/backoffice/Dragonfly/SiteAuditor/GetPropertiesForDoctypeHtml?DocTypeAlias=xxx
+	[HttpGet]
+	public IActionResult GetPropertiesForDoctypeHtml(string DocTypeAlias = "")
+	{
+		if (DocTypeAlias != "")
 		{
-			var saService = GetSiteAuditorService();
-			var allDts = saService.GetAuditableDocTypes();
+			return PropsForDoctypeHtml(DocTypeAlias);
+		}
+		else
+		{
+			return DoctypesForPropertiesForDoctypeHtml();
+		}
+	}
 
-			//Return JSON
-			return new JsonResult(allDts);
+	private IActionResult PropsForDoctypeHtml(string DocTypeAlias)
+	{
+		//Setup
+		var pvPath = RazorFilesPath() + "AllPropertiesAsHtmlTable.cshtml";
+		var saService = GetSiteAuditorService();
+
+		//GET DATA TO DISPLAY
+		var status = new StatusMessage(true);
+
+		var siteProps = saService.AllPropertiesForDocType(DocTypeAlias);
+		var propertiesList = siteProps.AllProperties;
+
+
+		//VIEW DATA 
+		var model = propertiesList;
+		var viewData = new Dictionary<string, object>();
+		viewData.Add("StandardInfo", GetStandardViewInfo());
+		viewData.Add("Status", status);
+		viewData.Add("Title", $"Properties for Document Type '{DocTypeAlias}'");
+		viewData.Add("DocTypeAlias", DocTypeAlias);
+
+		//RENDER
+		var htmlTask = _viewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
+		var displayHtml = htmlTask.Result;
+
+		//RETURN AS HTML
+		var result = new HttpResponseMessage()
+		{
+			Content = new StringContent(
+				displayHtml,
+				Encoding.UTF8,
+				"text/html"
+			)
+		};
+
+		return new HttpResponseMessageResult(result);
+
+	}
+
+	private IActionResult DoctypesForPropertiesForDoctypeHtml()
+	{
+		//Setup
+		var pvPath = RazorFilesPath() + "DoctypesForPropertiesForDoctypeList.cshtml";
+
+		var saService = GetSiteAuditorService();
+
+		//GET DATA TO DISPLAY
+		var status = new StatusMessage(true);
+
+		var allSiteDocTypes = saService.GetAllDocTypes();
+		var allAliases = allSiteDocTypes.Select(n => n.Alias).OrderBy(n => n).ToList();
+
+		//VIEW DATA 
+		var model = allAliases;
+		var viewData = new Dictionary<string, object>();
+		viewData.Add("StandardInfo", GetStandardViewInfo());
+		viewData.Add("Status", status);
+
+
+		//BUILD HTML
+		//var returnSB = new StringBuilder();
+
+		//returnSB.AppendLine($"<h1>Get Properties for a Selected Document Type</h1>");
+		//returnSB.AppendLine($"<h3>Available Document Types</h3>");
+		//returnSB.AppendLine("<p>Note: Choosing the 'All' option will take significantly longer to load than the 'Published' option because we need to bypass the cache and query the database directly.</p>");
+
+		//returnSB.AppendLine("<ul>");
+		//foreach (var alias in allAliases)
+		//{
+		//	var url = $"/umbraco/backoffice/Dragonfly/SiteAuditor/GetPropertiesForDoctypeHtml?DocTypeAlias={alias}";
+
+		//	returnSB.AppendLine($"<li>{alias} <a target=\"_blank\" href=\"{url}\">View</a></li>");
+		//}
+		//returnSB.AppendLine("</ul>");
+		//var displayHtml = returnSB.ToString();
+
+
+		//RENDER
+		var htmlTask = _viewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
+		var displayHtml = htmlTask.Result;
+
+		//RETURN AS HTML
+		var result = new HttpResponseMessage()
+		{
+			Content = new StringContent(
+				displayHtml,
+				Encoding.UTF8,
+				"text/html"
+			)
+		};
+
+		return new HttpResponseMessageResult(result);
+	}
+
+	#endregion
+
+	#region DataType Info
+
+	/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetAllDataTypesAsJson
+	[HttpGet]
+	public IActionResult GetAllDataTypesAsJson()
+	{
+		var saService = GetSiteAuditorService();
+
+		var dataTypes = saService.AllDataTypes();
+
+		//Return JSON
+		return new JsonResult(dataTypes);
+	}
+
+	// /umbraco/backoffice/Dragonfly/SiteAuditor/GetAllDataTypesAsHtmlTable
+	[HttpGet]
+	public IActionResult GetAllDataTypesAsHtmlTable()
+	{
+		//Setup
+		var pvPath = RazorFilesPath() + "AllDataTypesAsHtmlTable.cshtml";
+		var saService = GetSiteAuditorService();
+
+		//GET DATA TO DISPLAY
+		var status = new StatusMessage(true);
+
+		var dataTypes = saService.AllDataTypes();
+
+		//VIEW DATA 
+		var model = dataTypes;
+		var viewData = new Dictionary<string, object>();
+		viewData.Add("StandardInfo", GetStandardViewInfo());
+		viewData.Add("Status", status);
+
+		//RENDER
+		var htmlTask = _viewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
+		var displayHtml = htmlTask.Result;
+
+		//RETURN AS HTML
+		return new ContentResult()
+		{
+			Content = displayHtml,
+			StatusCode = (int)HttpStatusCode.OK,
+			ContentType = "text/html; charset=utf-8"
+		};
+	}
+
+	/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetAllDataTypesAsCsv
+	[HttpGet]
+	public IActionResult GetAllDataTypesAsCsv()
+	{
+		var saService = GetSiteAuditorService();
+		var returnSB = new StringBuilder();
+
+		var dataTypes = saService.AllDataTypes();
+
+		var tableData = new StringBuilder();
+
+		tableData.AppendLine(
+			"\"DataType Name\",\"Property Editor Alias\",\"Id\",\"Guid Key\",\"Used On Properties\",\"Qty of Properties\"");
+
+		foreach (var dt in dataTypes)
+		{
+			tableData.AppendFormat(
+				"\"{0}\",\"{1}\",{2},\"{3}\",\"{4}\",{5}{6}",
+				dt.Name,
+				dt.EditorAlias,
+				dt.Id,
+				dt.Guid.ToString(),
+				string.Join(" | ", dt.UsedOnProperties.Select(n => $"{n.Value} [{n.Key.Alias}]")),
+				dt.UsedOnProperties.Count(),
+				Environment.NewLine);
 		}
 
-		/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetAllDocTypesAsHtmlTable
-		[HttpGet]
-		public IActionResult GetAllDocTypesAsHtmlTable()
+		returnSB.Append(tableData);
+
+		//RETURN AS CSV FILE
+		var fileName = "AllDataTypes.csv";
+		var fileContent = Encoding.UTF8.GetBytes(returnSB.ToString());
+		var result = Encoding.UTF8.GetPreamble().Concat(fileContent).ToArray();
+		return File(result, "text/csv", fileName);
+
+		//var contentDispositionHeader = new System.Net.Mime.ContentDisposition()
+		//{
+		//	FileName = "AllDataTypes.csv",
+		//	DispositionType = "attachment"
+		//};
+		//HttpContext.Response.Headers.Add("Content-Disposition", contentDispositionHeader.ToString());
+		//return new ContentResult()
+		//{
+		//	Content = returnSB.ToString(),
+		//	StatusCode = (int)HttpStatusCode.OK,
+		//	ContentType = "text/csv; charset=utf-8",
+		//};
+
+	}
+
+
+	#endregion
+
+	#region DocTypes Info
+
+	/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetAllDocTypesAsJson
+	[HttpGet]
+	public IActionResult GetAllDocTypesAsJson()
+	{
+		var saService = GetSiteAuditorService();
+		var allDts = saService.GetAuditableDocTypes();
+
+		//Return JSON
+		return new JsonResult(allDts);
+	}
+
+	/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetAllDocTypesAsHtmlTable
+	[HttpGet]
+	public IActionResult GetAllDocTypesAsHtmlTable()
+	{
+		//Setup
+		var pvPath = RazorFilesPath() + "AllDocTypesAsHtmlTable.cshtml";
+		var saService = GetSiteAuditorService();
+
+		//GET DATA TO DISPLAY
+		var status = new StatusMessage(true);
+		var allDts = saService.GetAuditableDocTypes();
+
+		//VIEW DATA 
+		var model = allDts;
+		var viewData = new Dictionary<string, object>();
+		viewData.Add("StandardInfo", GetStandardViewInfo());
+		viewData.Add("Status", status);
+
+		//RENDER
+		var htmlTask = _viewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
+		var displayHtml = htmlTask.Result;
+
+		//RETURN AS HTML
+		var result = new HttpResponseMessage()
 		{
-			//Setup
-			var pvPath = RazorFilesPath() + "AllDocTypesAsHtmlTable.cshtml";
-			var saService = GetSiteAuditorService();
+			Content = new StringContent(
+				displayHtml,
+				Encoding.UTF8,
+				"text/html"
+			)
+		};
 
-			//GET DATA TO DISPLAY
-			var status = new StatusMessage(true);
-			var allDts = saService.GetAuditableDocTypes();
+		return new HttpResponseMessageResult(result);
+	}
 
-			//VIEW DATA 
-			var model = allDts;
-			var viewData = new Dictionary<string, object>();
-			viewData.Add("StandardInfo", GetStandardViewInfo());
-			viewData.Add("Status", status);
+	/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetAllDocTypesAsCsv
+	[HttpGet]
+	public IActionResult GetAllDocTypesAsCsv()
+	{
+		var saService = GetSiteAuditorService();
+		var returnSB = new StringBuilder();
 
-			//RENDER
-			var htmlTask = _viewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
-			var displayHtml = htmlTask.Result;
+		var allDts = saService.GetAuditableDocTypes();
 
-			//RETURN AS HTML
-			var result = new HttpResponseMessage()
-			{
-				Content = new StringContent(
-					displayHtml,
-					Encoding.UTF8,
-					"text/html"
-				)
-			};
+		var tableData = new StringBuilder();
 
-			return new HttpResponseMessageResult(result);
+		tableData.AppendLine(
+			"\"Doctype Name\",\"Alias\",\"Default Template\",\"GUID\",\"Create Date\",\"Update Date\"");
+
+		foreach (var item in allDts)
+		{
+			tableData.AppendFormat(
+				"\"{0}\",\"{1}\",\"{2}\",\"{3}\",{4},{5}{6}",
+				item.Name,
+				item.Alias,
+				item.DefaultTemplateName,
+				item.Guid,
+				item.ContentType != null ? item.ContentType.CreateDate : DateTime.MinValue,
+				item.ContentType != null ? item.ContentType.UpdateDate : DateTime.MinValue,
+				Environment.NewLine);
 		}
+		returnSB.Append(tableData);
 
-		/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetAllDocTypesAsCsv
-		[HttpGet]
-		public IActionResult GetAllDocTypesAsCsv()
+		//RETURN AS CSV FILE
+		var fileName = "AllDoctypes.csv";
+		var fileContent = Encoding.UTF8.GetBytes(returnSB.ToString());
+		var result = Encoding.UTF8.GetPreamble().Concat(fileContent).ToArray();
+		return File(result, "text/csv", fileName);
+
+		//var contentDispositionHeader = new System.Net.Mime.ContentDisposition()
+		//{
+		//	FileName = "AllDoctypes.csv",
+		//	DispositionType = "attachment"
+		//};
+		//HttpContext.Response.Headers.Add("Content-Disposition", contentDispositionHeader.ToString());
+		//return new ContentResult()
+		//{
+		//	Content = returnSB.ToString(),
+		//	StatusCode = (int)HttpStatusCode.OK,
+		//	ContentType = "text/csv; charset=utf-8",
+		//};
+
+	}
+
+	#endregion
+
+	#region Templates Info
+
+	/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetAllTemplatesAsJson
+	[HttpGet]
+	public IActionResult GetAllTemplatesAsJson()
+	{
+		var saService = GetSiteAuditorService();
+		var allTemps = saService.GetAuditableTemplates();
+
+		//Return JSON
+		return new JsonResult(allTemps);
+	}
+
+	/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetAllTemplatesAsHtmlTable
+	[HttpGet]
+	public IActionResult GetAllTemplatesAsHtmlTable()
+	{
+		//Setup
+		var pvPath = RazorFilesPath() + "AllTemplatesAsHtmlTable.cshtml";
+		var saService = GetSiteAuditorService();
+
+		//GET DATA TO DISPLAY
+		var status = new StatusMessage(true);
+		var allTemps = saService.GetAuditableTemplates();
+
+		//VIEW DATA 
+		var model = allTemps;
+		var viewData = new Dictionary<string, object>();
+		viewData.Add("StandardInfo", GetStandardViewInfo());
+		viewData.Add("Status", status);
+
+		//RENDER
+		var htmlTask = _viewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
+		var displayHtml = htmlTask.Result;
+
+		//RETURN AS HTML
+		var result = new HttpResponseMessage()
 		{
-			var saService = GetSiteAuditorService();
-			var returnSB = new StringBuilder();
+			Content = new StringContent(
+				displayHtml,
+				Encoding.UTF8,
+				"text/html"
+			)
+		};
 
-			var allDts = saService.GetAuditableDocTypes();
+		return new HttpResponseMessageResult(result);
+	}
 
-			var tableData = new StringBuilder();
+	/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetAllTemplatesAsCsv
+	[HttpGet]
+	public IActionResult GetAllTemplatesAsCsv()
+	{
+		var saService = GetSiteAuditorService();
+		var returnSB = new StringBuilder();
 
-			tableData.AppendLine(
-				"\"Doctype Name\",\"Alias\",\"Default Template\",\"GUID\",\"Create Date\",\"Update Date\"");
+		var allTemplates = saService.GetAuditableTemplates();
 
-			foreach (var item in allDts)
-			{
-				tableData.AppendFormat(
-					"\"{0}\",\"{1}\",\"{2}\",\"{3}\",{4},{5}{6}",
-					item.Name,
-					item.Alias,
-					item.DefaultTemplateName,
-					item.Guid,
-					item.ContentType != null ? item.ContentType.CreateDate : DateTime.MinValue,
-					item.ContentType != null ? item.ContentType.UpdateDate : DateTime.MinValue,
-					Environment.NewLine);
-			}
-			returnSB.Append(tableData);
+		var tableData = new StringBuilder();
 
-			//RETURN AS CSV FILE
-			var fileName = "AllDoctypes.csv";
-			var fileContent = Encoding.UTF8.GetBytes(returnSB.ToString());
-			var result = Encoding.UTF8.GetPreamble().Concat(fileContent).ToArray();
-			return File(result, "text/csv", fileName);
+		tableData.AppendLine(
+			"\"Template Name\",\"Alias\",\"Code Length\",\"GUID\",\"Create Date\",\"Update Date\"");
 
-			//var contentDispositionHeader = new System.Net.Mime.ContentDisposition()
-			//{
-			//	FileName = "AllDoctypes.csv",
-			//	DispositionType = "attachment"
-			//};
-			//HttpContext.Response.Headers.Add("Content-Disposition", contentDispositionHeader.ToString());
-			//return new ContentResult()
-			//{
-			//	Content = returnSB.ToString(),
-			//	StatusCode = (int)HttpStatusCode.OK,
-			//	ContentType = "text/csv; charset=utf-8",
-			//};
-
+		foreach (var item in allTemplates)
+		{
+			tableData.AppendFormat(
+				"\"{0}\",\"{1}\",\"{2}\",\"{3}\",{4},{5}{6}",
+				item.Name,
+				item.Alias,
+				item.CodeLength,
+				item.Guid,
+				item.CreateDate,
+				item.UpdateDate,
+				Environment.NewLine);
 		}
+		returnSB.Append(tableData);
 
-		#endregion
+		//RETURN AS CSV FILE
+		var fileName = "AllTemplates.csv";
+		var fileContent = Encoding.UTF8.GetBytes(returnSB.ToString());
+		var result = Encoding.UTF8.GetPreamble().Concat(fileContent).ToArray();
+		return File(result, "text/csv", fileName);
 
-		#region Templates Info
+	}
 
-		/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetAllTemplatesAsJson
-		[HttpGet]
-		public IActionResult GetAllTemplatesAsJson()
+	#endregion
+
+	#region Special Queries
+	/// /umbraco/backoffice/Dragonfly/SiteAuditor/TemplateUsageReport
+	[HttpGet]
+	public IActionResult TemplateUsageReport()
+	{
+		//Setup
+		var pvPath = RazorFilesPath() + "TemplateUsageReport.cshtml";
+		var saService = GetSiteAuditorService();
+
+		//GET DATA TO DISPLAY
+		var status = new StatusMessage(true);
+
+		//VIEW DATA 
+		var model = status;
+		var viewData = new Dictionary<string, object>();
+		viewData.Add("StandardInfo", GetStandardViewInfo());
+		viewData.Add("Status", status);
+		viewData.Add("TemplatesUsedOnContent", saService.TemplatesUsedOnContent());
+		viewData.Add("TemplatesNotUsedOnContent", saService.TemplatesNotUsedOnContent());
+
+		//RENDER
+		var htmlTask = _viewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
+		var displayHtml = htmlTask.Result;
+
+		//RETURN AS HTML
+		var result = new HttpResponseMessage()
 		{
-			var saService = GetSiteAuditorService();
-			var allTemps = saService.GetAuditableTemplates();
+			Content = new StringContent(
+				displayHtml,
+				Encoding.UTF8,
+				"text/html"
+			)
+		};
 
-			//Return JSON
-			return new JsonResult(allTemps);
-		}
+		return new HttpResponseMessageResult(result);
+	}
+	#endregion
 
-		/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetAllTemplatesAsHtmlTable
-		[HttpGet]
-		public IActionResult GetAllTemplatesAsHtmlTable()
+	#region Tests & Examples
+
+	/// /umbraco/backoffice/Dragonfly/SiteAuditor/TestJson?DocTypeAlias=xxx
+	[HttpGet]
+	public IActionResult TestJson(string DocTypeAlias)
+	{
+		//Setup
+		var saService = GetSiteAuditorService();
+
+		//GET DATA TO DISPLAY
+		var status = new StatusMessage(true);
+		try
 		{
-			//Setup
-			var pvPath = RazorFilesPath() + "AllTemplatesAsHtmlTable.cshtml";
-			var saService = GetSiteAuditorService();
-
-			//GET DATA TO DISPLAY
-			var status = new StatusMessage(true);
-			var allTemps = saService.GetAuditableTemplates();
-
-			//VIEW DATA 
-			var model = allTemps;
-			var viewData = new Dictionary<string, object>();
-			viewData.Add("StandardInfo", GetStandardViewInfo());
-			viewData.Add("Status", status);
-
-			//RENDER
-			var htmlTask = _viewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
-			var displayHtml = htmlTask.Result;
-
-			//RETURN AS HTML
-			var result = new HttpResponseMessage()
-			{
-				Content = new StringContent(
-					displayHtml,
-					Encoding.UTF8,
-					"text/html"
-				)
-			};
-
-			return new HttpResponseMessageResult(result);
-		}
-
-		/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetAllTemplatesAsCsv
-		[HttpGet]
-		public IActionResult GetAllTemplatesAsCsv()
-		{
-			var saService = GetSiteAuditorService();
-			var returnSB = new StringBuilder();
-
-			var allTemplates = saService.GetAuditableTemplates();
-
-			var tableData = new StringBuilder();
-
-			tableData.AppendLine(
-				"\"Template Name\",\"Alias\",\"Code Length\",\"GUID\",\"Create Date\",\"Update Date\"");
-
-			foreach (var item in allTemplates)
-			{
-				tableData.AppendFormat(
-					"\"{0}\",\"{1}\",\"{2}\",\"{3}\",{4},{5}{6}",
-					item.Name,
-					item.Alias,
-					item.CodeLength,
-					item.Guid,
-					item.CreateDate,
-					item.UpdateDate,
-					Environment.NewLine);
-			}
-			returnSB.Append(tableData);
-
-			//RETURN AS CSV FILE
-			var fileName = "AllTemplates.csv";
-			var fileContent = Encoding.UTF8.GetBytes(returnSB.ToString());
-			var result = Encoding.UTF8.GetPreamble().Concat(fileContent).ToArray();
-			return File(result, "text/csv", fileName);
-
-		}
-
-		#endregion
-
-		#region Special Queries
-		/// /umbraco/backoffice/Dragonfly/SiteAuditor/TemplateUsageReport
-		[HttpGet]
-		public IActionResult TemplateUsageReport()
-		{
-			//Setup
-			var pvPath = RazorFilesPath() + "TemplateUsageReport.cshtml";
-			var saService = GetSiteAuditorService();
-
-			//GET DATA TO DISPLAY
-			var status = new StatusMessage(true);
-
-			//VIEW DATA 
-			var model = status;
-			var viewData = new Dictionary<string, object>();
-			viewData.Add("StandardInfo", GetStandardViewInfo());
-			viewData.Add("Status", status);
-			viewData.Add("TemplatesUsedOnContent", saService.TemplatesUsedOnContent());
-			viewData.Add("TemplatesNotUsedOnContent", saService.TemplatesNotUsedOnContent());
-
-			//RENDER
-			var htmlTask = _viewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
-			var displayHtml = htmlTask.Result;
-
-			//RETURN AS HTML
-			var result = new HttpResponseMessage()
-			{
-				Content = new StringContent(
-					displayHtml,
-					Encoding.UTF8,
-					"text/html"
-				)
-			};
-
-			return new HttpResponseMessageResult(result);
-		}
-		#endregion
-
-		#region Tests & Examples
-
-		/// /umbraco/backoffice/Dragonfly/SiteAuditor/TestJson?DocTypeAlias=xxx
-		[HttpGet]
-		public IActionResult TestJson(string DocTypeAlias)
-		{
-			//Setup
-			var saService = GetSiteAuditorService();
-
-			//GET DATA TO DISPLAY
-			var status = new StatusMessage(true);
-			try
-			{
-				var contentNodes = saService.GetContentNodesUsingElement(DocTypeAlias);
-				status.RelatedObject = contentNodes;
-			}
-			catch (Exception e)
-			{
-				status.Success = false;
-				status.SetRelatedException(e);
-			}
-
-
-			//Return JSON
-			return new JsonResult(status);
-		}
-
-		/// /umbraco/backoffice/Dragonfly/SiteAuditor/TestData?DocTypeAlias=xxx
-		[HttpGet]
-		public List<KeyValuePair<AuditableContent, NodePropertyDataTypeInfo>> TestData(string DocTypeAlias)
-		{
-			_logger.LogInformation($"SiteAuditor.TestData STARTING...");
-
-			//Setup
-			var saService = GetSiteAuditorService();
-
-			//GET DATA TO DISPLAY
-			var status = new StatusMessage(true);
-
 			var contentNodes = saService.GetContentNodesUsingElement(DocTypeAlias);
 			status.RelatedObject = contentNodes;
-
-			_logger.LogInformation($"SiteAuditor.TestData COMPLETED");
-			return contentNodes;
-
 		}
-
-
-
-		/// /umbraco/backoffice/Dragonfly/AuthorizedApi/Test
-		[HttpGet]
-		public bool Test()
+		catch (Exception e)
 		{
-			//LogHelper.Info<PublicApiController>("Test STARTED/ENDED");
-			return true;
+			status.Success = false;
+			status.SetRelatedException(e);
 		}
 
-		/// /umbraco/backoffice/Dragonfly/AuthorizedApi/ExampleReturnHtml
-		[HttpGet]
-		public IActionResult ExampleReturnHtml()
-		{
-			//Setup
-			// var pvPath = RazorFilesPath() + "Start.cshtml";
 
-			//GET DATA TO DISPLAY
-			var status = new StatusMessage(true);
-
-			//BUILD HTML
-			var returnSB = new StringBuilder();
-			returnSB.AppendLine("<h1>Hello! This is HTML</h1>");
-			returnSB.AppendLine("<p>Use this type of return when you want to exclude &lt;XML&gt;&lt;/XML&gt; tags from your output and don\'t want it to be encoded automatically.</p>");
-			var displayHtml = returnSB.ToString();
-
-			////VIEW DATA 
-			//var model = XXX;
-			// var viewData = new Dictionary<string, object>();
-			// viewData.Add("StandardInfo", GetStandardViewInfo());
-			// viewData.Add("Status", status);
-
-			// //RENDER
-			// var htmlTask = _viewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
-			// var displayHtml = htmlTask.Result;
-
-			//RETURN AS HTML
-			return new ContentResult()
-			{
-				Content = displayHtml,
-				StatusCode = (int)HttpStatusCode.OK,
-				ContentType = "text/html; charset=utf-8"
-			};
-
-		}
-
-		/// /umbraco/backoffice/Dragonfly/AuthorizedApi/ExampleReturnJson
-		[HttpGet]
-		public IActionResult ExampleReturnJson()
-		{
-			//var testData1 = new TimeSpan(1, 1, 1, 1);
-			var testData2 = new StatusMessage(true, "This is a test object so you can see JSON!");
-
-			//Return JSON
-			return new JsonResult(testData2);
-		}
-
-		/// /umbraco/backoffice/Dragonfly/SiteAuditor/ExampleReturnCsv
-		[HttpGet]
-		public IActionResult ExampleReturnCsv()
-		{
-			var returnSB = new StringBuilder();
-			var tableData = new StringBuilder();
-
-			for (int i = 0; i < 10; i++)
-			{
-				tableData.AppendFormat(
-					"\"{0}\",{1},\"{2}\",{3}{4}",
-					"Name " + i,
-					i,
-					string.Format("Some text about item #{0} for demo.", i),
-					DateTime.Now,
-					Environment.NewLine);
-			}
-			returnSB.Append(tableData);
-
-			//RETURN AS CSV FILE
-			var fileName = "Example.csv";
-			var fileContent = Encoding.UTF8.GetBytes(returnSB.ToString());
-			var result = Encoding.UTF8.GetPreamble().Concat(fileContent).ToArray();
-			return File(result, "text/csv", fileName);
-
-		}
-
-		/// /umbraco/backoffice/Dragonfly/SiteAuditor/TestCSV
-		[HttpGet]
-		public IActionResult TestCsv()
-		{
-			var returnSB = new StringBuilder();
-
-			var tableData = new StringBuilder();
-
-			for (int i = 0; i < 10; i++)
-			{
-				tableData.AppendFormat(
-					"\"{0}\",{1},\"{2}\",{3}{4}",
-					"Name " + i,
-					i,
-					string.Format("Some text about item #{0} for demo.", i),
-					DateTime.Now,
-					Environment.NewLine);
-			}
-			returnSB.Append(tableData);
-
-
-			//RETURN AS CSV FILE
-			var fileName = "Test.csv";
-			var fileContent = Encoding.UTF8.GetBytes(returnSB.ToString());
-			var result = Encoding.UTF8.GetPreamble().Concat(fileContent).ToArray();
-			return File(result, "text/csv", fileName);
-
-		}
-
-		#endregion
+		//Return JSON
+		return new JsonResult(status);
 	}
+
+	/// /umbraco/backoffice/Dragonfly/SiteAuditor/TestData?DocTypeAlias=xxx
+	[HttpGet]
+	public List<KeyValuePair<AuditableContent, NodePropertyDataTypeInfo>> TestData(string DocTypeAlias)
+	{
+		_logger.LogInformation($"SiteAuditor.TestData STARTING...");
+
+		//Setup
+		var saService = GetSiteAuditorService();
+
+		//GET DATA TO DISPLAY
+		var status = new StatusMessage(true);
+
+		var contentNodes = saService.GetContentNodesUsingElement(DocTypeAlias);
+		status.RelatedObject = contentNodes;
+
+		_logger.LogInformation($"SiteAuditor.TestData COMPLETED");
+		return contentNodes;
+
+	}
+
+
+
+	/// /umbraco/backoffice/Dragonfly/AuthorizedApi/Test
+	[HttpGet]
+	public bool Test()
+	{
+		//LogHelper.Info<PublicApiController>("Test STARTED/ENDED");
+		return true;
+	}
+
+	/// /umbraco/backoffice/Dragonfly/AuthorizedApi/ExampleReturnHtml
+	[HttpGet]
+	public IActionResult ExampleReturnHtml()
+	{
+		//Setup
+		// var pvPath = RazorFilesPath() + "Start.cshtml";
+
+		//GET DATA TO DISPLAY
+		var status = new StatusMessage(true);
+
+		//BUILD HTML
+		var returnSB = new StringBuilder();
+		returnSB.AppendLine("<h1>Hello! This is HTML</h1>");
+		returnSB.AppendLine("<p>Use this type of return when you want to exclude &lt;XML&gt;&lt;/XML&gt; tags from your output and don\'t want it to be encoded automatically.</p>");
+		var displayHtml = returnSB.ToString();
+
+		////VIEW DATA 
+		//var model = XXX;
+		// var viewData = new Dictionary<string, object>();
+		// viewData.Add("StandardInfo", GetStandardViewInfo());
+		// viewData.Add("Status", status);
+
+		// //RENDER
+		// var htmlTask = _viewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
+		// var displayHtml = htmlTask.Result;
+
+		//RETURN AS HTML
+		return new ContentResult()
+		{
+			Content = displayHtml,
+			StatusCode = (int)HttpStatusCode.OK,
+			ContentType = "text/html; charset=utf-8"
+		};
+
+	}
+
+	/// /umbraco/backoffice/Dragonfly/AuthorizedApi/ExampleReturnJson
+	[HttpGet]
+	public IActionResult ExampleReturnJson()
+	{
+		//var testData1 = new TimeSpan(1, 1, 1, 1);
+		var testData2 = new StatusMessage(true, "This is a test object so you can see JSON!");
+
+		//Return JSON
+		return new JsonResult(testData2);
+	}
+
+	/// /umbraco/backoffice/Dragonfly/SiteAuditor/ExampleReturnCsv
+	[HttpGet]
+	public IActionResult ExampleReturnCsv()
+	{
+		var returnSB = new StringBuilder();
+		var tableData = new StringBuilder();
+
+		for (int i = 0; i < 10; i++)
+		{
+			tableData.AppendFormat(
+				"\"{0}\",{1},\"{2}\",{3}{4}",
+				"Name " + i,
+				i,
+				string.Format("Some text about item #{0} for demo.", i),
+				DateTime.Now,
+				Environment.NewLine);
+		}
+		returnSB.Append(tableData);
+
+		//RETURN AS CSV FILE
+		var fileName = "Example.csv";
+		var fileContent = Encoding.UTF8.GetBytes(returnSB.ToString());
+		var result = Encoding.UTF8.GetPreamble().Concat(fileContent).ToArray();
+		return File(result, "text/csv", fileName);
+
+	}
+
+	/// /umbraco/backoffice/Dragonfly/SiteAuditor/TestCSV
+	[HttpGet]
+	public IActionResult TestCsv()
+	{
+		var returnSB = new StringBuilder();
+
+		var tableData = new StringBuilder();
+
+		for (int i = 0; i < 10; i++)
+		{
+			tableData.AppendFormat(
+				"\"{0}\",{1},\"{2}\",{3}{4}",
+				"Name " + i,
+				i,
+				string.Format("Some text about item #{0} for demo.", i),
+				DateTime.Now,
+				Environment.NewLine);
+		}
+		returnSB.Append(tableData);
+
+
+		//RETURN AS CSV FILE
+		var fileName = "Test.csv";
+		var fileContent = Encoding.UTF8.GetBytes(returnSB.ToString());
+		var result = Encoding.UTF8.GetPreamble().Concat(fileContent).ToArray();
+		return File(result, "text/csv", fileName);
+
+	}
+
+	#endregion
 }
+

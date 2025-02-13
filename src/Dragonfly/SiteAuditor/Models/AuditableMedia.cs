@@ -7,10 +7,10 @@ using Umbraco.Cms.Core.Models.Membership;
 using Umbraco.Cms.Core.Models.PublishedContent;
 
 /// <summary>
-/// Meta data about a Content Node for Auditing purposes.
+/// Meta data about a Media Node for Auditing purposes.
 /// </summary>
 [DataContract]
-public class AuditableContent
+public class AuditableMedia
 {
 	#region Private vars
 	//private UmbracoHelper umbHelper = new UmbracoHelper(UmbracoContext.Current);
@@ -21,12 +21,12 @@ public class AuditableContent
 
 	#region Public Props
 	/// <summary>
-	/// Gets or sets the content node as an IContent
+	/// Gets or sets the node as an IMedia
 	/// </summary>
-	public IContent? UmbContentNode { get; internal set; }
+	public IMedia? UmbMediaNode { get; internal set; }
 
 	/// <summary>
-	/// Gets or sets the content node and an IPublishedContent
+	/// Gets or sets the node and an IPublishedContent
 	/// </summary>
 	public IPublishedContent? UmbPublishedNode { get; internal set; }
 
@@ -61,28 +61,36 @@ public class AuditableContent
 	}
 
 	/// <summary>
-	/// Alias of the Template assigned to this Content Node. Returns "NONE" if there is no template.
+	/// Size of the file in bytes.
 	/// </summary>
-	public string TemplateAlias { get; internal set; } = "";
+	public long SizeInBytes { get; internal set; }
 
 	/// <summary>
-	/// Url with domain name. Returns "UNPUBLISHED" if there is no public url.
+	/// Size of the file in B, KB, MB, etc.
 	/// </summary>
-	public string FullNiceUrl { get; internal set; } = "";
-
-	public bool IsPublished { get; internal set; }
+	public string SizeReadable { get; internal set; } = "";
 
 	/// <summary>
-	/// Path-only Url. Returns "UNPUBLISHED" if there is no public url.
+	/// Url with domain name.
 	/// </summary>
-	public string RelativeNiceUrl { get; internal set; } = "";
+	public string FullUrl { get; internal set; } = "";
+
+
+	/// <summary>
+	/// Path-only Url. 
+	/// </summary>
+	public string RelativeUrl { get; internal set; } = "";
 
 	public IUser? CreateUser { get; set; }
 	public IUser? UpdateUser { get; set; }
+	public string? FileExtension { get; set; }
+	public int WidthPixels { get; set; }
+	public int HeightPixels { get; set; }
+	public string? AltText { get; set; }
 
 	#endregion
 
-	public AuditableContent()
+	public AuditableMedia()
 	{
 
 	}

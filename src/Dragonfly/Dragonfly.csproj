@@ -18,7 +18,7 @@
 		<RepositoryUrl>https://github.com/hfloyd/Dragonfly.Umbraco10.SiteAuditor</RepositoryUrl>
 
 		<PackageIcon>Dragonfly-SiteAuditor-128.png</PackageIcon>
-		<PackageTags>Umbraco;umbraco-marketplace;Umbraco-10;Umbraco-11;Umbraco-12</PackageTags>
+		<PackageTags>Umbraco;umbraco-marketplace;Umbraco-10;Umbraco-11;Umbraco-12;Umbraco-13</PackageTags>
 	
 	</PropertyGroup>
 
@@ -37,10 +37,10 @@
 	<PropertyGroup>
 		<RootNamespace>Dragonfly</RootNamespace>
 		<AssemblyName>Dragonfly.UmbracoSiteAuditor</AssemblyName>
-		<Version>2.4.0</Version>
+		<Version>2.5.0</Version>
 		<AssemblyVersion>$(Version)</AssemblyVersion>
 		<FileVersion>$(Version)</FileVersion>
-		<PackageReleaseNotes>Style updates and addition of buttons to views; fixes to Media property values display</PackageReleaseNotes>
+		<PackageReleaseNotes>Addition of "All Media" options, Dashboard UI change</PackageReleaseNotes>
 
 		<IncludeSymbols>True</IncludeSymbols>
 		<SymbolPackageFormat>symbols.nupkg</SymbolPackageFormat>
@@ -65,7 +65,7 @@
 
 	<!-- Packages-->
 	<ItemGroup>
-		<PackageReference Include="Dragonfly.Net6" Version="1.4.0" />
+		<PackageReference Include="Dragonfly.Net6" Version="1.6.0" />
 		<PackageReference Include="Dragonfly.Umbraco10" Version="1.1.0" />
 		<PackageReference Include="Umbraco.Cms.Core" Version="[10.0.1,14.0.0)" />
 		<PackageReference Include="Umbraco.Cms.Web.Website" Version="[10.0.1,14.0.0)" PrivateAssets="All" />
@@ -97,6 +97,13 @@
 	<ItemGroup>
 		<None Remove="App_Plugins\Dragonfly.SiteAuditor\RazorViews\AllElementContentAsHtmlTable.cshtml" />
 		<None Remove="App_Plugins\Dragonfly.SiteAuditor\RazorViews\DataFormats\xxMediaImage.cshtml" />
+	</ItemGroup>
+	<ItemGroup>
+	  <Content Update="App_Plugins\Dragonfly.SiteAuditor\RazorViews\AllMediaAsHtmlTable.cshtml">
+	    <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+	    <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+	    <Pack>True</Pack>
+	  </Content>
 	</ItemGroup>
 	
 	

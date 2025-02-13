@@ -3,8 +3,10 @@
 	//IPublishedProperty property = Model;
 	IEnumerable<MediaWithCrops> medias = Model;
 	//var fancyFormat = Mvc.GetSafeViewDataBool(ViewData, "FancyFormat", true);
-	//var imageWidth = Mvc.GetSafeViewDataInt(ViewData, "ImageWidth", 300);
-	//var umbracoHelper = Current.UmbracoHelper;
+
+	var paramStandardInfo = Mvc.GetSafeViewData(ViewData, "StandardInfo", new StandardViewInfo()) as StandardViewInfo;
+	var imageWidth = paramStandardInfo.ThumbnailWidth;
+	var imageHeight = paramStandardInfo.ThumbnailHeight;
 
 	foreach (var media in medias)
 	{
@@ -24,6 +26,7 @@
 		,{".jpeg"}
 		,{".gif"}
 		,{".svg"}
+		,{".webp"}
 	};
 
 		var extension = IPub.Value<string>("umbracoExtension");

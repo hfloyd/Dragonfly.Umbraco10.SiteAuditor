@@ -2,8 +2,12 @@
 @{
 	IPublishedContent iPubMedia = Model;
 	var fancyFormat = Mvc.GetSafeViewDataBool(ViewData, "FancyFormat", true);
-	var imageWidth = Mvc.GetSafeViewDataInt(ViewData, "ImageWidth", 300);
-	var imageHeight = Mvc.GetSafeViewDataInt(ViewData, "ImageHeight", 300);
+
+	var paramStandardInfo = Mvc.GetSafeViewData(ViewData, "StandardInfo", new StandardViewInfo()) as StandardViewInfo;
+	var imageWidth = paramStandardInfo.ThumbnailWidth;
+	var imageHeight = paramStandardInfo.ThumbnailHeight;
+
+	var thumbOnly = Mvc.GetSafeViewDataBool(ViewData, "ThumbOnly", false);
 }
 
 @if (iPubMedia.Url() != "")
@@ -17,11 +21,15 @@
 		if (IsImage(iPubMedia))
 		{
 			var mediaUrl = $"{iPubMedia.Url()}?width={imageWidth}&height={imageHeight}&rmode=max";
-			
-			<a href="@iPubMedia.Url()" target="_blank"><img src="@mediaUrl" /></a>
+
+			<a href="@iPubMedia.Url()" target="_blank"><img src="@mediaUrl" class="thumbnail"/></a>
 		}
-		<div>@mediaPath <small><a href="@editUrl" target="_blank">[OPEN]</a></small></div>
-		<div><small>@iPubMedia.Url()</small></div>
+
+		if (!thumbOnly)
+		{
+			<div>@mediaPath <small><a href="@editUrl" target="_blank">[OPEN]</a></small></div>
+			<div><small>@iPubMedia.Url()</small></div>
+		}
 	}
 	else
 	{
@@ -46,6 +54,7 @@ else
 				,{"jpeg"}
 				,{"gif"}
 				,{"svg"}
+				,{"webp"}
 			};
 
 		var extension = IPub.Value<string>("umbracoExtension");

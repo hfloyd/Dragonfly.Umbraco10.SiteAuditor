@@ -1,6 +1,10 @@
 @inherits UmbracoViewPage<object>
 @{
 	Layout = null;
+
+	var paramStandardInfo = Mvc.GetSafeViewData(ViewData, "StandardInfo", new StandardViewInfo()) as StandardViewInfo;
+	var thumbWidth = paramStandardInfo.ThumbnailWidth;
+	var thumbHeight = paramStandardInfo.ThumbnailHeight;
 }
 
 <!DOCTYPE html>
@@ -41,6 +45,11 @@
 		.dt-length label {
 			margin-left: 1rem;
 		}
+		img.thumbnail {
+			max-width: @($"{thumbWidth}px");
+			max-height: @($"{thumbHeight}px");
+		}
+
 	</style>
 
 	@RenderSection("Head")
@@ -63,7 +72,7 @@
 			// DataTable
 			$('#umbracodata').DataTable({
 				pageLength: 10,
-				lengthMenu: [10, 50, 100, 200, 500],
+				lengthMenu: [5, 10, 50, 100, 200, 500],
 
 				layout: {
 					topStart: ['pageLength', 'info'],

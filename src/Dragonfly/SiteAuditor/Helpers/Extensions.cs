@@ -36,5 +36,32 @@
         }
         
         #endregion
+
+        #region IMedia
+        public static bool HasPropertyValue(this IMedia Media, string PropertyAlias)
+        {
+	        var hasProp = Media.HasProperty(PropertyAlias);
+
+	        if (!hasProp)
+	        {
+		        return false;
+	        }
+
+	        var valObject = Media.GetValue(PropertyAlias);
+	        if (valObject == null)
+	        {
+		        return false;
+	        }
+
+	        var valString = Media.GetValue<string>(PropertyAlias);
+	        if (valString == "")
+	        {
+		        return false;
+	        }
+
+	        return true;
+        }
+        
+        #endregion
     }
 }

@@ -1,6 +1,7 @@
 @inject ILogger<UmbracoViewPage> CurrentLogger
 @inject SiteAuditorService AuditorService
 @using Newtonsoft.Json
+
 @inherits UmbracoViewPage<NodePropertyDataTypeInfo>
 @{
 	NodePropertyDataTypeInfo nodePropertyDataTypeInfo = Model;
@@ -8,6 +9,10 @@
 	var renderingDone = false;
 
 	var viewDD = new ViewDataDictionary(ViewData);
+
+	var paramStandardInfo = Mvc.GetSafeViewData(ViewData, "StandardInfo", new StandardViewInfo()) as StandardViewInfo;
+	var imageWidth = paramStandardInfo.ThumbnailWidth;
+	var imageHeight = paramStandardInfo.ThumbnailHeight;
 
 	var paramHighlights = Mvc.GetSafeViewData(ViewData, "HighlightText", new List<string>()) as List<string>;
 
@@ -157,11 +162,13 @@
 }
 @functions {
 
-	private void RenderMediaData(List<IPublishedContent> MediaItems, string ErrorMsg, object PropertyData)
+	private void RenderMediaData(List<IPublishedContent> MediaItems, string ErrorMsg, object? PropertyData)
 	{
 		var mediaImageVdd = new ViewDataDictionary(ViewData);
-		mediaImageVdd.Add("ImageWidth", 300);
-		mediaImageVdd.Add("ImageHeight", 300);
+
+		var paramStandardInfo = Mvc.GetSafeViewData(ViewData, "StandardInfo", new StandardViewInfo()) as StandardViewInfo;
+		var imageWidth = paramStandardInfo.ThumbnailWidth;
+		var imageHeight = paramStandardInfo.ThumbnailHeight;
 
 		if (!string.IsNullOrEmpty(ErrorMsg))
 		{
@@ -181,7 +188,7 @@
 			<div><small>[NO IMAGE(S) SELECTED]</small></div>
 		}
 
-		if (PropertyData is not null)
+		if (PropertyData != null)
 		{
 			<div><small><i>Raw Data:</i> @PropertyData.ToString()</small></div>
 		}
@@ -192,10 +199,11 @@
 	}
 
 
-	private void RenderImagesData(IList<string> MediaSrcs, string ErrorMsg, object PropertyData)
+	private void RenderImagesData(IList<string> MediaSrcs, string ErrorMsg, object? PropertyData)
 	{
-		var imageWidth = 300;
-		var imageHeight = 300;
+		var paramStandardInfo = Mvc.GetSafeViewData(ViewData, "StandardInfo", new StandardViewInfo()) as StandardViewInfo;
+		var imageWidth = paramStandardInfo.ThumbnailWidth;
+		var imageHeight = paramStandardInfo.ThumbnailHeight;
 
 		if (!string.IsNullOrEmpty(ErrorMsg))
 		{
@@ -217,7 +225,7 @@
 			<div><small>[NO IMAGE(S) SELECTED]</small></div>
 		}
 
-		if (PropertyData is not null)
+		if (PropertyData != null)
 		{
 			<div><small><i>Raw Data:</i> @PropertyData.ToString()</small></div>
 		}
