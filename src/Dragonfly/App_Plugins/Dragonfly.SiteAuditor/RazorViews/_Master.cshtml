@@ -3,6 +3,7 @@
 	Layout = null;
 
 	var paramStandardInfo = Mvc.GetSafeViewData(ViewData, "StandardInfo", new StandardViewInfo()) as StandardViewInfo;
+	var version = paramStandardInfo.CurrentToolVersion != null ? paramStandardInfo.CurrentToolVersion.ToString(3) : "Unknown";
 	var thumbWidth = paramStandardInfo.ThumbnailWidth;
 	var thumbHeight = paramStandardInfo.ThumbnailHeight;
 }
@@ -55,9 +56,10 @@
 	@RenderSection("Head")
 </head>
 <body>
-	<div class="container-fluid" style="margin: auto 15px;">
-		@RenderBody()
-	</div>
+<div class="container-fluid" style="margin: auto 15px;">
+		<p><small>Dragonfly Site Auditor v. @version</small></p>
+	@RenderBody()
+</div>
 
 	@*<!--https://datatables.net/extensions/buttons/examples/styling/bootstrap4.html-->*@
 	<script type="text/javascript">

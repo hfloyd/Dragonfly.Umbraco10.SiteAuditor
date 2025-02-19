@@ -1,0 +1,181 @@
+@using System.Globalization
+@inherits UmbracoViewPage<IList<SerilogItem>>
+@*
+	Expected View Data:
+	-------------------
+	StandardInfo (object - StandardViewInfo)		: Version, Current environment, etc.
+	Status (object - StatusMessage)					: Status of operations
+
+*@
+@{
+	Layout = "_Master.cshtml";
+	var paramStandardInfo = Mvc.GetSafeViewData(ViewData, "StandardInfo", new StandardViewInfo()) as StandardViewInfo;
+	var paramStatus = Mvc.GetSafeViewData(ViewData, "Status", new StatusMessage()) as StatusMessage;
+	var paramDateOptions = Mvc.GetSafeViewData(ViewData, "AllDateOptions", new List<DatesOption>()) as IList<DatesOption>;
+	var paramThisDateOption = Mvc.GetSafeViewData(ViewData, "ThisDateOption", new DatesOption()) as DatesOption;
+	var paramPromotedProperties = Mvc.GetSafeViewDataString(ViewData, "PromotedProperties", "");
+
+	IList<string> promotedProps = !string.IsNullOrEmpty(paramPromotedProperties) ? paramPromotedProperties.Split(",").ToList() : new List<string>
+	();
+
+	var requestUri = Dragonfly.NetHelpers.Urls.CurrentRequestUri(Context.Request);
+
+	var title = Dragonfly.UmbracoHelpers.Mvc.GetSafeViewDataString(ViewData, "Title", $"Logs: {paramThisDateOption.Description}");
+
+	var counter = 0;
+	var cultureFormat = CultureInfo.CurrentCulture.DateTimeFormat;
+	var dateFormat = "D"; //"YYYY-MM-dd";
+	var dateTimeFormat = "G"; //"YYYY-MM-dd h:mm:s ";
+
+	var displayEndDate = paramThisDateOption.EndDate.AddDays(-1);
+	var isSingleDay = displayEndDate == paramThisDateOption.StartDate;
+
+	var datesText = isSingleDay ? paramThisDateOption.StartDate.ToString(dateFormat, cultureFormat) : $"{paramThisDateOption.StartDate.ToString(dateFormat, cultureFormat)} - {displayEndDate.ToString(dateFormat, cultureFormat)}";
+}
+
+@section Head {
+	<title>
+		@title (@datesText)
+	</title>
+    }
+
+<!--LogsAsHtmlTable-->
+<h1>
+	@title <br />
+	<small>
+		@paramThisDateOption.StartDate.ToString(dateFormat, cultureFormat)
+		@if (!isSingleDay)
+		{
+			<span>through @displayEndDate.ToString(dateFormat, cultureFormat)</span>
+		}
+	</small>
+</h1>
+
+<p>Total Logs Returned: @Model.Count()</p>
+
+<table id="umbracodata" class="table table-striped table-bordered table-hover table-sm" cellspacing="0" style="width:100%">
+	<thead>
+		<tr>
+			<th>#</th>
+
+			<th>Timestamp</th>
+			<th>Log4NetLevel</th>
+
+			<th> Message</th>
+			<th> MessageTemplate</th>
+
+			<th> RequestPath</th>
+			<th> RequestUrl</th>
+
+			<th> NodeId</th>
+			<th> NodeName</th>
+
+			<th> Has Exception</th>
+			<th> Exception Info</th>
+
+			@if (promotedProps.Any())
+			{
+				foreach (var property in promotedProps)
+				{
+					var tooltip = $"Remove '{property}' from columns";
+					var qsProps = promotedProps.Where(p => p != property).ToList();
+					var url = $"{Dragonfly.NetHelpers.Urls.RemoveQueryStringKeyFromUrl(requestUri, "PromotedProperties")}";
+					url = $"{Dragonfly.NetHelpers.Urls.AppendQueryStringToUrl(url, "PromotedProperties", string.Join(",", qsProps), ",")}";
+
+					<th><a title="@tooltip" href="@url">@property</a></th>
+				}
+			}
+
+			<th>Properties</th>
+
+
+		</tr>
+	</thead>
+	<tbody>
+		@foreach (var log in Model)
+		{
+			counter++;
+
+			<tr>
+
+				@*  // # *@
+				<td>@counter</td>
+
+				<td>@log.Timestamp.ToLocalTime().ToString(dateTimeFormat, cultureFormat)</td>
+				<td>@log.Log4NetLevel</td>
+
+				<td>@log.Message</td>
+				<td>@log.MessageTemplate</td>
+
+				<td>@log.RequestPath</td>
+				<td>@log.RequestUrl</td>
+
+				<td>@log.NodeId</td>
+				<td>@log.NodeName</td>
+
+				<td>@(log.LoggedException != null)</td>
+				<td>
+					@if (log.LoggedException != null)
+					{
+						<small>@log.LoggedException.ToString()</small>
+					}
+				</td>
+
+				@if (promotedProps.Any())
+				{
+					foreach (var property in promotedProps)
+					{
+						var propValue = log.AllProperties.ContainsKey(property) ? log.AllProperties[property].ToString() : "";
+						<td>@propValue</td>
+					}
+				}
+
+				<td>
+					@if (log.OtherProperties.Any())
+					{
+						<ul>
+							@foreach (var property in log.OtherProperties)
+							{
+								var tooltip = $"Promote '{property.Key}' to a column";
+								var url = $"{Dragonfly.NetHelpers.Urls.AppendQueryStringToUrl(requestUri, "PromotedProperties", property.Key, ",")}";
+								<li><i><a title="@tooltip" href="@url">@property.Key</a>:</i> @property.Value</li>
+							}
+						</ul>
+					}
+				</td>
+
+
+			</tr>
+		}
+	</tbody>
+	<tfoot>
+		<tr>
+			<th>#</th>
+
+			<th>Timestamp</th>
+			<th>Log4NetLevel</th>
+
+			<th> Message</th>
+			<th> MessageTemplate</th>
+
+			<th> RequestPath</th>
+			<th> RequestUrl</th>
+
+			<th> NodeId</th>
+			<th> NodeName</th>
+
+			<th> Has Exception</th>
+			<th> Exception Info</th>
+
+			@if (promotedProps.Any())
+			{
+				foreach (var property in promotedProps)
+				{
+					<th>@property</th>
+				}
+			}
+
+			<th>Properties</th>
+		</tr>
+	</tfoot>
+</table>

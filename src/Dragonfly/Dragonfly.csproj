@@ -37,10 +37,10 @@
 	<PropertyGroup>
 		<RootNamespace>Dragonfly</RootNamespace>
 		<AssemblyName>Dragonfly.UmbracoSiteAuditor</AssemblyName>
-		<Version>2.5.0</Version>
+		<Version>2.6.0</Version>
 		<AssemblyVersion>$(Version)</AssemblyVersion>
 		<FileVersion>$(Version)</FileVersion>
-		<PackageReleaseNotes>Addition of "All Media" options, Dashboard UI change</PackageReleaseNotes>
+		<PackageReleaseNotes>Addition of "Log" options</PackageReleaseNotes>
 
 		<IncludeSymbols>True</IncludeSymbols>
 		<SymbolPackageFormat>symbols.nupkg</SymbolPackageFormat>
@@ -65,8 +65,9 @@
 
 	<!-- Packages-->
 	<ItemGroup>
-		<PackageReference Include="Dragonfly.Net6" Version="1.6.0" />
+		<PackageReference Include="Dragonfly.Net6" Version="1.7.0" />
 		<PackageReference Include="Dragonfly.Umbraco10" Version="1.1.0" />
+		<PackageReference Include="Serilog.Formatting.Compact.Reader" Version="4.0.0" />
 		<PackageReference Include="Umbraco.Cms.Core" Version="[10.0.1,14.0.0)" />
 		<PackageReference Include="Umbraco.Cms.Web.Website" Version="[10.0.1,14.0.0)" PrivateAssets="All" />
 		<PackageReference Include="Umbraco.Cms.Web.BackOffice" Version="[10.0.1,14.0.0)" PrivateAssets="All" />

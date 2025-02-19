@@ -2,9 +2,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 //using System.Text.Json;
 //using System.Text.Json.Nodes;
@@ -24,7 +26,9 @@ using Umbraco.Extensions;
 using Dragonfly.NetModels;
 using Dragonfly.SiteAuditor.Models;
 using Dragonfly.NetHelperServices;
+using Serilog.Formatting.Compact.Reader;
 using Umbraco.Cms.Core.PropertyEditors.ValueConverters;
+using Microsoft.Extensions.Logging.Abstractions;
 
 #pragma warning disable 0168
 public class SiteAuditorService
@@ -48,6 +52,7 @@ public class SiteAuditorService
 	private IEnumerable<AuditableDataType> _AllDataTypes = new List<AuditableDataType>();
 
 	private IEnumerable<DataTypesWithElements> _AllDataTypesWithElements = new List<DataTypesWithElements>();
+
 	internal static string DataPath()
 	{
 		//var config = Config.GetConfig();
@@ -67,6 +72,7 @@ public class SiteAuditorService
 	#endregion
 
 	#region Public Properties
+
 	/// <summary>
 	/// Default string used for NodePathAsText
 	/// ' » ' unless explicitly changed
@@ -76,11 +82,13 @@ public class SiteAuditorService
 		get { return _defaultDelimiter; }
 		internal set { _defaultDelimiter = value; }
 	}
+
 	private string _defaultDelimiter = " » ";
 
 	#endregion
 
 	#region CTOR & DI
+
 	private readonly UmbracoHelper _umbracoHelper;
 	private readonly ILogger<SiteAuditorService> _logger;
 	private readonly IUmbracoContextAccessor _umbracoContextAccessor;
@@ -215,7 +223,7 @@ public class SiteAuditorService
 
 	#endregion
 
-	#region Content 
+	#region Content
 
 	public List<IContent> GetAllContent()
 	{
@@ -245,7 +253,9 @@ public class SiteAuditorService
 		if (countChildren > 0)
 		{
 			long countTest;
-			var allChildren = _services.ContentService.GetPagedChildren(ThisNode.Id, 0, Convert.ToInt32(countChildren), out countTest);
+			var allChildren =
+				_services.ContentService.GetPagedChildren(ThisNode.Id, 0, Convert.ToInt32(countChildren),
+					out countTest);
 			foreach (var childNode in allChildren.OrderBy(n => n.SortOrder))
 			{
 				nodesList.AddRange(LoopForContentNodes(childNode));
@@ -254,6 +264,7 @@ public class SiteAuditorService
 
 		return nodesList;
 	}
+
 	#endregion
 
 	#region AuditableContent
@@ -291,7 +302,8 @@ public class SiteAuditorService
 	{
 		var nodesList = new List<AuditableContent>();
 
-		var topLevelNodes = _services.ContentService!.GetByIds(RootNodeId.AsEnumerableOfOne()).OrderBy(n => n.SortOrder);
+		var topLevelNodes = _services.ContentService!.GetByIds(RootNodeId.AsEnumerableOfOne())
+			.OrderBy(n => n.SortOrder);
 
 		foreach (var thisNode in topLevelNodes)
 		{
@@ -311,7 +323,8 @@ public class SiteAuditorService
 		var nodesList = new List<AuditableContent>();
 
 		//var TopLevelNodes = umbHelper.ContentAtRoot();
-		var topLevelNodes = _services.ContentService!.GetByIds(RootNodeUdi.AsEnumerableOfOne())!.OrderBy(n => n.SortOrder);
+		var topLevelNodes =
+			_services.ContentService!.GetByIds(RootNodeUdi.AsEnumerableOfOne())!.OrderBy(n => n.SortOrder);
 
 		foreach (var thisNode in topLevelNodes)
 		{
@@ -407,7 +420,8 @@ public class SiteAuditorService
 							else
 							{
 								var elementAlias = elementContentType.Alias;
-								_logger.LogInformation($"6B. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}' - elementAlias='{(elementAlias == null ? "NULL" : elementAlias.ToString())}'");
+								_logger.LogInformation(
+									$"6B. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}' - elementAlias='{(elementAlias == null ? "NULL" : elementAlias.ToString())}'");
 								if (elementAlias != null && valueString != null)
 								{
 									if (valueString.Contains(elementAlias.ToString()))
@@ -572,7 +586,7 @@ public class SiteAuditorService
 
 	#endregion
 
-	#region Media 
+	#region Media
 
 	public List<IMedia> GetAllMedia()
 	{
@@ -602,7 +616,8 @@ public class SiteAuditorService
 		if (countChildren > 0)
 		{
 			long countTest;
-			var allChildren = _services.MediaService.GetPagedChildren(ThisNode.Id, 0, Convert.ToInt32(countChildren), out countTest);
+			var allChildren =
+				_services.MediaService.GetPagedChildren(ThisNode.Id, 0, Convert.ToInt32(countChildren), out countTest);
 			foreach (var childNode in allChildren.OrderBy(n => n.SortOrder))
 			{
 				nodesList.AddRange(LoopForMediaNodes(childNode));
@@ -611,9 +626,11 @@ public class SiteAuditorService
 
 		return nodesList;
 	}
+
 	#endregion
 
 	#region AuditableMedia
+
 	/// <summary>
 	/// Gets all site nodes as AuditableMedia models
 	/// </summary>
@@ -836,7 +853,8 @@ public class SiteAuditorService
 
 		if (ContentType.DefaultTemplate != null)
 		{
-			adt.DefaultTemplateName = ContentType.DefaultTemplate.Name != null ? ContentType.DefaultTemplate.Name : "UNKNOWN";
+			adt.DefaultTemplateName =
+				ContentType.DefaultTemplate.Name != null ? ContentType.DefaultTemplate.Name : "UNKNOWN";
 		}
 		else
 		{
@@ -952,7 +970,7 @@ public class SiteAuditorService
 					var info = new PropertyDoctypeInfo(docType);
 
 					propertiesList.Find(i =>
-						i.UmbPropertyType?.Alias == prop.Alias
+							i.UmbPropertyType?.Alias == prop.Alias
 						)
 						?.AllDocTypes.Add(info);
 				}
@@ -1038,7 +1056,9 @@ public class SiteAuditorService
 
 		ap.DataType = _services.DataTypeService!.GetDataType(UmbPropertyType.DataTypeId);
 		ap.DataTypeElementTypes = ap.DataType != null ? GetAllDataTypeElementsList(ap.DataType) : new List<string>();
-		ap.DataTypeConfigType = ap.DataType != null && ap.DataType.Configuration != null ? ap.DataType.Configuration.GetType() : null;
+		ap.DataTypeConfigType = ap.DataType != null && ap.DataType.Configuration != null
+			? ap.DataType.Configuration.GetType()
+			: null;
 		try
 		{
 			var configDict = (Dictionary<string, string>)ap.DataType.Configuration;
@@ -1236,7 +1256,8 @@ public class SiteAuditorService
 		return allElementsList.Distinct();
 	}
 
-	private IEnumerable<string> LoopElements(string ElementAlias, List<DataTypesWithElements> AllTypes, HashSet<string> VisitedElements)
+	private IEnumerable<string> LoopElements(string ElementAlias, List<DataTypesWithElements> AllTypes,
+		HashSet<string> VisitedElements)
 	{
 		var elementsList = new List<string>();
 
@@ -1256,7 +1277,8 @@ public class SiteAuditorService
 		foreach (var property in properties)
 		{
 			//var dt = _services.DataTypeService.GetDataType();
-			var dtElements = AllTypes.Where(n => n.DataTypeId == property.DataTypeId).Select(n => n.ElementTypeAlias).ToList();
+			var dtElements = AllTypes.Where(n => n.DataTypeId == property.DataTypeId).Select(n => n.ElementTypeAlias)
+				.ToList();
 			elementsList.AddRange(dtElements);
 
 			foreach (var element in dtElements)
@@ -1272,72 +1294,72 @@ public class SiteAuditorService
 	private List<string> UmbracoStandardPropEditors()
 	{
 		return new List<string>()
-				{
-					{ "Umbraco.BlockList" },
-					{ "Umbraco.CheckBoxList" },
-					{ "Umbraco.ColorPicker" },
-					{ "Umbraco.Decimal" },
-					{ "Umbraco.ColorPicker.EyeDropper" },
-					{ "Umbraco.ContentPicker" },
-					{ "Umbraco.DateTime" },
-					{ "Umbraco.DropDown.Flexible" },
-					{ "Umbraco.Grid" },
-					{ "Umbraco.ImageCropper" },
-					{ "Umbraco.Integer" },
-					{ "Umbraco.Label" },
-					{ "Umbraco.ListView" },
-					{ "Umbraco.MarkdownEditor" },
-					{ "Umbraco.MediaPicker" },
-					{ "Umbraco.MediaPicker3" },
-					{ "Umbraco.MemberPicker" },
-					{ "Umbraco.MultiNodeTreePicker" },
-					{ "Umbraco.MultipleTextstring" },
-					{ "Umbraco.MultiUrlPicker" },
-					{ "Umbraco.NestedContent" },
-					{ "Umbraco.RadioButtonList" },
-					{ "Umbraco.Tags" },
-					{ "Umbraco.TextArea" },
-					{ "Umbraco.TextBox" },
-					{ "Umbraco.TinyMCE" },
-					{ "Umbraco.TrueFalse" },
-					{ "Umbraco.UploadField" },
-					{ "UmbracoForms.FormPicker" },
-					{ "UmbracoForms.ThemePicker" }
-				};
+		{
+			{ "Umbraco.BlockList" },
+			{ "Umbraco.CheckBoxList" },
+			{ "Umbraco.ColorPicker" },
+			{ "Umbraco.Decimal" },
+			{ "Umbraco.ColorPicker.EyeDropper" },
+			{ "Umbraco.ContentPicker" },
+			{ "Umbraco.DateTime" },
+			{ "Umbraco.DropDown.Flexible" },
+			{ "Umbraco.Grid" },
+			{ "Umbraco.ImageCropper" },
+			{ "Umbraco.Integer" },
+			{ "Umbraco.Label" },
+			{ "Umbraco.ListView" },
+			{ "Umbraco.MarkdownEditor" },
+			{ "Umbraco.MediaPicker" },
+			{ "Umbraco.MediaPicker3" },
+			{ "Umbraco.MemberPicker" },
+			{ "Umbraco.MultiNodeTreePicker" },
+			{ "Umbraco.MultipleTextstring" },
+			{ "Umbraco.MultiUrlPicker" },
+			{ "Umbraco.NestedContent" },
+			{ "Umbraco.RadioButtonList" },
+			{ "Umbraco.Tags" },
+			{ "Umbraco.TextArea" },
+			{ "Umbraco.TextBox" },
+			{ "Umbraco.TinyMCE" },
+			{ "Umbraco.TrueFalse" },
+			{ "Umbraco.UploadField" },
+			{ "UmbracoForms.FormPicker" },
+			{ "UmbracoForms.ThemePicker" }
+		};
 
 	}
 
 	private List<string> PackagePropEditorsWithoutDocTypeConfig()
 	{
 		return new List<string>()
-				{
-					{ "Umbraco.Community.Contentment.CodeEditor" },
-					{ "Umbraco.Community.Contentment.DataList" },
-					{ "Umbraco.Community.Contentment.TemplatedLabel" },
-					{ "Umbraco.Community.Contentment.RenderMacro" },
-					{ "Umbraco.Community.Contentment.EditorNotes" },
-					{ "Dragonfly.Theming.ThemePicker" },
-					{ "Dragonfly.Theming.CssOverridePicker" },
-					{ "our.iconic" },
-					{ "Dawoe.OEmbedPickerPropertyEditor" },
-					{ "Vokseverk.KeyValueEditor" }
+		{
+			{ "Umbraco.Community.Contentment.CodeEditor" },
+			{ "Umbraco.Community.Contentment.DataList" },
+			{ "Umbraco.Community.Contentment.TemplatedLabel" },
+			{ "Umbraco.Community.Contentment.RenderMacro" },
+			{ "Umbraco.Community.Contentment.EditorNotes" },
+			{ "Dragonfly.Theming.ThemePicker" },
+			{ "Dragonfly.Theming.CssOverridePicker" },
+			{ "our.iconic" },
+			{ "Dawoe.OEmbedPickerPropertyEditor" },
+			{ "Vokseverk.KeyValueEditor" }
 
-				};
+		};
 	}
 
 	private List<string> ConfigKeysRepresentingDocType()
 	{
 		return new List<string>()
-				{
-					{ "doctype" },
-					{ "doctypes" },
-					{ "contenttype" },
-					{ "contenttypes" },
-					{ "element" },
-					{ "elements" },
-					{ "elementtype" },
-					{ "elementtypes" }
-				};
+		{
+			{ "doctype" },
+			{ "doctypes" },
+			{ "contenttype" },
+			{ "contenttypes" },
+			{ "element" },
+			{ "elements" },
+			{ "elementtype" },
+			{ "elementtypes" }
+		};
 	}
 
 
@@ -1376,17 +1398,21 @@ public class SiteAuditorService
 				//Legacy built-in [Obsolete("Nested content is obsolete, will be removed in V13")]
 				case "Umbraco.NestedContent":
 					var nestedContentConfig =
-						(Umbraco.Cms.Core.PropertyEditors.NestedContentConfiguration)dt.Configuration; //JsonSerializer.Deserialize<NestedContentConfig>(configJson);
+						(Umbraco.Cms.Core.PropertyEditors.NestedContentConfiguration)dt
+							.Configuration; //JsonSerializer.Deserialize<NestedContentConfig>(configJson);
 					if (nestedContentConfig != null && nestedContentConfig.ContentTypes != null)
 					{
 						var types = nestedContentConfig.ContentTypes.ToList();
 						elementTypesList.AddRange(types.Select(c => c.Alias));
 					}
+
 					break;
 
 				//Current built-in
 				case "Umbraco.BlockList":
-					var blockListConfig = (Umbraco.Cms.Core.PropertyEditors.BlockListConfiguration)dt.Configuration;//JsonSerializer.Deserialize<UmbracoBlockListConfig>(configJson);
+					var blockListConfig =
+						(Umbraco.Cms.Core.PropertyEditors.BlockListConfiguration)dt
+							.Configuration; //JsonSerializer.Deserialize<UmbracoBlockListConfig>(configJson);
 					if (blockListConfig != null)
 					{
 						keyGuids.AddRange(blockListConfig.Blocks.Select(b => b.ContentElementTypeKey));
@@ -1401,6 +1427,7 @@ public class SiteAuditorService
 							}
 						}
 					}
+
 					break;
 
 				//Current built-in
@@ -1500,20 +1527,23 @@ public class SiteAuditorService
 						if (!keyFound)
 						{
 							//If not a standard prop editor... or known prop editor
-							if (!UmbracoStandardPropEditors().Contains(dt.EditorAlias) && !PackagePropEditorsWithoutDocTypeConfig().Contains(dt.EditorAlias))
+							if (!UmbracoStandardPropEditors().Contains(dt.EditorAlias) &&
+								!PackagePropEditorsWithoutDocTypeConfig().Contains(dt.EditorAlias))
 							{
 								_logger.LogWarning(
 									$"SiteAuditorService.GetDataTypeElementsList: Unknown Editor '{dt.EditorAlias}' includes unprocessed config keys {string.Join(", ", configDict.Keys)}");
 							}
 						}
 					}
-					else if (!UmbracoStandardPropEditors().Contains(dt.EditorAlias) && !PackagePropEditorsWithoutDocTypeConfig().Contains(dt.EditorAlias))
+					else if (!UmbracoStandardPropEditors().Contains(dt.EditorAlias) &&
+							 !PackagePropEditorsWithoutDocTypeConfig().Contains(dt.EditorAlias))
 					{
 						//If not a standard prop editor... or known editor
 
 						_logger.LogWarning(
 							$"SiteAuditorService.GetDataTypeElementsList: Unknown Editor '{dt.EditorAlias}' with Config Model {dt.Configuration.ToString()} - needs processing?");
 					}
+
 					break;
 			}
 
@@ -1542,7 +1572,8 @@ public class SiteAuditorService
 		}
 		catch (Exception e)
 		{
-			_logger.LogError(e, $"SiteAuditorService.GetDataTypeElementsList: Error on '{dt.EditorAlias}' with config: {dt.Configuration}");
+			_logger.LogError(e,
+				$"SiteAuditorService.GetDataTypeElementsList: Error on '{dt.EditorAlias}' with config: {dt.Configuration}");
 		}
 
 		return elementTypesList.Distinct();
@@ -1584,9 +1615,10 @@ public class SiteAuditorService
 	public GroupingCollection<AuditableContent> TemplatesUsedOnContent()
 	{
 		var allContent = this.GetContentNodes();
-		var allContentTemplates = new GroupingCollection<AuditableContent>(allContent); //allContent.Select(n => n.TemplateAlias);
+		var allContentTemplates =
+			new GroupingCollection<AuditableContent>(allContent); //allContent.Select(n => n.TemplateAlias);
 		allContentTemplates.GroupItems(n => n.TemplateAlias);
-		return allContentTemplates;//.GroupBy(n => n);
+		return allContentTemplates; //.GroupBy(n => n);
 	}
 
 	public List<ITemplate> TemplatesNotUsedOnContent()
@@ -1607,6 +1639,7 @@ public class SiteAuditorService
 	#endregion
 
 	#region AuditableTemplates
+
 	public IEnumerable<AuditableTemplate> GetAuditableTemplates()
 	{
 		var list = new List<AuditableTemplate>();
@@ -1701,42 +1734,60 @@ public class SiteAuditorService
 
 		return templateAlias;
 	}
+
 	#endregion
 
 	#region Serilog Items
 
-	internal List<SerilogItem> ProcessSerilogFile(string filePath)
+	internal List<SerilogItem> GetLogsBetweenDates(string directoryPath, DateTime startDate, DateTime endDate)
 	{
-		var list = new List<SerilogItem>();
-		string line;
+		var logEntries = new List<SerilogItem>();
 
-		// Open the file for reading
-		using (StreamReader reader = new StreamReader(filePath))
+		foreach (var filePath in Directory.GetFiles(directoryPath, "*.json"))
 		{
-			// Read each line until the end of the file
-			while ((line = reader.ReadLine()) != null)
+			var fileName = filePath.Split(Path.DirectorySeparatorChar).Last();
+			var fileDate = ExtractDateFromSerilogFilename(fileName);
+
+			//Test file date against start and end dates before parsing
+			if (fileDate >= startDate && fileDate <= endDate)
 			{
-				// Process each line here
-				var serilogItem = SerilogItem.FromJson(line);
-				list.Add(serilogItem);
+				using (var stream = System.IO.File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+				using (TextReader textReader = new StreamReader(stream))
+				{
+					using var reader = new LogEventReader(textReader);
+					while (reader.TryRead(out var logEvent))
+					{
+						//var logEntry = SerilogItem.FromJson(line);
+						var logEntry = new SerilogItem(logEvent);
+						if (logEntry.Timestamp >= startDate && logEntry.Timestamp <= endDate)
+						{
+							logEntry.FileName = fileName;
+							logEntry.FileDate = fileDate;
+							logEntries.Add(logEntry);
+						}
+					}
+				}
 			}
 		}
 
-		return list;
-
-		//byte[] result;
-		//using (FileStream stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-		//{
-		//	result = new byte[stream.Length];
-		//	stream.Read(result, 0, (int)stream.Length);
-		//}
-
-		//return File(result, "text/plain", fileName);
+		return logEntries;
 	}
 
-	public static void ProcessFile(string filePath)
+	private static DateTime? ExtractDateFromSerilogFilename(string Filename)
 	{
+		var match = Regex.Match(Filename, @"\.(\d+)\.json$");
+		if (match.Success)
+		{
+			var dateDigits = match.Groups[1].Value;
 
+			var date = DateTime.ParseExact(dateDigits, "yyyyMMdd", CultureInfo.InvariantCulture);
+
+			return date;
+		}
+		else
+		{
+			return null;
+		}
 	}
 
 	#endregion
@@ -1932,6 +1983,7 @@ public class SiteAuditorService
 		return imgSrcs;
 	}
 	#endregion
+
 
 }
 

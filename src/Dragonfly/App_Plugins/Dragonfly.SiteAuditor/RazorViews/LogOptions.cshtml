@@ -1,0 +1,72 @@
+@using System.Globalization
+@inherits UmbracoViewPage<IList<DatesOption>>
+@*
+	Expected View Data:
+	-------------------
+	StandardInfo (object - StandardViewInfo)		: Version, Current environment, etc.
+	Status (object - StatusMessage)					: Status of operations
+
+*@
+@{
+	Layout = "_Master.cshtml";
+	var paramStandardInfo = Mvc.GetSafeViewData(ViewData, "StandardInfo", new StandardViewInfo()) as StandardViewInfo;
+	var paramStatus = Mvc.GetSafeViewData(ViewData, "Status", new StatusMessage()) as StatusMessage;
+
+	//	IEnumerable<AuditableContent> contentList = Model.ToList();
+	//	var propertyAlias = Dragonfly.UmbracoHelpers.Mvc.GetSafeViewDataString(ViewData, "PropertyAlias");
+	// var includeUnpublished = Dragonfly.UmbracoHelpers.Mvc.GetSafeViewDataBool(ViewData, "IncludeUnpublished");
+
+	//var allPropsAliases = Model.ToList();
+
+	var baseUrl = $"/umbraco/backoffice/Dragonfly/SiteAuditor/GetLogs";
+	var title = Dragonfly.UmbracoHelpers.Mvc.GetSafeViewDataString(ViewData, "Title", $"Get Logs: Select Dates");
+
+	var initDates = $"{DateTime.Today.AddDays(-1).ToString("d", CultureInfo.InvariantCulture)} - {DateTime.Today.ToString("d", CultureInfo.InvariantCulture)}";
+}
+
+@section Head {
+	<title>@title</title>
+}
+
+<!--LogOptions-->
+<h1>@title</h1>
+<p><strong>Pre-configured Options</strong></p>
+<ol>
+	@foreach (var option in Model)
+	{
+		var url = $"{baseUrl}?StartDate={option.StartDate}&EndDate={option.EndDate}";
+
+		<li><a target="_blank" href="@url">@option.Description</a></li>
+	}
+</ol>
+
+<script type="text/javascript" src="https://cdn.jsdelivr.net/jquery/latest/jquery.min.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+
+<p><strong>Select a custom date range: </strong></p>
+<p>
+	<input type="text" name="daterange" value="@initDates" />
+	<a id="CustomRangeLink" target="_blank" href="#" class="d-none">Get Logs for <span id="DateRange"></span></a>
+</p>
+
+<script>
+	$(function() {
+		$('input[name="daterange"]').daterangepicker({
+			opens: 'left'
+		}, function(start, end, label) {
+			var dateRangeText = start.format('MM-DD-YYYY') + ' to ' + end.format('MM-DD-YYYY');
+			
+			var startDate = start.format('MM-DD-YYYY');
+			var endDatePlusOne = end.add(1, 'days').format('MM-DD-YYYY');
+			var url = "/umbraco/backoffice/Dragonfly/SiteAuditor/GetLogs?StartDate=" + startDate + "%2012:00:00%20AM&EndDate=" + endDatePlusOne + "%2012:00:00%20AM";
+
+			$('span[id="DateRange"]').html(dateRangeText);
+			$('a[id="CustomRangeLink"]').attr("href", url);
+			$('a[id="CustomRangeLink"]').removeClass("d-none");
+
+			// console.log("A new date selection was made: " + dateRangeText);
+		});
+	});
+</script>
