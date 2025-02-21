@@ -26,9 +26,9 @@ using Umbraco.Extensions;
 using Dragonfly.NetModels;
 using Dragonfly.SiteAuditor.Models;
 using Dragonfly.NetHelperServices;
+using Dragonfly.UmbracoHelpers;
 using Serilog.Formatting.Compact.Reader;
 using Umbraco.Cms.Core.PropertyEditors.ValueConverters;
-using Microsoft.Extensions.Logging.Abstractions;
 
 #pragma warning disable 0168
 public class SiteAuditorService
@@ -38,11 +38,14 @@ public class SiteAuditorService
 
 	private IEnumerable<AuditableContent> _AllAuditableContent = new List<AuditableContent>();
 
+	private IEnumerable<AuditableContent> _AllPublishedAuditableContent = new List<AuditableContent>();
+
 	private IEnumerable<AuditableMedia> _AllAuditableMedia = new List<AuditableMedia>();
 
 	private IEnumerable<IContent> _AllContent = new List<IContent>();
 
-	private IEnumerable<IMedia> _AllMedia = new List<IMedia>();
+	//private IEnumerable<IMedia> _AllMedia = new List<IMedia>();
+	private List<IPublishedContent> _AllIPubMedia = new List<IPublishedContent>();
 
 	/// <summary>
 	/// Use .GetAllCompositions() to return this list
@@ -104,6 +107,7 @@ public class SiteAuditorService
 	private bool _HasUmbracoContext;
 
 
+
 	public SiteAuditorService(
 		DependencyLoader dependencies,
 		ILogger<SiteAuditorService> logger,
@@ -136,42 +140,27 @@ public class SiteAuditorService
 
 	#endregion
 
-	#region All Nodes (IPublishedContent)
+	#region All Published Content (IPublishedContent)
 
 	/// <summary>
-	/// Gets all site nodes as IPublishedContent
+	/// Gets all Content nodes as IPublishedContent
 	/// </summary>
-	/// <param name="IncludeUnpublished">Should unpublished nodes be included? (They will be returned as 'virtual' IPublishedContent models)</param>
 	/// <returns></returns>
-	public IEnumerable<IPublishedContent> GetAllNodes()
+	public IList<IPublishedContent> GetAllPublishedContent()
 	{
 		var nodesList = new List<IPublishedContent>();
 
-		//if (IncludeUnpublished)
-		//{
-		//    //Get nodes as IContent
-		//    var topLevelNodes = _services.ContentService.GetRootContent().OrderBy(n => n.SortOrder);
-
-		//    foreach (var thisNode in topLevelNodes)
-		//    {
-		//        nodesList.AddRange(LoopNodes(thisNode));
-		//    }
-		//}
-		//else
-		//{
-		//Get nodes as IPublishedContent
 		var topLevelNodes = _umbracoHelper.ContentAtRoot().OrderBy(n => n.SortOrder);
 
 		foreach (var thisNode in topLevelNodes)
 		{
 			nodesList.AddRange(LoopNodes(thisNode));
 		}
-		// }
 
 		return nodesList;
 	}
 
-	private IEnumerable<IPublishedContent> LoopNodes(IPublishedContent ThisNode)
+	private IList<IPublishedContent> LoopNodes(IPublishedContent ThisNode)
 	{
 		var nodesList = new List<IPublishedContent>();
 
@@ -195,31 +184,6 @@ public class SiteAuditorService
 
 		return nodesList;
 	}
-
-	//private IEnumerable<IPublishedContent> LoopNodes(IContent ThisNode)
-	//{
-	//    var nodesList = new List<IPublishedContent>();
-
-	//    //Add current node, then loop for children
-	//    try
-	//    {
-	//        nodesList.Add(ThisNode.ToPublishedContent());
-
-	//        if (ThisNode.Children().Any())
-	//        {
-	//            foreach (var childNode in ThisNode.Children().OrderBy(n => n.SortOrder))
-	//            {
-	//                nodesList.AddRange(LoopNodes(childNode));
-	//            }
-	//        }
-	//    }
-	//    catch (Exception e)
-	//    {
-	//        //skip
-	//    }
-
-	//    return nodesList;
-	//}
 
 	#endregion
 
@@ -272,24 +236,50 @@ public class SiteAuditorService
 	/// <summary>
 	/// Gets all site nodes as AuditableContent models
 	/// </summary>
+	/// <param name="DocTypeAlias"></param>
 	/// <returns></returns>
-	public List<AuditableContent> GetContentNodes()
+	public List<AuditableContent> GetContentNodes(bool PublishedOnly)
 	{
-		if (_AllAuditableContent.Any())
+		if (PublishedOnly)
 		{
-			return _AllAuditableContent.ToList();
+			if (_AllPublishedAuditableContent.Any())
+			{
+				return _AllPublishedAuditableContent.ToList();
+			}
+		}
+		else
+		{
+			if (_AllAuditableContent.Any())
+			{
+				return _AllAuditableContent.ToList();
+			}
 		}
 
 		var nodesList = new List<AuditableContent>();
 
-		var topLevelContentNodes = _services.ContentService!.GetRootContent().OrderBy(n => n.SortOrder);
-
-		foreach (var thisNode in topLevelContentNodes)
+		if (PublishedOnly)
 		{
-			nodesList.AddRange(LoopForAuditableContentNodes(thisNode));
+			var topLevelContentNodes = _umbracoHelper.ContentAtRoot().OrderBy(n => n.SortOrder);
+
+			foreach (var thisNode in topLevelContentNodes)
+			{
+				nodesList.AddRange(LoopForAuditableContentNodes(thisNode));
+			}
+
+			_AllPublishedAuditableContent = nodesList;
+		}
+		else
+		{
+			var topLevelContentNodes = _services.ContentService!.GetRootContent().OrderBy(n => n.SortOrder);
+
+			foreach (var thisNode in topLevelContentNodes)
+			{
+				nodesList.AddRange(LoopForAuditableContentNodes(thisNode));
+			}
+
+			_AllAuditableContent = nodesList;
 		}
 
-		_AllAuditableContent = nodesList;
 		return nodesList;
 	}
 
@@ -298,16 +288,28 @@ public class SiteAuditorService
 	/// </summary>
 	/// <param name="RootNodeId">Integer Id of Root Node</param>
 	/// <returns></returns>
-	public List<AuditableContent> GetContentNodes(int RootNodeId)
+	public List<AuditableContent> GetContentNodes(int RootNodeId, bool PublishedOnly)
 	{
 		var nodesList = new List<AuditableContent>();
 
-		var topLevelNodes = _services.ContentService!.GetByIds(RootNodeId.AsEnumerableOfOne())
-			.OrderBy(n => n.SortOrder);
-
-		foreach (var thisNode in topLevelNodes)
+		if (PublishedOnly)
 		{
-			nodesList.AddRange(LoopForAuditableContentNodes(thisNode));
+			var topLevelNodes = _umbracoHelper.Content(RootNodeId.AsEnumerableOfOne()).OrderBy(n => n.SortOrder);
+
+			foreach (var thisNode in topLevelNodes)
+			{
+				nodesList.AddRange(LoopForAuditableContentNodes(thisNode));
+			}
+		}
+		else
+		{
+			var topLevelNodes = _services.ContentService!.GetByIds(RootNodeId.AsEnumerableOfOne())
+				.OrderBy(n => n.SortOrder);
+
+			foreach (var thisNode in topLevelNodes)
+			{
+				nodesList.AddRange(LoopForAuditableContentNodes(thisNode));
+			}
 		}
 
 		return nodesList;
@@ -318,50 +320,76 @@ public class SiteAuditorService
 	/// </summary>
 	/// <param name="RootNodeUdi">Udi of Root Node</param>
 	/// <returns></returns>
-	public List<AuditableContent> GetContentNodes(Udi RootNodeUdi)
+	public List<AuditableContent> GetContentNodes(Udi RootNodeUdi, bool PublishedOnly)
 	{
 		var nodesList = new List<AuditableContent>();
 
-		//var TopLevelNodes = umbHelper.ContentAtRoot();
-		var topLevelNodes =
-			_services.ContentService!.GetByIds(RootNodeUdi.AsEnumerableOfOne())!.OrderBy(n => n.SortOrder);
-
-		foreach (var thisNode in topLevelNodes)
+		if (PublishedOnly)
 		{
-			nodesList.AddRange(LoopForAuditableContentNodes(thisNode));
-		}
+			var topLevelNodes = _umbracoHelper.Content(RootNodeUdi.AsEnumerableOfOne()).OrderBy(n => n.SortOrder);
 
-		return nodesList;
-	}
-
-	public List<AuditableContent> GetContentNodes(string DocTypeAlias)
-	{
-		var nodesList = new List<AuditableContent>();
-
-		IEnumerable<IContent> allContent;
-		if (_AllContent.Any())
-		{
-			allContent = _AllContent.ToList();
+			foreach (var thisNode in topLevelNodes)
+			{
+				nodesList.AddRange(LoopForAuditableContentNodes(thisNode));
+			}
 		}
 		else
 		{
-			allContent = GetAllContent().ToList();
+			var topLevelNodes = _services.ContentService!.GetByIds(RootNodeUdi.AsEnumerableOfOne())!.OrderBy(n => n.SortOrder);
+
+			foreach (var thisNode in topLevelNodes)
+			{
+				nodesList.AddRange(LoopForAuditableContentNodes(thisNode));
+			}
 		}
 
-		var filteredContent = allContent.Where(n => n.ContentType.Alias == DocTypeAlias);
+		return nodesList;
+	}
 
-		foreach (var content in filteredContent)
+	public List<AuditableContent> GetContentNodes(string DocTypeAlias, bool PublishedOnly)
+	{
+		var nodesList = new List<AuditableContent>();
+
+		if (PublishedOnly)
 		{
-			nodesList.Add(ConvertIContentToAuditableContent(content));
+			var allPublishedContent = GetAllPublishedContent();
+
+			var filteredContent = allPublishedContent.Where(n => n.ContentType.Alias == DocTypeAlias);
+
+			foreach (var content in filteredContent)
+			{
+				nodesList.Add(ConvertIPubContentToAuditableContent(content));
+			}
+		}
+		else
+		{
+			IEnumerable<IContent> allContent;
+			if (_AllContent.Any())
+			{
+				allContent = _AllContent.ToList();
+			}
+			else
+			{
+				allContent = GetAllContent().ToList();
+			}
+
+			var filteredContent = allContent.Where(n => n.ContentType.Alias == DocTypeAlias);
+
+			foreach (var content in filteredContent)
+			{
+				nodesList.Add(ConvertIContentToAuditableContent(content));
+			}
+
 		}
 
 		return nodesList;
 	}
 
 
-	public List<KeyValuePair<AuditableContent, NodePropertyDataTypeInfo>> GetContentNodesUsingElement(
-		string DocTypeAlias)
+	public List<KeyValuePair<AuditableContent, NodePropertyDataTypeInfo>> GetContentNodesUsingElement(string DocTypeAlias, bool PublishedOnly)
 	{
+		//TODO: This doesn't work with Published Only - needs fixing
+
 		_logger.LogDebug($"~~DocTypeAlias: {DocTypeAlias}");
 		//DataTypes using the Element
 		var dataTypes = AllDataTypesUsingElement(DocTypeAlias).ToList();
@@ -379,74 +407,127 @@ public class SiteAuditorService
 		foreach (var property in possibleProperties)
 		{
 			//Content Nodes with properties which might use the element type
-			var allContentWithProp = GetContentWithProperty(property.Key.Alias);
+			var allContentWithProp = GetContentWithProperty(property.Key.Alias, PublishedOnly);
 
 			//Nodes where the property IS using the Element
-			foreach (var content in allContentWithProp)
+			if (PublishedOnly)
 			{
-				if (content.UmbContentNode != null)
+				//USE IPublishedContent
+				foreach (var content in allContentWithProp)
 				{
-					_logger.LogDebug(
-						$"1. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}'");
-
-					var info = _auditorInfoService.GetPropertyDataTypeInfo(property.Key.Alias, content.UmbContentNode);
-					_logger.LogDebug(
-						$"2. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}' - Info.DocType='{info.DocTypeAlias}'");
-
-					if (info.PropertyData != null)
+					if (content.UmbPublishedNode != null)
 					{
-						var valueString = info.PropertyData.ToString();
-						_logger.LogDebug(
-							$"3A. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}' - Value='{(valueString == null ? "NULL" : valueString)}'");
+						_logger.LogDebug($"1. Node #{content.UmbPublishedNode.Id} - {content.UmbPublishedNode.Name} for Element use: Property '{property.Key.Alias}'");
 
-						var elementContentType = _services.ContentTypeService!.Get(DocTypeAlias);
-						_logger.LogDebug(
-							$"4. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}' - elementContentType='{(elementContentType == null ? "NULL" : elementContentType.Alias)}'");
+						var info = _auditorInfoService.GetPropertyDataTypeInfo(property.Key.Alias, content.UmbPublishedNode);
+						_logger.LogDebug($"2. Node #{content.UmbPublishedNode.Id} - {content.UmbPublishedNode.Name} for Element use: Property '{property.Key.Alias}' - Info.DocType='{info.DocTypeAlias}'");
 
-						if (elementContentType != null)
+						if (info.PropertyData != null)
 						{
-							var elementGuid = elementContentType.Key;
-							_logger.LogInformation(
-								$"5. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}' - elementGuid='{elementGuid.ToString()}'");
+							var valueString = info.PropertyData.ToString();
+							_logger.LogDebug($"3A. Node #{content.UmbPublishedNode.Id} - {content.UmbPublishedNode.Name} for Element use: Property '{property.Key.Alias}' - Value='{(valueString == null ? "NULL" : valueString)}'");
 
-							if (valueString != null && valueString.Contains(elementGuid.ToString()))
-							{
-								_logger.LogInformation(
-									$"6A. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}' - Value Includes GUID!");
+							var elementContentType = _services.ContentTypeService!.Get(DocTypeAlias);
+							_logger.LogDebug($"4. Node #{content.UmbPublishedNode.Id} - {content.UmbPublishedNode.Name} for Element use: Property '{property.Key.Alias}' - elementContentType='{(elementContentType == null ? "NULL" : elementContentType.Alias)}'");
 
-								var match = new KeyValuePair<AuditableContent, NodePropertyDataTypeInfo>(content, info);
-								finalContentList.Add(match);
-							}
-							else
+							if (elementContentType != null)
 							{
-								var elementAlias = elementContentType.Alias;
-								_logger.LogInformation(
-									$"6B. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}' - elementAlias='{(elementAlias == null ? "NULL" : elementAlias.ToString())}'");
-								if (elementAlias != null && valueString != null)
+								var elementGuid = elementContentType.Key;
+								_logger.LogInformation($"5. Node #{content.UmbPublishedNode.Id} - {content.UmbPublishedNode.Name} for Element use: Property '{property.Key.Alias}' - elementGuid='{elementGuid.ToString()}'");
+
+								if (valueString != null && valueString.Contains(elementGuid.ToString()))
 								{
-									if (valueString.Contains(elementAlias.ToString()))
-									{
-										_logger.LogInformation(
-											$"7A. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}' - Value Includes Alias!");
+									_logger.LogInformation($"6A. Node #{content.UmbPublishedNode.Id} - {content.UmbPublishedNode.Name} for Element use: Property '{property.Key.Alias}' - Value Includes GUID!");
 
-										var match = new KeyValuePair<AuditableContent, NodePropertyDataTypeInfo>(
-											content,
-											info);
-										finalContentList.Add(match);
-									}
-									else
+									var match = new KeyValuePair<AuditableContent, NodePropertyDataTypeInfo>(content, info);
+									finalContentList.Add(match);
+								}
+								else
+								{
+									var elementAlias = elementContentType.Alias;
+									_logger.LogInformation($"6B. Node #{content.UmbPublishedNode.Id} - {content.UmbPublishedNode.Name} for Element use: Property '{property.Key.Alias}' - elementAlias='{(elementAlias == null ? "NULL" : elementAlias.ToString())}'");
+									if (elementAlias != null && valueString != null)
 									{
-										_logger.LogInformation(
-											$"7B. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}' - Value DOES NOT include Alias!");
+										if (valueString.Contains(elementAlias.ToString()))
+										{
+											_logger.LogInformation($"7A. Node #{content.UmbPublishedNode.Id} - {content.UmbPublishedNode.Name} for Element use: Property '{property.Key.Alias}' - Value Includes Alias!");
+
+											var match = new KeyValuePair<AuditableContent, NodePropertyDataTypeInfo>(content, info);
+											finalContentList.Add(match);
+										}
+										else
+										{
+											_logger.LogInformation($"7B. Node #{content.UmbPublishedNode.Id} - {content.UmbPublishedNode.Name} for Element use: Property '{property.Key.Alias}' - Value DOES NOT include Alias!");
+										}
 									}
 								}
 							}
 						}
+						else
+						{
+							_logger.LogDebug($"3B. Node #{content.UmbPublishedNode.Id} - {content.UmbPublishedNode.Name} for Element use: Property '{property.Key.Alias}' - PropertyData IS NULL'");
+						}
 					}
-					else
+				}
+			}
+			else
+			{
+				//USE IContent
+				foreach (var content in allContentWithProp)
+				{
+					if (content.UmbContentNode != null)
 					{
 						_logger.LogDebug(
-							$"3B. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}' - PropertyData IS NULL'");
+							$"1. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}'");
+
+						var info = _auditorInfoService.GetPropertyDataTypeInfo(property.Key.Alias, content.UmbContentNode);
+						_logger.LogDebug($"2. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}' - Info.DocType='{info.DocTypeAlias}'");
+
+						if (info.PropertyData != null)
+						{
+							var valueString = info.PropertyData.ToString();
+							_logger.LogDebug($"3A. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}' - Value='{(valueString == null ? "NULL" : valueString)}'");
+
+							var elementContentType = _services.ContentTypeService!.Get(DocTypeAlias);
+							_logger.LogDebug($"4. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}' - elementContentType='{(elementContentType == null ? "NULL" : elementContentType.Alias)}'");
+
+							if (elementContentType != null)
+							{
+								var elementGuid = elementContentType.Key;
+								_logger.LogInformation($"5. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}' - elementGuid='{elementGuid.ToString()}'");
+
+								if (valueString != null && valueString.Contains(elementGuid.ToString()))
+								{
+									_logger.LogInformation($"6A. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}' - Value Includes GUID!");
+
+									var match = new KeyValuePair<AuditableContent, NodePropertyDataTypeInfo>(content, info);
+									finalContentList.Add(match);
+								}
+								else
+								{
+									var elementAlias = elementContentType.Alias;
+									_logger.LogInformation($"6B. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}' - elementAlias='{(elementAlias == null ? "NULL" : elementAlias.ToString())}'");
+									if (elementAlias != null && valueString != null)
+									{
+										if (valueString.Contains(elementAlias.ToString()))
+										{
+											_logger.LogInformation($"7A. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}' - Value Includes Alias!");
+
+											var match = new KeyValuePair<AuditableContent, NodePropertyDataTypeInfo>(content, info);
+											finalContentList.Add(match);
+										}
+										else
+										{
+											_logger.LogInformation($"7B. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}' - Value DOES NOT include Alias!");
+										}
+									}
+								}
+							}
+						}
+						else
+						{
+							_logger.LogDebug($"3B. Node #{content.UmbContentNode.Id} - {content.UmbContentNode.Name} for Element use: Property '{property.Key.Alias}' - PropertyData IS NULL'");
+						}
 					}
 				}
 			}
@@ -456,12 +537,21 @@ public class SiteAuditorService
 
 	}
 
-	public List<AuditableContent> GetContentWithProperty(string PropertyAlias)
+	public List<AuditableContent> GetContentWithProperty(string PropertyAlias, bool PublishedOnly)
 	{
-		var allContent = GetAllContent();
-		var contentWithProp = allContent.Where(n => n.HasProperty(PropertyAlias)).ToList();
+		if (PublishedOnly)
+		{
+			var allContent = GetAllPublishedContent();
+			var contentWithProp = allContent.Where(n => n.HasProperty(PropertyAlias)).ToList();
+			return ConvertIPubContentToAuditableContent(contentWithProp);
+		}
+		else
+		{
 
-		return ConvertIContentToAuditableContent(contentWithProp);
+			var allContent = GetAllContent();
+			var contentWithProp = allContent.Where(n => n.HasProperty(PropertyAlias)).ToList();
+			return ConvertIContentToAuditableContent(contentWithProp);
+		}
 	}
 
 	internal List<AuditableContent> LoopForAuditableContentNodes(IContent ThisNode)
@@ -489,12 +579,44 @@ public class SiteAuditorService
 		return nodesList;
 	}
 
+	internal List<AuditableContent> LoopForAuditableContentNodes(IPublishedContent ThisNode)
+	{
+		var nodesList = new List<AuditableContent>();
+
+		//Add current node, then loop for children
+		AuditableContent auditContent = ConvertIPubContentToAuditableContent(ThisNode);
+		nodesList.Add(auditContent);
+
+		var hasChildren = ThisNode.Children() != null;
+		if (hasChildren)
+		{
+			var allChildren = ThisNode.Children()!.ToList();
+			foreach (var childNode in allChildren.OrderBy(n => n.SortOrder))
+			{
+				nodesList.AddRange(LoopForAuditableContentNodes(childNode));
+			}
+		}
+
+		return nodesList;
+	}
+
+
 	private AuditableContent ConvertIContentToAuditableContent(IContent ThisIContent)
 	{
 		var ac = new AuditableContent();
 
 		ac.UmbContentNode = ThisIContent;
 		ac.IsPublished = ac.UmbContentNode.Published;
+		ac.NodeId = ThisIContent.Id;
+		ac.NodeUdi = ThisIContent.GetUdi().ToString();
+		ac.NodeName = ThisIContent.Name ?? "";
+		ac.NodeContentTypeAlias = ThisIContent.ContentType.Alias;
+		ac.NodeParentId = ThisIContent.ParentId;
+		ac.NodeLevel = ThisIContent.Level;
+		ac.NodeSortOrder = ThisIContent.SortOrder;
+		ac.NodeCreateDate = ThisIContent.CreateDate;
+		ac.NodeUpdateDate = ThisIContent.UpdateDate;
+
 
 		if (ThisIContent.TemplateId != null)
 		{
@@ -524,8 +646,7 @@ public class SiteAuditorService
 
 			if (ac.UmbPublishedNode != null && ac.UmbPublishedNode.ItemType == PublishedItemType.Element)
 			{
-				_logger.LogError(
-					$"SiteAuditorService.ConvertIContentToAuditableContent: Invalid Item Type (Element) on Node #{ac.UmbContentNode.Id} - Document Type = {ac.UmbContentNode.ContentType.Name}");
+				_logger.LogError($"SiteAuditorService.ConvertIContentToAuditableContent: Invalid Item Type (Element) on Node #{ac.UmbContentNode.Id} - Document Type = {ac.UmbContentNode.ContentType.Name}");
 			}
 			else
 			{
@@ -566,66 +687,125 @@ public class SiteAuditorService
 
 	private AuditableContent ConvertIPubContentToAuditableContent(IPublishedContent PubContentNode)
 	{
-		var content = _services.ContentService!.GetById(PubContentNode.Id);
+		var content = _umbracoHelper.Content(PubContentNode.Id);
 
 		var ac = new AuditableContent();
 		if (content != null)
 		{
-			ac.UmbContentNode = content;
-			ac.NodePath = _auditorInfoService.NodePath(content);
+			ac.UmbContentNode = null;
+			ac.NodePath = _auditorInfoService.PublishedContentNodePath(content);
 			ac.TemplateAlias = GetTemplateAlias(content);
+			ac.FullNiceUrl = content.Url(mode: UrlMode.Absolute);
+			ac.RelativeNiceUrl = content.Url(mode: UrlMode.Relative);
+			ac.IsPublished = true;
+
+			ac.NodeId = content.Id;
+			ac.NodeUdi = content.ToUdi().ToString();
+			ac.NodeName = content.Name ?? "";
+			ac.NodeContentTypeAlias = content.ContentType.Alias;
+			ac.NodeParentId = content.Parent != null ? content.Parent.Id : 0;
+			ac.NodeLevel = content.Level;
+			ac.NodeSortOrder = content.SortOrder;
+			ac.NodeCreateDate = content.CreateDate;
+			ac.NodeUpdateDate = content.UpdateDate;
 		}
 
 		ac.UmbPublishedNode = PubContentNode;
 		ac.CreateUser = _auditorInfoService.GetUser(PubContentNode.CreatorId);
 		ac.UpdateUser = _auditorInfoService.GetUser(PubContentNode.WriterId);
-		//this.DocTypes = new List<string>();
 
 		return ac;
+	}
+
+	private List<AuditableContent> ConvertIPubContentToAuditableContent(List<IPublishedContent> ContentList)
+	{
+		var nodesList = new List<AuditableContent>();
+		foreach (var content in ContentList)
+		{
+			nodesList.Add(ConvertIPubContentToAuditableContent(content));
+		}
+
+		return nodesList;
 	}
 
 	#endregion
 
 	#region Media
 
-	public List<IMedia> GetAllMedia()
+	public List<IPublishedContent> GetAllIPubMedia()
 	{
-		var nodesList = new List<IMedia>();
+		var nodesList = new List<IPublishedContent>();
 
-		var topLevelNodes = _services.MediaService!.GetRootMedia().OrderBy(n => n.SortOrder);
+		var topLevelNodes = _umbracoHelper.MediaAtRoot().OrderBy(n => n.SortOrder);
 
 		foreach (var thisNode in topLevelNodes)
 		{
-			nodesList.AddRange(LoopForMediaNodes(thisNode));
+			nodesList.AddRange(LoopForIPubMediaNodes(thisNode));
 		}
 
-		_AllMedia = nodesList;
+		_AllIPubMedia = nodesList;
 		return nodesList;
 	}
 
-	internal List<IMedia> LoopForMediaNodes(IMedia ThisNode)
+	internal List<IPublishedContent> LoopForIPubMediaNodes(IPublishedContent ThisNode)
 	{
-		var nodesList = new List<IMedia>();
+		var nodesList = new List<IPublishedContent>();
 
 		//Add current node, then loop for children
 		nodesList.Add(ThisNode);
 
-		//figure out num of children
-		long countChildren;
-		var test = _services.MediaService!.GetPagedChildren(ThisNode.Id, 0, 1, out countChildren);
-		if (countChildren > 0)
+
+		var hasChildren = ThisNode.Children != null;
+		if (hasChildren)
 		{
-			long countTest;
-			var allChildren =
-				_services.MediaService.GetPagedChildren(ThisNode.Id, 0, Convert.ToInt32(countChildren), out countTest);
+			var allChildren = ThisNode.Children!.ToList();
 			foreach (var childNode in allChildren.OrderBy(n => n.SortOrder))
 			{
-				nodesList.AddRange(LoopForMediaNodes(childNode));
+				nodesList.AddRange(LoopForIPubMediaNodes(childNode));
 			}
 		}
 
 		return nodesList;
 	}
+
+	//public List<IMedia> GetAllMedia()
+	//{
+	//	var nodesList = new List<IMedia>();
+
+	//	var topLevelNodes = _services.MediaService!.GetRootMedia().OrderBy(n => n.SortOrder);
+
+	//	foreach (var thisNode in topLevelNodes)
+	//	{
+	//		nodesList.AddRange(LoopForMediaNodes(thisNode));
+	//	}
+
+	//	_AllMedia = nodesList;
+	//	return nodesList;
+	//}
+
+	//internal List<IMedia> LoopForMediaNodes(IMedia ThisNode)
+	//{
+	//	var nodesList = new List<IMedia>();
+
+	//	//Add current node, then loop for children
+	//	nodesList.Add(ThisNode);
+
+	//	//figure out num of children
+	//	long countChildren;
+	//	var test = _services.MediaService!.GetPagedChildren(ThisNode.Id, 0, 1, out countChildren);
+	//	if (countChildren > 0)
+	//	{
+	//		long countTest;
+	//		var allChildren =
+	//			_services.MediaService.GetPagedChildren(ThisNode.Id, 0, Convert.ToInt32(countChildren), out countTest);
+	//		foreach (var childNode in allChildren.OrderBy(n => n.SortOrder))
+	//		{
+	//			nodesList.AddRange(LoopForMediaNodes(childNode));
+	//		}
+	//	}
+
+	//	return nodesList;
+	//}
 
 	#endregion
 
@@ -644,7 +824,7 @@ public class SiteAuditorService
 
 		var nodesList = new List<AuditableMedia>();
 
-		var topLevelNodes = _services.MediaService!.GetRootMedia().OrderBy(n => n.SortOrder);
+		var topLevelNodes = _umbracoHelper.MediaAtRoot().OrderBy(n => n.SortOrder);
 
 		foreach (var thisNode in topLevelNodes)
 		{
@@ -659,64 +839,39 @@ public class SiteAuditorService
 	{
 		var nodesList = new List<AuditableMedia>();
 
-		IEnumerable<IMedia> allMedia;
-		if (_AllMedia.Any())
+		IEnumerable<IPublishedContent> allMedia;
+		if (_AllIPubMedia.Any())
 		{
-			allMedia = _AllMedia.ToList();
+			allMedia = _AllIPubMedia.ToList();
 		}
 		else
 		{
-			allMedia = GetAllMedia().ToList();
+			allMedia = GetAllIPubMedia().ToList();
 		}
 
 		var filtered = allMedia.Where(n => n.ContentType.Alias == MediaTypeAlias);
 
 		foreach (var item in filtered)
 		{
-			nodesList.Add(ConvertIMediaToAuditableMedia(item));
+			nodesList.Add(ConvertIPubMediaToAuditableMedia(item));
 		}
 
 		return nodesList;
 	}
 
-	internal List<AuditableMedia> LoopForAuditableMediaNodes(IMedia ThisNode)
-	{
-		var nodesList = new List<AuditableMedia>();
-
-		//Add current node, then loop for children
-		AuditableMedia auditContent = ConvertIMediaToAuditableMedia(ThisNode);
-		nodesList.Add(auditContent);
-
-		//figure out num of children
-		long countChildren;
-		var test = _services.MediaService!.GetPagedChildren(ThisNode.Id, 0, 1, out countChildren);
-		if (countChildren > 0)
-		{
-			long countTest;
-			var allChildren = _services.MediaService.GetPagedChildren(ThisNode.Id, 0,
-				Convert.ToInt32(countChildren), out countTest);
-			foreach (var childNode in allChildren.OrderBy(n => n.SortOrder))
-			{
-				nodesList.AddRange(LoopForAuditableMediaNodes(childNode));
-			}
-		}
-
-		return nodesList;
-	}
-
-	private AuditableMedia ConvertIMediaToAuditableMedia(IMedia ThisIMedia)
+	private AuditableMedia ConvertIPubMediaToAuditableMedia(IPublishedContent ThisIPubMedia)
 	{
 		var am = new AuditableMedia();
 
-		am.UmbMediaNode = ThisIMedia;
+		//am.UmbMediaNode = _services.MediaService.GetById(ThisIPubMedia.Id);
 
-		var iPub = _umbracoHelper.Media(ThisIMedia.Id);
-		am.UmbPublishedNode = iPub;
+		var iPub = ThisIPubMedia;
+		am.UmbPublishedNode = ThisIPubMedia;
 
 		if (iPub != null)
 		{
-			am.WidthPixels = ThisIMedia.GetValue<int>("umbracoWidth");
-			am.HeightPixels = ThisIMedia.GetValue<int>("umbracoHeight");
+			am.WidthPixels = ThisIPubMedia.Value<int>("umbracoWidth");
+			am.HeightPixels = ThisIPubMedia.Value<int>("umbracoHeight");
 			am.FileExtension = iPub.Value<string>("umbracoExtension");
 
 			if (iPub.HasProperty("AltText"))
@@ -728,7 +883,7 @@ public class SiteAuditorService
 				am.AltText = iPub.Value<string>("altText");
 			}
 
-			am.SizeInBytes = ThisIMedia.GetValue<long>("umbracoBytes");
+			am.SizeInBytes = ThisIPubMedia.Value<long>("umbracoBytes");
 			if (am.SizeInBytes > 0)
 			{
 				am.SizeReadable = Dragonfly.NetHelpers.Strings.FileBytesToString(am.SizeInBytes);
@@ -743,19 +898,40 @@ public class SiteAuditorService
 			? am.UmbPublishedNode.Url(mode: UrlMode.Absolute)
 			: "NONE";
 
-		am.NodePath = _auditorInfoService.NodePath(ThisIMedia);
-		am.CreateUser = _auditorInfoService.GetUser(ThisIMedia.CreatorId);
-		am.UpdateUser = _auditorInfoService.GetUser(ThisIMedia.WriterId);
+		am.NodePath = _auditorInfoService.MediaNodePath(ThisIPubMedia);
+		am.CreateUser = _auditorInfoService.GetUser(ThisIPubMedia.CreatorId);
+		am.UpdateUser = _auditorInfoService.GetUser(ThisIPubMedia.WriterId);
 
 		return am;
 	}
 
-	private List<AuditableMedia> ConvertIMediaToAuditableMedia(List<IMedia> MediaList)
+	private List<AuditableMedia> ConvertIPubMediaToAuditableMedia(List<IPublishedContent> MediaList)
 	{
 		var nodesList = new List<AuditableMedia>();
 		foreach (var media in MediaList)
 		{
-			nodesList.Add(ConvertIMediaToAuditableMedia(media));
+			nodesList.Add(ConvertIPubMediaToAuditableMedia(media));
+		}
+
+		return nodesList;
+	}
+
+	internal List<AuditableMedia> LoopForAuditableMediaNodes(IPublishedContent ThisNode)
+	{
+		var nodesList = new List<AuditableMedia>();
+
+		//Add current node, then loop for children
+		AuditableMedia auditContent = ConvertIPubMediaToAuditableMedia(ThisNode);
+		nodesList.Add(auditContent);
+
+		var hasChildren = ThisNode.Children != null;
+		if (hasChildren)
+		{
+			var allChildren = ThisNode.Children!.ToList();
+			foreach (var childNode in allChildren.OrderBy(n => n.SortOrder))
+			{
+				nodesList.AddRange(LoopForAuditableMediaNodes(childNode));
+			}
 		}
 
 		return nodesList;
@@ -763,11 +939,95 @@ public class SiteAuditorService
 
 	public List<AuditableMedia> GetMediaWithProperty(string PropertyAlias)
 	{
-		var allMedia = GetAllMedia();
+		var allMedia = GetAllIPubMedia();
 		var withProp = allMedia.Where(n => n.HasProperty(PropertyAlias)).ToList();
 
-		return ConvertIMediaToAuditableMedia(withProp);
+		return ConvertIPubMediaToAuditableMedia(withProp);
 	}
+
+	//internal List<AuditableMedia> LoopForAuditableMediaNodes(IMedia ThisNode)
+	//{
+	//	var nodesList = new List<AuditableMedia>();
+
+	//	//Add current node, then loop for children
+	//	AuditableMedia auditContent = ConvertIMediaToAuditableMedia(ThisNode);
+	//	nodesList.Add(auditContent);
+
+	//	//figure out num of children
+	//	long countChildren;
+	//	var test = _services.MediaService!.GetPagedChildren(ThisNode.Id, 0, 1, out countChildren);
+	//	if (countChildren > 0)
+	//	{
+	//		long countTest;
+	//		var allChildren = _services.MediaService.GetPagedChildren(ThisNode.Id, 0,
+	//			Convert.ToInt32(countChildren), out countTest);
+	//		foreach (var childNode in allChildren.OrderBy(n => n.SortOrder))
+	//		{
+	//			nodesList.AddRange(LoopForAuditableMediaNodes(childNode));
+	//		}
+	//	}
+
+	//	return nodesList;
+	//}
+
+	//private AuditableMedia ConvertIMediaToAuditableMedia(IMedia ThisIMedia)
+	//{
+	//	var am = new AuditableMedia();
+
+	//	//am.UmbMediaNode = ThisIMedia;
+
+	//	var iPub = _umbracoHelper.Media(ThisIMedia.Id);
+	//	am.UmbPublishedNode = iPub;
+
+	//	if (iPub != null)
+	//	{
+	//		am.WidthPixels = ThisIMedia.GetValue<int>("umbracoWidth");
+	//		am.HeightPixels = ThisIMedia.GetValue<int>("umbracoHeight");
+	//		am.FileExtension = iPub.Value<string>("umbracoExtension");
+
+	//		if (iPub.HasProperty("AltText"))
+	//		{
+	//			am.AltText = iPub.Value<string>("AltText");
+	//		}
+	//		else if (iPub.HasProperty("altText"))
+	//		{
+	//			am.AltText = iPub.Value<string>("altText");
+	//		}
+
+	//		am.SizeInBytes = ThisIMedia.GetValue<long>("umbracoBytes");
+	//		if (am.SizeInBytes > 0)
+	//		{
+	//			am.SizeReadable = Dragonfly.NetHelpers.Strings.FileBytesToString(am.SizeInBytes);
+	//		}
+
+	//	}
+
+	//	am.RelativeUrl = am.UmbPublishedNode != null
+	//		? am.UmbPublishedNode.Url(mode: UrlMode.Relative)
+	//		: "NONE";
+	//	am.FullUrl = am.UmbPublishedNode != null
+	//		? am.UmbPublishedNode.Url(mode: UrlMode.Absolute)
+	//		: "NONE";
+
+	//	am.NodePath = _auditorInfoService.NodePath(ThisIMedia);
+	//	am.CreateUser = _auditorInfoService.GetUser(ThisIMedia.CreatorId);
+	//	am.UpdateUser = _auditorInfoService.GetUser(ThisIMedia.WriterId);
+
+	//	return am;
+	//}
+
+	//private List<AuditableMedia> ConvertIMediaToAuditableMedia(List<IMedia> MediaList)
+	//{
+	//	var nodesList = new List<AuditableMedia>();
+	//	foreach (var media in MediaList)
+	//	{
+	//		nodesList.Add(ConvertIMediaToAuditableMedia(media));
+	//	}
+
+	//	return nodesList;
+	//}
+
+
 
 	#endregion
 
@@ -1614,7 +1874,7 @@ public class SiteAuditorService
 
 	public GroupingCollection<AuditableContent> TemplatesUsedOnContent()
 	{
-		var allContent = this.GetContentNodes();
+		var allContent = GetContentNodes(false);
 		var allContentTemplates =
 			new GroupingCollection<AuditableContent>(allContent); //allContent.Select(n => n.TemplateAlias);
 		allContentTemplates.GroupItems(n => n.TemplateAlias);
@@ -1626,7 +1886,7 @@ public class SiteAuditorService
 		var allTemplates = _services.FileService.GetTemplates();
 		//var allTemplateAliases = _services.FileService.GetTemplates().Select(n => n.Alias).ToList();
 
-		var allContent = this.GetContentNodes();
+		var allContent = GetContentNodes(false);
 
 		var contentTemplatesInUse = allContent.Select(n => n.TemplateAlias).Distinct().ToList();
 
@@ -1645,7 +1905,7 @@ public class SiteAuditorService
 		var list = new List<AuditableTemplate>();
 		var templates = _services.FileService.GetTemplates();
 
-		var content = GetContentNodes().ToList();
+		var content = GetContentNodes(false).ToList();
 		var docTypes = GetAllDocTypes().ToList();
 
 		foreach (var temp in templates)
@@ -1724,6 +1984,18 @@ public class SiteAuditorService
 	}
 
 	private string GetTemplateAlias(IContent Content)
+	{
+		string templateAlias = "NONE";
+		if (Content.TemplateId != null)
+		{
+			var template = _services.FileService.GetTemplate((int)Content.TemplateId);
+			templateAlias = template.Alias;
+		}
+
+		return templateAlias;
+	}
+
+	private string GetTemplateAlias(IPublishedContent Content)
 	{
 		string templateAlias = "NONE";
 		if (Content.TemplateId != null)

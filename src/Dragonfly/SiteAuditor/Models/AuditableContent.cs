@@ -1,5 +1,6 @@
 ﻿namespace Dragonfly.SiteAuditor.Models;
 
+using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
 using Umbraco.Cms.Core.Models;
@@ -79,6 +80,15 @@ public class AuditableContent
 
 	public IUser? CreateUser { get; set; }
 	public IUser? UpdateUser { get; set; }
+	public int NodeId { get; set; }
+	public string NodeName { get; set; } = "";
+	public string NodeContentTypeAlias { get; set; }
+	public int NodeParentId { get; set; }
+	public int NodeLevel { get; set; }
+	public int NodeSortOrder { get; set; }
+	public DateTime NodeCreateDate { get; set; }
+	public DateTime NodeUpdateDate { get; set; }
+	public string NodeUdi { get; set; }
 
 	#endregion
 

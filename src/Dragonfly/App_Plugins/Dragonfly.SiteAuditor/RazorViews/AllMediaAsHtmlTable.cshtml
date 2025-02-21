@@ -95,25 +95,25 @@
 					}
 					catch (Exception e)
 					{
-						<span>Error on Node # @node.UmbMediaNode.Id : @e.Message</span>
+						<span>Error on Node # @node.UmbPublishedNode.Id : @e.Message</span>
 					}
 				</td>
 
 
 				@* //Node Name*@
-				<td>@node.UmbMediaNode.Name</td>
+				<td>@node.UmbPublishedNode.Name</td>
 
 				@* //Node ID*@
-				<td>@node.UmbMediaNode.Id</td>
+				<td>@node.UmbPublishedNode.Id</td>
 
 				@* //Node Path*@
 				<td>@node.NodePathAsText</td>
 
 				@* //DocType*@
-				<td>@node.UmbMediaNode.ContentType.Alias</td>
+				<td>@node.UmbPublishedNode.ContentType.Alias</td>
 
 				@* //ParentID*@
-				<td>@node.UmbMediaNode.ParentId</td>
+				<td>@(node.UmbPublishedNode.Parent != null ? node.UmbPublishedNode.Parent.Id:0)</td>
 
 				@* //Full URL*@
 				<td><small><a href="@node.FullUrl" target="_blank">@node.FullUrl</a></small></td>
@@ -138,7 +138,7 @@
 						}
 						catch (Exception e)
 						{
-							<span>Error on Node # @node.UmbMediaNode.Id : @e.Message</span>
+							<span>Error on Node # @node.UmbPublishedNode.Id : @e.Message</span>
 						}
 					</td>
 				}
@@ -168,7 +168,7 @@
 				@* //Create Date*@
 				<td>
 					@{
-						Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/DateValue.cshtml", node.UmbMediaNode.CreateDate);
+						Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/DateValue.cshtml", node.UmbPublishedNode.CreateDate);
 					}
 				</td>
 
@@ -189,7 +189,7 @@
 				@*//Date Last Updated*@
 				<td>
 					@{
-						Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/DateValue.cshtml", node.UmbMediaNode.UpdateDate);
+						Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/DateValue.cshtml", node.UmbPublishedNode.UpdateDate);
 					}
 				</td>
 
@@ -208,10 +208,10 @@
 				</td>
 
 				@* //Node UDI*@
-				<td><small>@node.UmbMediaNode.GetUdi()</small></td>
+				<td><small>@node.UmbPublishedNode.ToUdi()</small></td>
 
 				@* //Node GUID*@
-				<td><small>@node.UmbMediaNode.Key.ToString()</small></td>
+				<td><small>@node.UmbPublishedNode.Key.ToString()</small></td>
 			</tr>
 		}
 	</tbody>

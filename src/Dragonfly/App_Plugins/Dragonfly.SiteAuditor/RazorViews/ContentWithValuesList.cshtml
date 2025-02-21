@@ -27,12 +27,14 @@
 
 <!--ContentWithValuesList-->
 <h1>Get Content with Values</h1>
+<p>NOTE: Choosing the "Only Published" option is faster and less resource-intensive.</p>
+
 <h3>Available Properties</h3>
 <ol>
 @foreach (var propAlias in allPropsAliases.OrderBy(n => n))
 {
-	var url = $"/umbraco/backoffice/Dragonfly/SiteAuditor/GetContentWithValues?PropertyAlias={propAlias}";
-
-	<li>@propAlias <a target="_blank" href="@url">View</a></li>
+	var url1 = $"/umbraco/backoffice/Dragonfly/SiteAuditor/GetContentWithValues?PropertyAlias={propAlias}";
+	var url2 = $"{url1}&PublishedOnly=true";
+		<li>@propAlias <a target="_blank" href="@url1">All Content</a> | <a target="_blank" href="@url2">Only Published Content</a></li>
 }
 </ol>

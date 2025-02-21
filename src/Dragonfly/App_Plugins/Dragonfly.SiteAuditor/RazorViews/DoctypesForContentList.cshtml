@@ -27,16 +27,17 @@
 
 <!--DoctypesForContentList-->
 <h1>Get Content for a Selected Document Type</h1>
+<p>NOTE: Choosing the "Only Published" option is faster and less resource-intensive.</p>
 <p id="Nav"><a href="#ContentNodes\">Content Node Document Types</a> | <a href="#Elements">Element Types</a></p>
 
 <h3 id="ContentNodes">Available Content Node Document Types</h3>
 <ol>
 	@foreach (var docType in Model.AllNodeTypes)
 	{
-		var type = docType.IsElement ? "Nodes Using Element" : "Content Nodes of Type";
 		var api = docType.IsElement ? "GetContentForElementHtml" : "GetContentForDoctypeHtml";
-		var url = $"/umbraco/backoffice/Dragonfly/SiteAuditor/{api}?DocTypeAlias={docType.Alias}";
-		<li>@docType.Alias <a target="_blank" href="@url">View</a></li>
+		var url1 = $"/umbraco/backoffice/Dragonfly/SiteAuditor/{api}?DocTypeAlias={docType.Alias}";
+		var url2 = $"{url1}&PublishedOnly=true";
+		<li>@docType.Alias <a target="_blank" href="@url1">All Content</a> | <a target="_blank" href="@url2">Only Published Content</a></li>
 	}
 </ol>
 <p><a href="#Nav">Top Nav</a></p>
@@ -46,11 +47,11 @@
 <ol>
 	@foreach (var docType in Model.AllElementTypes)
 	{
-		var type = docType.IsElement ? "Nodes Using Element" : "Content Nodes of Type";
 		var api = docType.IsElement ? "GetContentForElementHtml" : "GetContentForDoctypeHtml";
-		var url = $"/umbraco/backoffice/Dragonfly/SiteAuditor/{api}?DocTypeAlias={docType.Alias}";
-
-		<li>@docType.Alias <a target="_blank" href="@url">View</a></li>
+		var url1 = $"/umbraco/backoffice/Dragonfly/SiteAuditor/{api}?DocTypeAlias={docType.Alias}";
+	@* 	var url2 = $"{url1}&PublishedOnly=true"; *@
+	<li>@docType.Alias <a target="_blank" href="@url1">All Content</a> @* | <a target="_blank" href="@url2">Only Published Content</a> *@
+		</li>
 	}
 </ol>
 <p><a href="#Nav">Top Nav</a></p>

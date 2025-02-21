@@ -23,7 +23,7 @@ public class AuditableMedia
 	/// <summary>
 	/// Gets or sets the node as an IMedia
 	/// </summary>
-	public IMedia? UmbMediaNode { get; internal set; }
+	//public IMedia? UmbMediaNode { get; internal set; }
 
 	/// <summary>
 	/// Gets or sets the node and an IPublishedContent

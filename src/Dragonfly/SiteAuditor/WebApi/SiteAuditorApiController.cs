@@ -83,7 +83,7 @@ public class SiteAuditorController : UmbracoAuthorizedApiController
 	public IActionResult GetAllContentAsJson()
 	{
 		var saService = GetSiteAuditorService();
-		var allNodes = saService.GetContentNodes();
+		var allNodes = saService.GetContentNodes(false);
 		var exportable = allNodes.ConvertToExportable();
 
 		//Return JSON
@@ -92,7 +92,7 @@ public class SiteAuditorController : UmbracoAuthorizedApiController
 
 	/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetAllContentAsHtmlTable
 	[HttpGet]
-	public IActionResult GetAllContentAsHtmlTable()
+	public IActionResult GetAllContentAsHtmlTable(bool PublishedOnly)
 	{
 		//Setup
 		var pvPath = RazorFilesPath() + "AllContentAsHtmlTable.cshtml";
@@ -100,13 +100,14 @@ public class SiteAuditorController : UmbracoAuthorizedApiController
 
 		//GET DATA TO DISPLAY
 		var status = new StatusMessage(true);
-		var contentNodes = saService.GetContentNodes();
+		var contentNodes = saService.GetContentNodes(PublishedOnly);
 
 		//VIEW DATA 
 		var model = contentNodes;
 		var viewData = new Dictionary<string, object>();
 		viewData.Add("StandardInfo", GetStandardViewInfo());
 		viewData.Add("Status", status);
+		viewData.Add("PublishedOnly",PublishedOnly);
 
 		//RENDER
 		var htmlTask = _ViewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
@@ -132,7 +133,7 @@ public class SiteAuditorController : UmbracoAuthorizedApiController
 		var saService = GetSiteAuditorService();
 		var returnSB = new StringBuilder();
 
-		var allNodes = saService.GetContentNodes();
+		var allNodes = saService.GetContentNodes(false);
 
 		var tableData = new StringBuilder();
 
@@ -197,11 +198,11 @@ public class SiteAuditorController : UmbracoAuthorizedApiController
 
 	/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetContentForDoctypeHtml?DocTypeAlias=X
 	[HttpGet]
-	public IActionResult GetContentForDoctypeHtml(string DocTypeAlias = "")
+	public IActionResult GetContentForDoctypeHtml(string DocTypeAlias = "",bool PublishedOnly=false)
 	{
 		if (DocTypeAlias != "")
 		{
-			return ContentForDoctypeHtml(DocTypeAlias);
+			return ContentForDoctypeHtml(DocTypeAlias,PublishedOnly);
 		}
 		else
 		{
@@ -211,11 +212,11 @@ public class SiteAuditorController : UmbracoAuthorizedApiController
 
 	/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetContentForDoctypeHtml?DocTypeAlias=X
 	[HttpGet]
-	public IActionResult GetContentForElementHtml(string DocTypeAlias = "")
+	public IActionResult GetContentForElementHtml(string DocTypeAlias = "", bool PublishedOnly=false)
 	{
 		if (DocTypeAlias != "")
 		{
-			return ContentForElementHtml(DocTypeAlias);
+			return ContentForElementHtml(DocTypeAlias,PublishedOnly);
 		}
 		else
 		{
@@ -294,7 +295,7 @@ public class SiteAuditorController : UmbracoAuthorizedApiController
 
 	}
 
-	private IActionResult ContentForDoctypeHtml(string DocTypeAlias)
+	private IActionResult ContentForDoctypeHtml(string DocTypeAlias, bool PublishedOnly)
 	{
 		//Setup
 		var pvPath = RazorFilesPath() + "AllContentAsHtmlTable.cshtml";
@@ -302,13 +303,15 @@ public class SiteAuditorController : UmbracoAuthorizedApiController
 
 		//GET DATA TO DISPLAY
 		var status = new StatusMessage(true);
-		var contentNodes = saService.GetContentNodes(DocTypeAlias);
+		var contentNodes = saService.GetContentNodes(DocTypeAlias, PublishedOnly);
 
 		//VIEW DATA 
 		var model = contentNodes;
 		var viewData = new Dictionary<string, object>();
 		viewData.Add("StandardInfo", GetStandardViewInfo());
 		viewData.Add("Status", status);
+		viewData.Add("DocTypeAlias",DocTypeAlias);
+		viewData.Add("PublishedOnly",PublishedOnly);
 
 		//RENDER
 		var htmlTask = _ViewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
@@ -324,7 +327,7 @@ public class SiteAuditorController : UmbracoAuthorizedApiController
 
 	}
 
-	private IActionResult ContentForElementHtml(string DocTypeAlias)
+	private IActionResult ContentForElementHtml(string DocTypeAlias, bool PublishedOnly)
 	{
 		//Setup
 		var pvPath = RazorFilesPath() + "AllElementContentAsHtmlTable.cshtml";
@@ -332,13 +335,15 @@ public class SiteAuditorController : UmbracoAuthorizedApiController
 
 		//GET DATA TO DISPLAY
 		var status = new StatusMessage(true);
-		var contentNodes = saService.GetContentNodesUsingElement(DocTypeAlias);
+		var contentNodes = saService.GetContentNodesUsingElement(DocTypeAlias,PublishedOnly);
 
 		//VIEW DATA 
 		var model = contentNodes;
 		var viewData = new Dictionary<string, object>();
 		viewData.Add("StandardInfo", GetStandardViewInfo());
 		viewData.Add("Status", status);
+		viewData.Add("DocTypeAlias",DocTypeAlias);
+		viewData.Add("PublishedOnly",PublishedOnly);
 
 		//RENDER
 		var htmlTask = _ViewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
@@ -476,7 +481,7 @@ public class SiteAuditorController : UmbracoAuthorizedApiController
 
 	/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetContentWithValues?PropertyAlias=xxx
 	[HttpGet]
-	public IActionResult GetContentWithValues(string PropertyAlias = "")
+	public IActionResult GetContentWithValues(string PropertyAlias = "", bool PublishedOnly=false)
 	{
 		//GET DATA TO DISPLAY
 		if (PropertyAlias == "")
@@ -485,7 +490,7 @@ public class SiteAuditorController : UmbracoAuthorizedApiController
 		}
 		else
 		{
-			return GetContentWithValuesTable(PropertyAlias);
+			return GetContentWithValuesTable(PropertyAlias,PublishedOnly);
 		}
 	}
 
@@ -530,7 +535,7 @@ public class SiteAuditorController : UmbracoAuthorizedApiController
 		return new HttpResponseMessageResult(result);
 	}
 
-	private IActionResult GetContentWithValuesTable(string PropertyAlias)
+	private IActionResult GetContentWithValuesTable(string PropertyAlias, bool PublishedOnly)
 	{
 		//Setup
 		var pvPath = RazorFilesPath() + "ContentWithValuesTable.cshtml";
@@ -541,7 +546,7 @@ public class SiteAuditorController : UmbracoAuthorizedApiController
 		var displayHtml = "";
 
 		//Get matching Property data
-		var contentNodes = saService.GetContentWithProperty(PropertyAlias);
+		var contentNodes = saService.GetContentWithProperty(PropertyAlias,PublishedOnly);
 
 		//VIEW DATA 
 		var model = contentNodes;
@@ -549,7 +554,7 @@ public class SiteAuditorController : UmbracoAuthorizedApiController
 		viewData.Add("StandardInfo", GetStandardViewInfo());
 		viewData.Add("Status", status);
 		viewData.Add("PropertyAlias", PropertyAlias);
-		// viewData.Add("IncludeUnpublished", IncludeUnpublished);
+		viewData.Add("PublishedOnly",PublishedOnly);
 
 		//RENDER
 		var htmlTask = _ViewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
@@ -1477,7 +1482,7 @@ private	string GetSerilogMappedDirectory()
 		var status = new StatusMessage(true);
 		try
 		{
-			var contentNodes = saService.GetContentNodesUsingElement(DocTypeAlias);
+			var contentNodes = saService.GetContentNodesUsingElement(DocTypeAlias, true);
 			status.RelatedObject = contentNodes;
 		}
 		catch (Exception e)
@@ -1503,7 +1508,7 @@ private	string GetSerilogMappedDirectory()
 		//GET DATA TO DISPLAY
 		var status = new StatusMessage(true);
 
-		var contentNodes = saService.GetContentNodesUsingElement(DocTypeAlias);
+		var contentNodes = saService.GetContentNodesUsingElement(DocTypeAlias, true);
 		status.RelatedObject = contentNodes;
 
 		_Logger.LogInformation($"SiteAuditor.TestData COMPLETED");

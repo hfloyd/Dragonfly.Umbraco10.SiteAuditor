@@ -11,25 +11,29 @@
 	var paramStandardInfo = Mvc.GetSafeViewData(ViewData, "StandardInfo", new StandardViewInfo()) as StandardViewInfo;
 	var paramStatus = Mvc.GetSafeViewData(ViewData, "Status", new StatusMessage()) as StatusMessage;
 	var propertyAlias = Dragonfly.UmbracoHelpers.Mvc.GetSafeViewDataString(ViewData, "PropertyAlias");
-	var includeUnpublished = Dragonfly.UmbracoHelpers.Mvc.GetSafeViewDataBool(ViewData, "IncludeUnpublished");
+	var paramPublishedOnly = Dragonfly.UmbracoHelpers.Mvc.GetSafeViewDataBool(ViewData, "PublishedOnly");
 
 	IEnumerable<AuditableContent> contentList = Model.ToList();
 
 	var counter = 0;
 	var requestUri = Dragonfly.NetHelpers.Urls.CurrentRequestUri(Context.Request);
 	var filterdByDoctype = Dragonfly.NetHelpers.Urls.GetSafeQueryStringValue<string>(requestUri, "DocTypeAlias", "");
-	var Title = Dragonfly.UmbracoHelpers.Mvc.GetSafeViewDataString(ViewData, "Title", "All Content");
+	var title = Dragonfly.UmbracoHelpers.Mvc.GetSafeViewDataString(ViewData, "Title", "All Content");
 }
 
 @section Head {
-	<title>@Title</title>
+	<title>@title</title>
 }
 
 <!--AllContentAsHtmlTable-->
-<h1>@Title</h1>
+<h1>@title</h1>
 @if (filterdByDoctype != "")
 {
 	<h2>Pages of type '@filterdByDoctype' Only</h2>
+}
+@if (paramPublishedOnly)
+{
+	<p>Only Published Nodes</p>
 }
 <p>Total Nodes Returned: @contentList.Count()</p>
 
@@ -58,7 +62,6 @@
 		@foreach (var node in contentList)
 		{
 			counter++;
-			//var dtInfo = AuditorInfoService.GetPropertyDataTypeInfo( propertyAlias, node.UmbPublishedNode);
 
 			<tr>
 
@@ -73,25 +76,24 @@
 					}
 					catch (Exception e)
 					{
-						<span>Error on Node # @node.UmbContentNode.Id : @e.Message</span>
+						<span>Error on Node # @node.NodeId : @e.Message</span>
 					}
 				</td>
-
-
+				
 				@* //Node Name*@
-				<td>@node.UmbContentNode.Name</td>
+				<td>@node.NodeName</td>
 
 				@* //Node ID*@
-				<td>@node.UmbContentNode.Id</td>
+				<td>@node.NodeId</td>
 
 				@* //Node Path*@
 				<td>@node.NodePathAsText</td>
 
 				@* //DocType*@
-				<td>@node.UmbContentNode.ContentType.Alias</td>
+				<td>@node.NodeContentTypeAlias</td>
 
 				@* //ParentID*@
-				<td>@node.UmbContentNode.ParentId</td>
+				<td>@node.NodeParentId</td>
 
 				@* //Full URL*@
 				<td>
@@ -106,10 +108,10 @@
 				</td>
 
 				@* //Level*@
-				<td>@node.UmbContentNode.Level</td>
+				<td>@node.NodeLevel</td>
 
 				@* //Sort Order*@
-				<td>@node.UmbContentNode.SortOrder</td>
+				<td>@node.NodeSortOrder</td>
 
 				@* //Template Name*@
 				<td>@node.TemplateAlias</td>
@@ -117,7 +119,7 @@
 				@* //Create Date*@
 				<td>
 					@{
-						Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/DateValue.cshtml", node.UmbContentNode.CreateDate);
+						Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/DateValue.cshtml", node.NodeCreateDate);
 					}
 				</td>
 
@@ -138,7 +140,7 @@
 				@*//Date Last Updated*@
 				<td>
 					@{
-						Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/DateValue.cshtml", node.UmbContentNode.UpdateDate);
+						Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/DateValue.cshtml", node.NodeUpdateDate);
 					}
 				</td>
 
@@ -157,7 +159,7 @@
 				</td>
 
 				@* //Node UDI*@
-				<td><small>@node.UmbContentNode.GetUdi()</small></td>
+				<td><small>@node.NodeUdi</small></td>
 			</tr>
 		}
 	</tbody>

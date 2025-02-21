@@ -154,6 +154,63 @@ public class AuditorInfoService
 		return nodepathList;
 	}
 
+	public IEnumerable<string> MediaNodePath(IPublishedContent IPubMedia)
+	{
+		var nodepathList = new List<string>();
+		string pathIdsCsv = IPubMedia.Path;
+		string[] pathIdsArray = pathIdsCsv.Split(',');
+
+		foreach (var sId in pathIdsArray)
+		{
+			if (sId != "-1")
+			{
+				IPublishedContent? getNode = _umbracoHelper.Media(Convert.ToInt32(sId));
+				if (getNode != null)
+				{
+					var nodeName = getNode.Name;
+					if (nodeName != null)
+					{
+						nodepathList.Add(nodeName);
+					}
+				}
+				else
+				{
+					nodepathList.Add($"MISSING [{sId}]");
+				}
+			}
+		}
+
+		return nodepathList;
+	}
+
+	public IEnumerable<string> PublishedContentNodePath(IPublishedContent IPub)
+	{
+		var nodepathList = new List<string>();
+		string pathIdsCsv = IPub.Path;
+		string[] pathIdsArray = pathIdsCsv.Split(',');
+
+		foreach (var sId in pathIdsArray)
+		{
+			if (sId != "-1")
+			{
+				IPublishedContent? getNode = _umbracoHelper.Content(Convert.ToInt32(sId));
+				if (getNode != null)
+				{
+					var nodeName = getNode.Name;
+					if (nodeName != null)
+					{
+						nodepathList.Add(nodeName);
+					}
+				}
+				else
+				{
+					nodepathList.Add($"MISSING [{sId}]");
+				}
+			}
+		}
+
+		return nodepathList;
+	}
 
 	/// <summary>
 	/// Takes an Umbraco content node and returns the full "path" to it using ancestor Node Names
@@ -530,6 +587,6 @@ public class AuditorInfoService
 	#endregion
 
 
-
+	
 }
 
