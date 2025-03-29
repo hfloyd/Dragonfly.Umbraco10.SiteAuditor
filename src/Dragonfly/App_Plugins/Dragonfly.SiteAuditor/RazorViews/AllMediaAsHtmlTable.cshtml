@@ -30,7 +30,7 @@
 
 @section Head {
 	<title>@title</title>
-}
+    }
 
 <!--AllMediaAsHtmlTable-->
 <h1>@title</h1>
@@ -61,6 +61,7 @@
 			{
 				<th>Width</th>
 				<th>Height</th>
+				<th>Aspect Ratio</th>
 			}
 			@if (hasAltText)
 			{
@@ -80,7 +81,7 @@
 		@foreach (var node in contentList)
 		{
 			counter++;
-			//var dtInfo = AuditorInfoService.GetPropertyDataTypeInfo( propertyAlias, node.UmbPublishedNode);
+			//var dtInfo = AuditorInfoService.GetPropertyDataTypeInfo( propertyAlias, node.UmbPublishedNode, true);
 
 			<tr>
 
@@ -113,7 +114,7 @@
 				<td>@node.UmbPublishedNode.ContentType.Alias</td>
 
 				@* //ParentID*@
-				<td>@(node.UmbPublishedNode.Parent != null ? node.UmbPublishedNode.Parent.Id:0)</td>
+				<td>@(node.UmbPublishedNode.Parent != null ? node.UmbPublishedNode.Parent.Id : 0)</td>
 
 				@* //Full URL*@
 				<td><small><a href="@node.FullUrl" target="_blank">@node.FullUrl</a></small></td>
@@ -150,6 +151,9 @@
 
 					@* //Height*@
 					<td>@node.HeightPixels</td>
+
+					@* //Aspect Ratio*@
+					<td>@SiteAuditorService.GetAspectRatio(node.WidthPixels, node.HeightPixels)</td>
 				}
 
 				@* //Alt Text*@
@@ -235,6 +239,7 @@
 			{
 				<th>Width</th>
 				<th>Height</th>
+				<th>Aspect Ratio</th>
 			}
 			@if (hasAltText)
 			{
@@ -251,3 +256,37 @@
 		</tr>
 	</tfoot>
 </table>
+
+@functions {
+	public static string GetAspectRatio(int width, int height)
+	{
+		// Handle edge cases for width and height
+		if (width == 0 && height == 0)
+		{
+			return "NONE"; 
+		}
+
+		int gcd = GCD(width, height);
+		if (gcd == 0)
+		{
+			// Handle case where gcd is 0, which means width or height is 0
+			// Return a default value to avoid division by zero
+			return "UNKNOWN"; 
+		}
+
+		int aspectWidth = width / gcd;
+		int aspectHeight = height / gcd;
+		return $"{aspectWidth}:{aspectHeight}";
+	}
+
+	private static int GCD(int a, int b)
+	{
+		while (b != 0)
+		{
+			int temp = b;
+			b = a % b;
+			a = temp;
+		}
+		return a;
+	}
+}

@@ -22,13 +22,13 @@
 		{
 			var mediaUrl = $"{iPubMedia.Url()}?width={imageWidth}&height={imageHeight}&rmode=max";
 
-			<a href="@iPubMedia.Url()" target="_blank"><img src="@mediaUrl" class="thumbnail"/></a>
+			<a href="@iPubMedia.Url()" title="Click to view full-sized image" target="_blank"><img src="@mediaUrl" class="thumbnail" /></a>
 		}
 
 		if (!thumbOnly)
 		{
-			<div>@mediaPath <small><a href="@editUrl" target="_blank">[OPEN]</a></small></div>
-			<div><small>@iPubMedia.Url()</small></div>
+			<div>@mediaPath <small><a href="@editUrl" title="Click to view in Media section" target="_blank">[OPEN]</a></small></div>
+			<div><small><a href="@iPubMedia.Url()" title="Click to view full-sized image" target="_blank">@iPubMedia.Url()</a></small></div>
 		}
 	}
 	else

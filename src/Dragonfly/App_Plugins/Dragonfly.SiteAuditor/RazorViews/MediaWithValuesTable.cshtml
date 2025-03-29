@@ -4,6 +4,7 @@
 	-------------------
 	StandardInfo (object - StandardViewInfo)		: Version, Current environment, etc.
 	Status (object - StatusMessage)					: Status of operations
+	ShowImageThumbnails (bool)							: Show image thumbnails
 
 *@
 @{
@@ -11,21 +12,23 @@
 	var paramStandardInfo = Mvc.GetSafeViewData(ViewData, "StandardInfo", new StandardViewInfo()) as StandardViewInfo;
 	var paramStatus = Mvc.GetSafeViewData(ViewData, "Status", new StatusMessage()) as StatusMessage;
 
-	IEnumerable<AuditableMedia> contentList = Model.ToList();
 	var propertyAlias = Dragonfly.UmbracoHelpers.Mvc.GetSafeViewDataString(ViewData, "PropertyAlias");
 	// var includeUnpublished = Dragonfly.UmbracoHelpers.Mvc.GetSafeViewDataBool(ViewData, "IncludeUnpublished");
 
-
+	IEnumerable<AuditableMedia> contentList = Model.ToList();
 	var counter = 0;
-	var Title = Dragonfly.UmbracoHelpers.Mvc.GetSafeViewDataString(ViewData, "Title", $"Nodes with Values for Property '{@propertyAlias}'");
+	var showThumbnails = Dragonfly.UmbracoHelpers.Mvc.GetSafeViewDataBool(ViewData, "ShowImageThumbnails", false);
+	var title = Dragonfly.UmbracoHelpers.Mvc.GetSafeViewDataString(ViewData, "Title", $"Nodes with Values for Property '{@propertyAlias}'");
+	//	var hasDimensions = contentList.Count(n => n.WidthPixels != 0) > 0;
+	//	var hasAltText = contentList.Count(n => !string.IsNullOrEmpty(n.AltText)) > 0;
 }
 
 @section Head {
-	<title>@Title</title>
+	<title>@title</title>
 }
 
 <!--MediaWithValuesTable-->
-<h1>@Title</h1>
+<h1>@title</h1>
 <p>Total Nodes Returned: @contentList.Count()</p>
 
 <table id="umbracodata" class="table table-striped table-bordered table-hover table-sm" cellspacing="0" style="width: 100%;">
@@ -34,7 +37,7 @@
 			<th>#</th>
 			<th>Actions</th>
 			<th>"@propertyAlias" Data Type</th>
-			<th>DocType</th>
+			<th>Media Type</th>
 			<th>Node ID</th>
 			<th>Node Path</th>
 			<th>"@propertyAlias" Value</th>
@@ -50,7 +53,7 @@
 		@foreach (var node in contentList)
 		{
 			counter++;
-			var dtInfo = AuditorInfoService.GetPropertyDataTypeInfo(propertyAlias, node.UmbMediaNode);
+			var dtInfo = AuditorInfoService.GetPropertyDataTypeInfo(propertyAlias, node.UmbPublishedNode, true);
 			<tr>
 
 				@*  // #*@
@@ -58,53 +61,73 @@
 
 				@*  //Actions*@
 				<td>
-					@{
+					@try
+					{
 						Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/MediaNodeActions.cshtml", node);
+					}
+					catch (Exception e)
+					{
+						<span>Error on Node # @node.UmbPublishedNode.Id : @e.Message</span>
 					}
 				</td>
 
 				@*//PropertyAlias Type*@
 				<td>
-					@{
+					@try
+					{
 						Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/PropertyTypeInfo.cshtml", dtInfo);
+					}
+					catch (Exception e)
+					{
+						<span>Error on Node # @node.UmbPublishedNode.Id : @e.Message</span>
 					}
 				</td>
 
-				@*//DocType*@
+				@*//Media*@
 				<td>
-					@{
+					@try
+					{
 						Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/DocTypeInfo.cshtml", dtInfo);
+					}
+					catch (Exception e)
+					{
+						<span>Error on Node # @node.UmbPublishedNode.Id : @e.Message</span>
 					}
 				</td>
 
 				@*//Node ID*@
-				<td>@node.UmbMediaNode.Id</td>
+				<td>@node.UmbPublishedNode.Id</td>
 
 				@*//Node Path*@
 				<td>@node.NodePathAsCustomText()</td>
 
-			
+
 				@*//PropertyAlias Value*@
 				@if (dtInfo.DataType != null)
 				{
 					<td>
-						@{
+						@try
+						{
 							Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/PropertyDataValue.cshtml", dtInfo);
+						}
+						catch (Exception e)
+						{
+							<span>Error on Node # @node.UmbPublishedNode.Id : @e.Message</span>
 						}
 					</td>
 
 				}
 				else
 				{
-					var propVal = node.UmbMediaNode.GetValue<string>(propertyAlias);
+					var propVal = node.UmbPublishedNode.Value<string>(propertyAlias);
 					<td>@propVal</td>
 				}
 
 				@*//Value Length*@
 				<td>
-					@if (node.UmbMediaNode.HasPropertyValue(propertyAlias) & dtInfo.PropertyData != null)
+					@if (node.UmbPublishedNode.HasValue(propertyAlias) && dtInfo!=null && dtInfo.PropertyData != null)
 					{
-						@dtInfo.PropertyData.ToString().Length
+						@dtInfo!.PropertyData!.ToString()!.Length
 					}
 					else
 					{
@@ -115,11 +138,11 @@
 
 				@*//Has Value*@
 				<td>@PropertyHasValue(dtInfo, node, propertyAlias)</td>
-				
-				
+
+
 				@* //Has File*@
 				<td>@(node.SizeInBytes > 0)</td>
-				
+
 				@* //File Extension*@
 				<td>@node.FileExtension</td>
 
@@ -128,8 +151,13 @@
 
 				@*//Date Last Updated*@
 				<td>
-					@{
-						Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/DateValue.cshtml", node.UmbMediaNode.UpdateDate);
+					@try
+					{
+						Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/DateValue.cshtml", node.UmbPublishedNode.UpdateDate);
+					}
+					catch (Exception e)
+					{
+						<span>Error on Node # @node.UmbPublishedNode.Id : @e.Message</span>
 					}
 				</td>
 
@@ -142,7 +170,7 @@
 			<td>#</td>
 			<td>Actions</td>
 			<th>"@propertyAlias" Data Type</th>
-			<th>DocType</th>
+			<th>Media Type</th>
 			<th>Node ID</th>
 			<th>Node Path</th>
 			<th>"@propertyAlias" Value</th>
@@ -165,13 +193,18 @@
 			return false;
 		}
 
-		if (!Node.UmbMediaNode.HasPropertyValue(PropertyAlias))
+		if (Node.UmbPublishedNode == null)
 		{
 			return false;
 		}
 
-		var editor = DtInfo.DataType.EditorAlias;
-		var valueString = DtInfo.PropertyData.ToString() is not null ? DtInfo.PropertyData.ToString() : "";
+		if (!Node.UmbPublishedNode.HasValue(PropertyAlias))
+		{
+			return false;
+		}
+
+		var editor = DtInfo.DataType != null ? DtInfo.DataType.EditorAlias : "";
+		var valueString = DtInfo.PropertyData != null ? DtInfo.PropertyData.ToString() : "";
 
 		if (valueString is null)
 		{

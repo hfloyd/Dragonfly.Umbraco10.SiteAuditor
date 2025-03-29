@@ -2071,7 +2071,7 @@ public class SiteAuditorService
 		var multiMedia = new List<IPublishedContent>();
 		ErrorMessage = "";
 
-		if (!PropertyValues.Any())
+		if (PropertyValues!=null && !PropertyValues.Any())
 		{
 			return multiMedia;
 		}
@@ -2199,12 +2199,14 @@ public class SiteAuditorService
 		return multiMedia;
 	}
 
+	
+
 	public IList<string> GetImageSrcFromPropValue(string Editor, IReadOnlyCollection<IPropertyValue> PropertyValues, out string ErrorMessage)
 	{
 		var imgSrcs = new List<string>();
 		ErrorMessage = "";
 
-		if (!PropertyValues.Any())
+		if (PropertyValues!=null && !PropertyValues.Any())
 		{
 			return imgSrcs;
 		}
@@ -2254,6 +2256,39 @@ public class SiteAuditorService
 
 		return imgSrcs;
 	}
+
+	public static string GetAspectRatio(int width, int height)
+	{
+		// Handle edge cases for width and height
+		if (width == 0 && height == 0)
+		{
+			return "NONE";
+		}
+
+		int gcd = GCD(width, height);
+		if (gcd == 0)
+		{
+			// Handle case where gcd is 0, which means width or height is 0
+			// Return a default value to avoid division by zero
+			return "UNKNOWN";
+		}
+
+		int aspectWidth = width / gcd;
+		int aspectHeight = height / gcd;
+		return $"{aspectWidth}:{aspectHeight}";
+	}
+
+	private static int GCD(int a, int b)
+	{
+		while (b != 0)
+		{
+			int temp = b;
+			b = a % b;
+			a = temp;
+		}
+		return a;
+	}
+
 	#endregion
 
 

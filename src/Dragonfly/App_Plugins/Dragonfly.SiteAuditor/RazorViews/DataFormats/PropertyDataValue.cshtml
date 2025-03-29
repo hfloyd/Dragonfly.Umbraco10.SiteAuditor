@@ -1,6 +1,5 @@
 @inject ILogger<UmbracoViewPage> CurrentLogger
 @inject SiteAuditorService AuditorService
-@using Newtonsoft.Json
 
 @inherits UmbracoViewPage<NodePropertyDataTypeInfo>
 @{
@@ -61,38 +60,66 @@
 
 			case "Umbraco.MediaPicker":
 				var errorMsg = "";
-				var medias = AuditorService.GetMediaListFromPropValue("Umbraco.MediaPicker",
-					nodePropertyDataTypeInfo.Property.Values, out errorMsg);
+				var medias = new List<IPublishedContent>(); // Initialize to empty list to avoid null reference exceptions
+				if (nodePropertyDataTypeInfo.Property == null)
+				{
+					errorMsg = "Property is null";
+				}
+				else
+				{
+					 medias = AuditorService.GetMediaListFromPropValue("Umbraco.MediaPicker", nodePropertyDataTypeInfo.Property.Values, out errorMsg);
+				}
 
 				//RENDER
-				RenderMediaData(medias, errorMsg, nodePropertyDataTypeInfo.PropertyData);
+				RenderMediaData(medias, errorMsg, nodePropertyDataTypeInfo.RawPropertyData);
 				renderingDone = true;
 				break;
 
 			case "Umbraco.MediaPicker2":
 				var errorMsg2 = "";
-				var medias2 = AuditorService.GetMediaListFromPropValue("Umbraco.MediaPicker2",
-					nodePropertyDataTypeInfo.Property.Values, out errorMsg2);
+				var medias2 = new List<IPublishedContent>(); // Initialize to empty list to avoid null reference exceptions
+				if (nodePropertyDataTypeInfo.Property == null)
+				{
+					errorMsg2 = "Property is null";
+				}
+				else
+				{
+					 medias2 = AuditorService.GetMediaListFromPropValue("Umbraco.MediaPicker2", nodePropertyDataTypeInfo.Property.Values, out errorMsg2);
+				}
 
 				//RENDER
-				RenderMediaData(medias2, errorMsg2, nodePropertyDataTypeInfo.PropertyData);
+				RenderMediaData(medias2, errorMsg2, nodePropertyDataTypeInfo.RawPropertyData);
 				renderingDone = true;
 				break;
 
 			case "Umbraco.MediaPicker3":
 				var errorMsg3 = "";
-				var medias3 = AuditorService.GetMediaListFromPropValue("Umbraco.MediaPicker3",
-					nodePropertyDataTypeInfo.Property.Values, out errorMsg3);
+				var medias3 = new List<IPublishedContent>(); // Initialize to empty list to avoid null reference exceptions
+				if (nodePropertyDataTypeInfo.Property == null)
+				{
+					errorMsg3 = "Property is null";
+				}
+				else
+				{
+					 medias3 = AuditorService.GetMediaListFromPropValue("Umbraco.MediaPicker3", nodePropertyDataTypeInfo.Property.Values, out errorMsg3);
+				}
 
 				//RENDER
-				RenderMediaData(medias3, errorMsg3, nodePropertyDataTypeInfo.PropertyData);
+				RenderMediaData(medias3, errorMsg3, nodePropertyDataTypeInfo.RawPropertyData);
 				renderingDone = true;
 				break;
 
 			case "Umbraco.ImageCropper":
 				var errorMsg4 = "";
-				var mediaSrcs = AuditorService.GetImageSrcFromPropValue("Umbraco.ImageCropper",
-					nodePropertyDataTypeInfo.Property.Values, out errorMsg3);
+				var mediaSrcs = new List<string>(); // Initialize to empty list to avoid null reference exceptions
+				if (nodePropertyDataTypeInfo.Property == null)
+				{
+					errorMsg4 = "Property is null"; 
+				}
+				else
+				{
+					 mediaSrcs = AuditorService.GetImageSrcFromPropValue("Umbraco.ImageCropper", nodePropertyDataTypeInfo.Property.Values, out errorMsg3).ToList();
+				}
 
 				//RENDER
 				RenderImagesData(mediaSrcs, errorMsg4, nodePropertyDataTypeInfo.PropertyData);
@@ -154,7 +181,7 @@
 	}
 	catch (Exception e)
 	{
-		var msg = $"Error in 'PropertyDataValue.cshtml' for Node #{nodePropertyDataTypeInfo.NodeId} - DocType:{nodePropertyDataTypeInfo.DocTypeAlias} & Property: {nodePropertyDataTypeInfo.Property.Alias} with Value: {JsonConvert.SerializeObject(nodePropertyDataTypeInfo.PropertyData)} (Type: {nodePropertyDataTypeInfo.PropertyData.GetType()})";
+		var msg = $"Error in 'PropertyDataValue.cshtml' for Node #{nodePropertyDataTypeInfo.NodeId} - DocType:{nodePropertyDataTypeInfo.DocTypeAlias} & Property: {nodePropertyDataTypeInfo.Property.Alias} with Value: {nodePropertyDataTypeInfo.RawPropertyData} (Type: {nodePropertyDataTypeInfo.PropertyData.GetType()})";
 		CurrentLogger.LogError(e, msg);
 
 		<div class="error"><small>@msg</small></div>
@@ -190,7 +217,8 @@
 
 		if (PropertyData != null)
 		{
-			<div><small><i>Raw Data:</i> @PropertyData.ToString()</small></div>
+			var propRaw = PropertyData.ToString();
+			<div><small><i>Raw Data:</i> @propRaw</small></div>
 		}
 		else
 		{
@@ -215,8 +243,8 @@
 			{
 				var srcThumb = $"{mediaSrc}?width={imageWidth}&height={imageHeight}&rmode=max";
 
-				<a href="@mediaSrc" target="_blank"><img src="@srcThumb" /></a>
-				<div><small>@mediaSrc</small></div>
+				<a href="@mediaSrc" title="Click to view full-sized image" target="_blank"><img src="@srcThumb" /></a>
+				<div><small><a href="@mediaSrc" title="Click to view full-sized image" target="_blank">@mediaSrc</a></small></div>
 			}
 		}
 		else

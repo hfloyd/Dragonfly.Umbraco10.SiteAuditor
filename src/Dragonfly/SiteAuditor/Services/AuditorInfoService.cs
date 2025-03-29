@@ -11,6 +11,7 @@ using Dragonfly.NetHelperServices;
 using Microsoft.AspNetCore.Html;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Hosting;
 using Umbraco.Cms.Core.Models;
@@ -246,58 +247,66 @@ public class AuditorInfoService
 	/// (Includes information about the Property, Datatype, and the node's property Value)
 	/// </summary>
 	/// <param name="PropertyAlias"></param>
-	/// <param name="Node">IPublishedContent Node</param>
+	/// <param name="PubNode">IPublishedContent Node</param>
+	/// <param name="IsMediaNode"></param>
 	/// <returns></returns>
-	public NodePropertyDataTypeInfo GetPropertyDataTypeInfo(string PropertyAlias, IPublishedContent? PubNode)
+	public NodePropertyDataTypeInfo GetPropertyDataTypeInfo(string PropertyAlias, IPublishedContent? PubNode, bool IsMediaNode = false)
 	{
 		var umbContentService = _services.ContentService;
+		var umbMediaService = _services.MediaService;
 		var umbContentTypeService = _services.ContentTypeService;
+		var umbMediaTypeService = _services.MediaTypeService;
 		var umbDataTypeService = _services.DataTypeService;
 
 		var dtInfo = new NodePropertyDataTypeInfo();
+		IDataType? dataType = null;
 
 		if (PubNode != null)
 		{
 			dtInfo.NodeId = PubNode.Id;
 
 			//Get Property
-			var content = umbContentService!.GetById(PubNode.Id);
-			if (content != null)
+			if (IsMediaNode)
 			{
-				dtInfo.Property = content.Properties.First(n => n.Alias == PropertyAlias);
-				dtInfo.PropertyData = PubNode.Value(PropertyAlias);
+				var media = umbMediaService!.GetById(PubNode.Id);
+				if (media != null)
+				{
+					dtInfo.Property = media.Properties.First(n => n.Alias == PropertyAlias);
+					dtInfo.PropertyData = PubNode.Value(PropertyAlias);
+
+					if (dtInfo.Property != null && dtInfo.Property.Values.Any())
+					{
+						dtInfo.RawPropertyData = GetRawPropValue(dtInfo.Property.Values);
+					}
+				}
 			}
+			else
+			{
+				var content = umbContentService!.GetById(PubNode.Id);
+				if (content != null)
+				{
+					dtInfo.Property = content.Properties.First(n => n.Alias == PropertyAlias);
+					dtInfo.PropertyData = PubNode.Value(PropertyAlias);
+
+					if (dtInfo.Property != null && dtInfo.Property.Values.Any())
+					{
+						dtInfo.RawPropertyData = GetRawPropValue(dtInfo.Property.Values);
+					}
+				}
+			}
+			
 
 			//Find datatype of property
-			IDataType? dataType = null;
-
-			var docType = umbContentTypeService!.Get(PubNode.ContentType.Id);
-			if (docType != null)
+			if (IsMediaNode)
 			{
-				var matchingProperties = docType.PropertyTypes.Where(n => n.Alias == PropertyAlias).ToList();
-
-				if (matchingProperties.Any())
+				var mediaType = umbMediaTypeService!.Get(PubNode.ContentType.Id);
+				if (mediaType != null)
 				{
-					var propertyType = matchingProperties.First();
-					dataType = umbDataTypeService!.GetDataType(propertyType.DataTypeId);
+					var matchingProperties = mediaType.PropertyTypes.Where(n => n.Alias == PropertyAlias).ToList();
 
-					dtInfo.DataType = dataType;
-					if (dataType != null)
+					if (matchingProperties.Any())
 					{
-						dtInfo.PropertyEditorAlias = dataType.EditorAlias;
-						dtInfo.DatabaseType = dataType.DatabaseType.ToString();
-					}
-
-					dtInfo.DocTypeAlias = PubNode.ContentType.Alias;
-				}
-				else
-				{
-					//Look at Compositions for prop data
-					var matchingCompProperties =
-						docType.CompositionPropertyTypes.Where(n => n.Alias == PropertyAlias).ToList();
-					if (matchingCompProperties.Any())
-					{
-						var propertyType = matchingCompProperties.First();
+						var propertyType = matchingProperties.First();
 						dataType = umbDataTypeService!.GetDataType(propertyType.DataTypeId);
 
 						dtInfo.DataType = dataType;
@@ -307,26 +316,108 @@ public class AuditorInfoService
 							dtInfo.DatabaseType = dataType.DatabaseType.ToString();
 						}
 
-						if (docType.ContentTypeComposition.Any())
-						{
-							var compsList = docType.ContentTypeComposition
-								.Where(n => n.PropertyTypeExists(PropertyAlias)).ToList();
-							if (compsList.Any())
-							{
-								dtInfo.DocTypeAlias = PubNode.ContentType.Alias;
-								dtInfo.DocTypeCompositionAlias = compsList.First().Alias;
-							}
-							else
-							{
-								dtInfo.DocTypeAlias = PubNode.ContentType.Alias;
-								dtInfo.DocTypeCompositionAlias = "Unknown Composition";
-							}
-						}
+						dtInfo.DocTypeAlias = mediaType.Alias;
 					}
 					else
 					{
-						dtInfo.ErrorMessage =
-							$"No property found for alias '{PropertyAlias}' in DocType '{docType.Name}'";
+						//Look at Compositions for prop data
+						var matchingCompProperties = mediaType.CompositionPropertyTypes.Where(n => n.Alias == PropertyAlias).ToList();
+						if (matchingCompProperties.Any())
+						{
+							var propertyType = matchingCompProperties.First();
+							dataType = umbDataTypeService!.GetDataType(propertyType.DataTypeId);
+
+							dtInfo.DataType = dataType;
+							if (dataType != null)
+							{
+								dtInfo.PropertyEditorAlias = dataType.EditorAlias;
+								dtInfo.DatabaseType = dataType.DatabaseType.ToString();
+							}
+
+							if (mediaType.ContentTypeComposition.Any())
+							{
+								var compsList = mediaType.ContentTypeComposition
+									.Where(n => n.PropertyTypeExists(PropertyAlias)).ToList();
+								if (compsList.Any())
+								{
+									dtInfo.DocTypeAlias = PubNode.ContentType.Alias;
+									dtInfo.DocTypeCompositionAlias = compsList.First().Alias;
+								}
+								else
+								{
+									dtInfo.DocTypeAlias = PubNode.ContentType.Alias;
+									dtInfo.DocTypeCompositionAlias = "Unknown Composition";
+								}
+							}
+						}
+						else
+						{
+							dtInfo.ErrorMessage =
+								$"No property found for alias '{PropertyAlias}' in DocType '{mediaType.Name}'";
+						}
+					}
+				}
+			}
+			else
+			{
+				var docType = umbContentTypeService!.Get(PubNode.ContentType.Id);
+				if (docType != null)
+				{
+
+					var matchingProperties = docType.PropertyTypes.Where(n => n.Alias == PropertyAlias).ToList();
+
+					if (matchingProperties.Any())
+					{
+						var propertyType = matchingProperties.First();
+						dataType = umbDataTypeService!.GetDataType(propertyType.DataTypeId);
+
+						dtInfo.DataType = dataType;
+						if (dataType != null)
+						{
+							dtInfo.PropertyEditorAlias = dataType.EditorAlias;
+							dtInfo.DatabaseType = dataType.DatabaseType.ToString();
+						}
+
+						dtInfo.DocTypeAlias = PubNode.ContentType.Alias;
+					}
+					else
+					{
+						//Look at Compositions for prop data
+						var matchingCompProperties =
+							docType.CompositionPropertyTypes.Where(n => n.Alias == PropertyAlias).ToList();
+						if (matchingCompProperties.Any())
+						{
+							var propertyType = matchingCompProperties.First();
+							dataType = umbDataTypeService!.GetDataType(propertyType.DataTypeId);
+
+							dtInfo.DataType = dataType;
+							if (dataType != null)
+							{
+								dtInfo.PropertyEditorAlias = dataType.EditorAlias;
+								dtInfo.DatabaseType = dataType.DatabaseType.ToString();
+							}
+
+							if (docType.ContentTypeComposition.Any())
+							{
+								var compsList = docType.ContentTypeComposition
+									.Where(n => n.PropertyTypeExists(PropertyAlias)).ToList();
+								if (compsList.Any())
+								{
+									dtInfo.DocTypeAlias = PubNode.ContentType.Alias;
+									dtInfo.DocTypeCompositionAlias = compsList.First().Alias;
+								}
+								else
+								{
+									dtInfo.DocTypeAlias = PubNode.ContentType.Alias;
+									dtInfo.DocTypeCompositionAlias = "Unknown Composition";
+								}
+							}
+						}
+						else
+						{
+							dtInfo.ErrorMessage =
+								$"No property found for alias '{PropertyAlias}' in DocType '{docType.Name}'";
+						}
 					}
 				}
 			}
@@ -337,6 +428,25 @@ public class AuditorInfoService
 		}
 
 		return dtInfo;
+	}
+
+	private string GetRawPropValue(IReadOnlyCollection<IPropertyValue>? PropertyValues)
+	{
+		var rawList = new List<string>();
+		
+		if (PropertyValues != null && !PropertyValues.Any())
+		{
+			return "";
+		}
+
+		foreach (var propertyValue in PropertyValues)
+		{
+			var propValue = propertyValue.PublishedValue;
+			var stringData = propValue != null ? propValue.ToString():"";
+			rawList.Add(stringData);
+		}
+
+		return string.Join(", ",rawList);
 	}
 
 	/// <summary>

@@ -365,7 +365,7 @@ public class SiteAuditorController : UmbracoAuthorizedApiController
 
 	/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetAllMediaAsHtmlTable
 	[HttpGet]
-	public IActionResult GetAllMediaAsHtmlTable()
+	public IActionResult GetAllMediaAsHtmlTable( bool ShowImageThumbnails = false)
 	{
 		//Setup
 		var pvPath = RazorFilesPath() + "AllMediaAsHtmlTable.cshtml";
@@ -380,6 +380,7 @@ public class SiteAuditorController : UmbracoAuthorizedApiController
 		var viewData = new Dictionary<string, object>();
 		viewData.Add("StandardInfo", GetStandardViewInfo());
 		viewData.Add("Status", status);
+		viewData.Add("ShowImageThumbnails", ShowImageThumbnails);
 
 		//RENDER
 		var htmlTask = _ViewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
