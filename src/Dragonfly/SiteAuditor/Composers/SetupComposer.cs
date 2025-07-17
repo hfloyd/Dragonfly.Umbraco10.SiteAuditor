@@ -20,7 +20,7 @@ namespace Dragonfly.SiteAuditor.Composers
 			//  builder.Services.AddSingleton<ITempDataProvider, CookieTempDataProvider>();
 			// builder.Services.AddScoped<IServiceProvider, ServiceProvider>();
 
-			umbBuilder.Services.AddHttpContextAccessor();
+		//	umbBuilder.Services.AddHttpContextAccessor();
 
 			umbBuilder.Services.AddScoped<IViewRenderService, Dragonfly.NetHelperServices.ViewRenderService>();
 			umbBuilder.Services.AddScoped<Dragonfly.NetHelperServices.FileHelperService>();
@@ -29,11 +29,11 @@ namespace Dragonfly.SiteAuditor.Composers
 			umbBuilder.Services.AddScoped<Dragonfly.SiteAuditor.Services.SiteAuditorService>();
 			umbBuilder.Services.AddScoped<Dragonfly.SiteAuditor.Services.AuditorInfoService>();
 
-			
-			WebApplicationBuilder waBuilder = WebApplication.CreateBuilder();
-			var app = waBuilder.Build();
-			app.UseImageSharp();
-			app.UseStaticFiles();
+			//This causes a 503 error in Umbraco 10.0.0
+			//WebApplicationBuilder waBuilder = WebApplication.CreateBuilder();
+			//var app = waBuilder.Build();
+			//app.UseImageSharp();
+			//app.UseStaticFiles();
 
 		}
 

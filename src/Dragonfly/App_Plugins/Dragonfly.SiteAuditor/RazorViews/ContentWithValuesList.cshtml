@@ -1,4 +1,4 @@
-@inherits UmbracoViewPage<IList<string>>
+@inherits UmbracoViewPage<IEnumerable<KeyValuePair<string, AuditableDataType?>>>
 @*
 	Expected View Data:
 	-------------------
@@ -11,14 +11,26 @@
 	var paramStandardInfo = Mvc.GetSafeViewData(ViewData, "StandardInfo", new StandardViewInfo()) as StandardViewInfo;
 	var paramStatus = Mvc.GetSafeViewData(ViewData, "Status", new StatusMessage()) as StatusMessage;
 
-//	IEnumerable<AuditableContent> contentList = Model.ToList();
-//	var propertyAlias = Dragonfly.UmbracoHelpers.Mvc.GetSafeViewDataString(ViewData, "PropertyAlias");
+	//	IEnumerable<AuditableContent> contentList = Model.ToList();
+	//	var propertyAlias = Dragonfly.UmbracoHelpers.Mvc.GetSafeViewDataString(ViewData, "PropertyAlias");
 	// var includeUnpublished = Dragonfly.UmbracoHelpers.Mvc.GetSafeViewDataBool(ViewData, "IncludeUnpublished");
 
-	var allPropsAliases = Model.ToList();
+	var allProps = Model.ToList();
 
 	var counter = 0;
 	var Title = Dragonfly.UmbracoHelpers.Mvc.GetSafeViewDataString(ViewData, "Title", $"Get Content with Values: Available Properties");
+
+	var filteredKvs = new List<KeyValuePair<string, AuditableDataType>>();
+	foreach (var kv in allProps.Where(n => n.Value != null))
+	{
+		filteredKvs.Add(kv);
+	}
+
+	var groupedDataTypes = new GroupingCollection<KeyValuePair<string, AuditableDataType>>(filteredKvs);
+	groupedDataTypes.GroupItems(n => n.Value.Name);
+
+	var groupedEditors = new GroupingCollection<KeyValuePair<string, AuditableDataType>>(filteredKvs);
+	groupedEditors.GroupItems(n => n.Value.EditorAlias);
 }
 
 @section Head {
@@ -29,12 +41,70 @@
 <h1>Get Content with Values</h1>
 <p>NOTE: Choosing the "Only Published" option is faster and less resource-intensive.</p>
 
-<h3>Available Properties</h3>
+<p>
+	<a href="#Alpha">Properties - Alphabetical</a> <br />
+	<a href="#DataType">Properties - By DataType</a> <br />
+	<a href="#PropEditor">Properties - By Property Editor</a>
+</p>
+
+
+<h3 id="Alpha">Properties - Alphabetical</h3>
 <ol>
-@foreach (var propAlias in allPropsAliases.OrderBy(n => n))
-{
-	var url1 = $"/umbraco/backoffice/Dragonfly/SiteAuditor/GetContentWithValues?PropertyAlias={propAlias}";
-	var url2 = $"{url1}&PublishedOnly=true";
-		<li>@propAlias <a target="_blank" href="@url1">All Content</a> | <a target="_blank" href="@url2">Only Published Content</a></li>
-}
+	@foreach (var prop in allProps.OrderBy(n => n.Key))
+	{
+		var url1 = $"/umbraco/backoffice/Dragonfly/SiteAuditor/GetContentWithValues?PropertyAlias={prop.Key}";
+		var url2 = $"{url1}&PublishedOnly=true";
+
+		var dataType = prop.Value != null ? prop.Value.Name : "";
+		var editor = prop.Value != null ? $"{prop.Value.EditorAlias}" : "";
+
+		<li><b>@prop.Key</b> - "@dataType" <small>(@editor)</small> <a target="_blank" href="@url1">All Content</a> | <a target="_blank" href="@url2">Only Published Content</a></li>
+	}
+</ol>
+
+
+<h3 id="DataType">Properties - By DataType</h3>
+<ol>
+	@foreach (var group in groupedDataTypes.Groups.OrderBy(n => n.GroupName.Values.First()))
+	{
+		var dtName = group.GroupName.Values.First();
+		var fullDataType = allProps.FirstOrDefault(n => n.Value?.Name == dtName).Value;
+		var editor = fullDataType != null ? fullDataType.EditorAlias : "";
+
+		<li>
+			<b>@dtName <small>(@editor)</small></b>
+			<ol>
+				@foreach (var item in group.Collection.OrderBy(n => n.Key))
+				{
+					var url1 = $"/umbraco/backoffice/Dragonfly/SiteAuditor/GetContentWithValues?PropertyAlias={item.Key}";
+					var url2 = $"{url1}&PublishedOnly=true";
+
+					<li>@item.Key <a target="_blank" href="@url1">All Content</a> | <a target="_blank" href="@url2">Only Published Content</a></li>
+				}
+			</ol>
+		</li>
+	}
+</ol>
+
+<h3 id="PropEditor">Properties - By Property Editor</h3>
+<ol>
+	@foreach (var group in groupedEditors.Groups.OrderBy(n => n.GroupName.Values.First()))
+	{
+		var editor = group.GroupName.Values.First();
+@* 		var fullDataType = allProps.FirstOrDefault(n => n.Value?.Name == dtName).Value;
+		var editor = fullDataType != null ? fullDataType.EditorAlias : ""; *@
+
+		<li>
+			<b>@editor</b>
+			<ol>
+				@foreach (var item in group.Collection.OrderBy(n => n.Key))
+				{
+					var url1 = $"/umbraco/backoffice/Dragonfly/SiteAuditor/GetContentWithValues?PropertyAlias={item.Key}";
+					var url2 = $"{url1}&PublishedOnly=true";
+
+					<li>@item.Key <a target="_blank" href="@url1">All Content</a> | <a target="_blank" href="@url2">Only Published Content</a></li>
+				}
+			</ol>
+		</li>
+	}
 </ol>

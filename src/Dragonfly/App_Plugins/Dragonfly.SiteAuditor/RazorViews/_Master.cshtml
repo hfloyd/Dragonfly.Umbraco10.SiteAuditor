@@ -46,6 +46,7 @@
 		.dt-length label {
 			margin-left: 1rem;
 		}
+
 		img.thumbnail {
 			max-width: @($"{thumbWidth}px");
 			max-height: @($"{thumbHeight}px");
@@ -56,10 +57,10 @@
 	@RenderSection("Head")
 </head>
 <body>
-<div class="container-fluid" style="margin: auto 15px;">
+	<div class="container-fluid" style="margin: auto 15px;">
 		<p><small>Dragonfly Site Auditor v. @version</small></p>
-	@RenderBody()
-</div>
+		@RenderBody()
+	</div>
 
 	@*<!--https://datatables.net/extensions/buttons/examples/styling/bootstrap4.html-->*@
 	<script type="text/javascript">
@@ -77,11 +78,29 @@
 				lengthMenu: [5, 10, 50, 100, 200, 500],
 
 				layout: {
-					topStart: ['pageLength', 'info'],
+					topStart: [
+							{
+								pageLength: {
+									 text: '_MENU_ per page'
+								}
+							},
+							{
+								info: {
+									text: '_START_ to _END_ of _TOTAL_'
+								}
+							},
+							{
+								paging: {
+									buttons: 3
+								}
+							}
+						],
 					topEnd: ['search',
 						{
 							buttons: ['copy', 'excel', 'csv', 'colvis']
-						}]
+						}],
+					bottomStart: 'info',
+					bottomEnd: 'paging'
 				},
 
 				initComplete: function () {

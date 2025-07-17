@@ -23,6 +23,11 @@
 		//Special handling based on editor
 		switch (editor)
 		{
+			case "Umbraco.BlockList":
+				Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/BlockList.cshtml", nodePropertyDataTypeInfo.Property, viewDD);
+				renderingDone = true;
+				break;
+
 			case "Umbraco.NestedContent":
 				Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/NestedContent.cshtml", nodePropertyDataTypeInfo.Property, viewDD);
 				renderingDone = true;

@@ -19,6 +19,7 @@ using Dragonfly.NetModels;
 using Dragonfly.SiteAuditor.Models;
 using Dragonfly.SiteAuditor.Services;
 using Microsoft.AspNetCore.Hosting;
+using Umbraco.Cms.Core;
 
 //  /umbraco/backoffice/Dragonfly/SiteAuditor/
 [PluginController("Dragonfly")]
@@ -30,21 +31,21 @@ public class SiteAuditorController : UmbracoAuthorizedApiController
 	private readonly SiteAuditorService _SiteAuditorService;
 	private readonly IViewRenderService _ViewRenderService;
 	private readonly Dragonfly.NetHelperServices.FileHelperService _FileHelperService;
-	private IWebHostEnvironment _HostingEnvironment;
+	//	private IWebHostEnvironment _HostingEnvironment;
 
 	public SiteAuditorController(
 		ILogger<SiteAuditorController> logger
-		,SiteAuditorService siteAuditorService
-		,IViewRenderService viewRenderService
-		,IWebHostEnvironment hostingEnvironment
-		,Dragonfly.NetHelperServices.FileHelperService fileHelperService
+		, SiteAuditorService siteAuditorService
+		, IViewRenderService viewRenderService
+		//	,IWebHostEnvironment hostingEnvironment
+		, Dragonfly.NetHelperServices.FileHelperService fileHelperService
 		)
 	{
 		_Logger = logger;
 		_SiteAuditorService = siteAuditorService;
 		_ViewRenderService = viewRenderService;
 		_FileHelperService = fileHelperService;
-		_HostingEnvironment = hostingEnvironment;
+		//	_HostingEnvironment = hostingEnvironment;
 	}
 
 	#endregion
@@ -107,7 +108,7 @@ public class SiteAuditorController : UmbracoAuthorizedApiController
 		var viewData = new Dictionary<string, object>();
 		viewData.Add("StandardInfo", GetStandardViewInfo());
 		viewData.Add("Status", status);
-		viewData.Add("PublishedOnly",PublishedOnly);
+		viewData.Add("PublishedOnly", PublishedOnly);
 
 		//RENDER
 		var htmlTask = _ViewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
@@ -198,11 +199,11 @@ public class SiteAuditorController : UmbracoAuthorizedApiController
 
 	/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetContentForDoctypeHtml?DocTypeAlias=X
 	[HttpGet]
-	public IActionResult GetContentForDoctypeHtml(string DocTypeAlias = "",bool PublishedOnly=false)
+	public IActionResult GetContentForDoctypeHtml(string DocTypeAlias = "", bool PublishedOnly = false)
 	{
 		if (DocTypeAlias != "")
 		{
-			return ContentForDoctypeHtml(DocTypeAlias,PublishedOnly);
+			return ContentForDoctypeHtml(DocTypeAlias, PublishedOnly);
 		}
 		else
 		{
@@ -212,11 +213,11 @@ public class SiteAuditorController : UmbracoAuthorizedApiController
 
 	/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetContentForDoctypeHtml?DocTypeAlias=X
 	[HttpGet]
-	public IActionResult GetContentForElementHtml(string DocTypeAlias = "", bool PublishedOnly=false)
+	public IActionResult GetContentForElementHtml(string DocTypeAlias = "", bool PublishedOnly = false)
 	{
 		if (DocTypeAlias != "")
 		{
-			return ContentForElementHtml(DocTypeAlias,PublishedOnly);
+			return ContentForElementHtml(DocTypeAlias, PublishedOnly);
 		}
 		else
 		{
@@ -310,8 +311,8 @@ public class SiteAuditorController : UmbracoAuthorizedApiController
 		var viewData = new Dictionary<string, object>();
 		viewData.Add("StandardInfo", GetStandardViewInfo());
 		viewData.Add("Status", status);
-		viewData.Add("DocTypeAlias",DocTypeAlias);
-		viewData.Add("PublishedOnly",PublishedOnly);
+		viewData.Add("DocTypeAlias", DocTypeAlias);
+		viewData.Add("PublishedOnly", PublishedOnly);
 
 		//RENDER
 		var htmlTask = _ViewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
@@ -335,15 +336,15 @@ public class SiteAuditorController : UmbracoAuthorizedApiController
 
 		//GET DATA TO DISPLAY
 		var status = new StatusMessage(true);
-		var contentNodes = saService.GetContentNodesUsingElement(DocTypeAlias,PublishedOnly);
+		var contentNodes = saService.GetContentNodesUsingElement(DocTypeAlias, PublishedOnly);
 
 		//VIEW DATA 
 		var model = contentNodes;
 		var viewData = new Dictionary<string, object>();
 		viewData.Add("StandardInfo", GetStandardViewInfo());
 		viewData.Add("Status", status);
-		viewData.Add("DocTypeAlias",DocTypeAlias);
-		viewData.Add("PublishedOnly",PublishedOnly);
+		viewData.Add("DocTypeAlias", DocTypeAlias);
+		viewData.Add("PublishedOnly", PublishedOnly);
 
 		//RENDER
 		var htmlTask = _ViewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
@@ -365,7 +366,7 @@ public class SiteAuditorController : UmbracoAuthorizedApiController
 
 	/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetAllMediaAsHtmlTable
 	[HttpGet]
-	public IActionResult GetAllMediaAsHtmlTable( bool ShowImageThumbnails = false)
+	public IActionResult GetAllMediaAsHtmlTable(bool ShowImageThumbnails = false)
 	{
 		//Setup
 		var pvPath = RazorFilesPath() + "AllMediaAsHtmlTable.cshtml";
@@ -482,7 +483,7 @@ public class SiteAuditorController : UmbracoAuthorizedApiController
 
 	/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetContentWithValues?PropertyAlias=xxx
 	[HttpGet]
-	public IActionResult GetContentWithValues(string PropertyAlias = "", bool PublishedOnly=false)
+	public IActionResult GetContentWithValues(string PropertyAlias = "", bool PublishedOnly = false)
 	{
 		//GET DATA TO DISPLAY
 		if (PropertyAlias == "")
@@ -491,7 +492,7 @@ public class SiteAuditorController : UmbracoAuthorizedApiController
 		}
 		else
 		{
-			return GetContentWithValuesTable(PropertyAlias,PublishedOnly);
+			return GetContentWithValuesTable(PropertyAlias, PublishedOnly);
 		}
 	}
 
@@ -547,7 +548,7 @@ public class SiteAuditorController : UmbracoAuthorizedApiController
 		var displayHtml = "";
 
 		//Get matching Property data
-		var contentNodes = saService.GetContentWithProperty(PropertyAlias,PublishedOnly);
+		var contentNodes = saService.GetContentWithProperty(PropertyAlias, PublishedOnly);
 
 		//VIEW DATA 
 		var model = contentNodes;
@@ -555,7 +556,7 @@ public class SiteAuditorController : UmbracoAuthorizedApiController
 		viewData.Add("StandardInfo", GetStandardViewInfo());
 		viewData.Add("Status", status);
 		viewData.Add("PropertyAlias", PropertyAlias);
-		viewData.Add("PublishedOnly",PublishedOnly);
+		viewData.Add("PublishedOnly", PublishedOnly);
 
 		//RENDER
 		var htmlTask = _ViewRenderService.RenderToStringAsync(this.HttpContext, pvPath, model, viewData);
@@ -575,17 +576,29 @@ public class SiteAuditorController : UmbracoAuthorizedApiController
 		return new HttpResponseMessageResult(result);
 	}
 
-	private IList<string> ListOfProperties()
+	private IEnumerable<KeyValuePair<string, AuditableDataType>> ListOfProperties()
 	{
 		//Setup
 		var saService = GetSiteAuditorService();
 
 		//GET DATA
 		var allSiteDocTypes = saService.GetAllDocTypes();
-		var allProps = allSiteDocTypes.SelectMany(n => n.PropertyTypes);
+		var allProps = allSiteDocTypes.SelectMany(n => n.PropertyTypes).ToList();
 		var allPropsAliases = allProps.Select(n => n.Alias).Distinct();
+		var allPropsWithDataType = new List<KeyValuePair<string, AuditableDataType>>();
 
-		return allPropsAliases.ToList();
+		foreach (var prop in allProps)
+		{
+			var dataType = saService.GetAuditableDataType(prop.DataTypeId);
+			if (dataType != null)
+			{
+				allPropsWithDataType.Add(new KeyValuePair<string, AuditableDataType>(prop.Alias, dataType));
+			}
+		}
+
+		var distinctList = allPropsWithDataType.Distinct().ToList();
+
+		return distinctList;
 	}
 
 	//private string HtmlListOfProperties()
@@ -1283,7 +1296,7 @@ public class SiteAuditorController : UmbracoAuthorizedApiController
 
 	/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetLogs
 	[HttpGet]
-	public IActionResult GetLogs(DateTime? StartDate=null, DateTime? EndDate=null, [FromQuery] string PromotedProperties ="")
+	public IActionResult GetLogs(DateTime? StartDate = null, DateTime? EndDate = null, [FromQuery] string PromotedProperties = "")
 	{
 		//GET DATA TO DISPLAY
 		if (StartDate is null)
@@ -1293,7 +1306,7 @@ public class SiteAuditorController : UmbracoAuthorizedApiController
 		else
 		{
 			var start = (DateTime)StartDate;
-			return GetLogsAsHtmlTable(start,EndDate,PromotedProperties);
+			return GetLogsAsHtmlTable(start, EndDate, PromotedProperties);
 		}
 	}
 
@@ -1341,7 +1354,7 @@ public class SiteAuditorController : UmbracoAuthorizedApiController
 
 	/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetLogsAsHtmlTable?StartDate=xxx&EndDate=xxx
 	[HttpGet]
-	public IActionResult GetLogsAsHtmlTable(DateTime StartDate, DateTime? EndDate=null, string PromotedProperties="")
+	public IActionResult GetLogsAsHtmlTable(DateTime StartDate, DateTime? EndDate = null, string PromotedProperties = "")
 	{
 		//Setup
 		var pvPath = RazorFilesPath() + "LogsAsHtmlTable.cshtml";
@@ -1350,20 +1363,20 @@ public class SiteAuditorController : UmbracoAuthorizedApiController
 		//GET DATA TO DISPLAY
 		var status = new StatusMessage(true);
 
-		var end =EndDate!=null? (DateTime)EndDate : DateTime.Today.AddDays(1);
+		var end = EndDate != null ? (DateTime)EndDate : DateTime.Today.AddDays(1);
 		var mappedPath = GetSerilogMappedDirectory();
 
 		IList<SerilogItem> logs = new List<SerilogItem>();
-		if (mappedPath!="")
+		if (mappedPath != "")
 		{
-			logs = saService.GetLogsBetweenDates(mappedPath,StartDate, end);
+			logs = saService.GetLogsBetweenDates(mappedPath, StartDate, end);
 		}
 		else
 		{
 			status.Success = false;
 			status.Message = "Unable to access the Serilog directory path. Please check your configuration.";
 		}
-		
+
 		var matchingDateOption = GetMatchingDatesOption(DateOptions(), StartDate, end);
 
 		//VIEW DATA 
@@ -1391,7 +1404,7 @@ public class SiteAuditorController : UmbracoAuthorizedApiController
 
 		return new HttpResponseMessageResult(result);
 	}
-	
+
 	DatesOption GetMatchingDatesOption(IList<DatesOption> AllDatesOptions, DateTime Start, DateTime End)
 	{
 		var match = AllDatesOptions.Where(n => n.StartDate == Start && n.EndDate == End);
@@ -1459,11 +1472,11 @@ public class SiteAuditorController : UmbracoAuthorizedApiController
 		return dateOptions;
 	}
 
-private	string GetSerilogMappedDirectory()
+	private string GetSerilogMappedDirectory()
 	{
 		var mappedPath = "";
 		var canMapPath = _FileHelperService.TryGetMappedPath(GetStandardViewInfo().SerilogDirectory, out mappedPath, true);
-	
+
 		return mappedPath;
 	}
 
