@@ -864,7 +864,7 @@ public class SiteAuditorService
 			am.WidthPixels = ThisIPubMedia.Value<int>("umbracoWidth");
 			am.HeightPixels = ThisIPubMedia.Value<int>("umbracoHeight");
 			am.FileExtension = iPub.Value<string>("umbracoExtension");
-
+			
 			if (iPub.HasProperty("AltText"))
 			{
 				am.AltText = iPub.Value<string>("AltText");
@@ -888,6 +888,23 @@ public class SiteAuditorService
 		am.FullUrl = am.UmbPublishedNode != null
 			? am.UmbPublishedNode.Url(mode: UrlMode.Absolute)
 			: "NONE";
+
+		if (am.UmbPublishedNode != null)
+		{
+			try
+			{
+				var uri = new Uri(am.UmbPublishedNode.Url(mode: UrlMode.Absolute));
+			am.FileName = uri.Segments.Last();
+			}
+			catch (Exception e)
+			{
+				am.FileName = "NONE";
+			}
+		}
+		else
+		{
+			am.FileName = "NONE";
+		}
 
 		am.NodePath = _AuditorInfoService.MediaNodePath(ThisIPubMedia);
 		am.CreateUser = _AuditorInfoService.GetUser(ThisIPubMedia.CreatorId);

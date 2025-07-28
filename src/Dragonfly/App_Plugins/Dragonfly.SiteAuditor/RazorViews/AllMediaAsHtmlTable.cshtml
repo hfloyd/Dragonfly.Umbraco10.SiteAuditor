@@ -26,11 +26,14 @@
 
 	var hasDimensions = contentList.Count(n => n.WidthPixels != 0) > 0;
 	var hasAltText = contentList.Count(n => !string.IsNullOrEmpty(n.AltText)) > 0;
+
+	var allFileNames = contentList.Select(n => n.FileName).ToList();
+
 }
 
 @section Head {
 	<title>@title</title>
-    }
+}
 
 <!--AllMediaAsHtmlTable-->
 <h1>@title</h1>
@@ -49,9 +52,9 @@
 			<th>NodeID</th>
 			<th>Node Path</th>
 			<th>DocType</th>
-			<th>ParentID</th>
 			<th>Full URL</th>
 			<th>Has File</th>
+			<th>File Name</th>
 			<th>File Extension</th>
 			@if (showThumbnails)
 			{
@@ -70,6 +73,8 @@
 			}
 			<th>File Size</th>
 			<th>Size <small>(In Bytes)</small></th>
+			<th>Qty <small>Media w. Same File Name</small></th>
+			<th>ParentID</th>
 			<th>Create Date</th>
 			<th>Create User</th>
 			<th>Update Date</th>
@@ -114,14 +119,16 @@
 				@* //DocType*@
 				<td>@node.UmbPublishedNode.ContentType.Alias</td>
 
-				@* //ParentID*@
-				<td>@(node.UmbPublishedNode.Parent != null ? node.UmbPublishedNode.Parent.Id : 0)</td>
+
 
 				@* //Full URL*@
 				<td><small><a href="@node.FullUrl" target="_blank">@node.FullUrl</a></small></td>
 
 				@* //Has File*@
 				<td>@(node.SizeInBytes > 0)</td>
+
+				@* //File Name*@
+				<td>@node.FileName</td>
 
 				@* //File Extension*@
 				<td>@node.FileExtension</td>
@@ -134,9 +141,9 @@
 						{
 							Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/MediaIPub.cshtml", node.UmbPublishedNode,
 							new ViewDataDictionary(ViewData)
-						{
-				{"ThumbOnly", true}
-						});
+							{
+								{"ThumbOnly", true}
+							});
 						}
 						catch (Exception e)
 						{
@@ -172,6 +179,22 @@
 				@* //Size (In Bytes)*@
 				<td>@node.SizeInBytes</td>
 
+				@* //Media with same File Name*@
+				<td>
+					@if (node.FileName != "NONE")
+					{
+						var qty = allFileNames.Count(n => n == node.FileName);
+						var yn = qty > 1 ? "Yes" : "No";
+						<text>@qty (@yn)</text>
+					}
+					else
+					{
+						<text>0</text>
+					}
+				</td>
+
+				@* //ParentID*@
+				<td>@(node.UmbPublishedNode.Parent != null ? node.UmbPublishedNode.Parent.Id : 0)</td>
 
 				@* //Create Date*@
 				<td>
@@ -231,9 +254,9 @@
 			<th>ID</th>
 			<th>Path</th>
 			<th>DocType</th>
-			<th>ParentID</th>
 			<th>URL</th>
 			<th>Has File</th>
+			<th>File Name</th>
 			<th>File Extension</th>
 			@if (showThumbnails)
 			{
@@ -252,6 +275,8 @@
 			}
 			<th>File Size</th>
 			<th>Size <small>(In Bytes)</small></th>
+			<th>Qty <small>Media w. Same File Name</small></th>
+			<th>ParentID</th>
 			<th>Create Date</th>
 			<th>Create User</th>
 			<th>Update Date</th>
@@ -268,7 +293,7 @@
 		// Handle edge cases for width and height
 		if (width == 0 && height == 0)
 		{
-			return "NONE"; 
+			return "NONE";
 		}
 
 		int gcd = GCD(width, height);
@@ -276,7 +301,7 @@
 		{
 			// Handle case where gcd is 0, which means width or height is 0
 			// Return a default value to avoid division by zero
-			return "UNKNOWN"; 
+			return "UNKNOWN";
 		}
 
 		int aspectWidth = width / gcd;

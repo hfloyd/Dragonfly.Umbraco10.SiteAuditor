@@ -83,10 +83,13 @@ public class AuditableMedia
 
 	public IUser? CreateUser { get; set; }
 	public IUser? UpdateUser { get; set; }
+
+	public string FileName { get; set; }
 	public string? FileExtension { get; set; }
 	public int WidthPixels { get; set; }
 	public int HeightPixels { get; set; }
 	public string? AltText { get; set; }
+	
 
 	#endregion
 
