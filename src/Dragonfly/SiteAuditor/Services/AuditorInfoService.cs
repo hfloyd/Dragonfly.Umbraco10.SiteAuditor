@@ -1,66 +1,47 @@
 ﻿namespace Dragonfly.SiteAuditor.Services;
 
+using Dragonfly.SiteAuditor.Models;
+using Microsoft.AspNetCore.Html;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Dragonfly.SiteAuditor.Models;
-using Dragonfly.NetHelperServices;
 
-using Microsoft.AspNetCore.Html;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using Umbraco.Cms.Core;
-using Umbraco.Cms.Core.Hosting;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Models.Membership;
 using Umbraco.Cms.Core.Models.PublishedContent;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Web;
+
 using Umbraco.Cms.Web.Common;
 using Umbraco.Extensions;
-using Umbraco.Cms.Infrastructure.PublishedCache;
 
 public class AuditorInfoService
 {
 	#region CTOR /DI
 
-	private readonly UmbracoHelper _umbracoHelper;
 	private readonly ILogger _logger;
-
 	private readonly IUmbracoContextAccessor _umbracoContextAccessor;
-	private readonly IUmbracoContext? _umbracoContext;
 	private readonly ServiceContext _services;
-	private readonly FileHelperService _FileHelperService;
-	private readonly HttpContext _Context;
-	private readonly IHostingEnvironment _HostingEnvironment;
-	private readonly DependencyLoader _Dependencies;
 
-	private bool _HasUmbracoContext;
+	private readonly UmbracoHelper _umbracoHelper;
 
 	public AuditorInfoService(
-		DependencyLoader dependencies,
 		ILogger<SiteAuditorService> logger
+		, IHttpContextAccessor contextAccessor
+		, ServiceContext serviceContext
 		)
 	{
-		//Services
-		_Dependencies = dependencies;
-		_HostingEnvironment = dependencies.HostingEnvironment;
-		_umbracoHelper = dependencies.UmbHelper;
-		_FileHelperService = dependencies.DragonflyFileHelperService;
-		_Context = dependencies.Context;
+
 		_logger = logger;
-		_services = dependencies.Services;
+		_services = serviceContext;
 
-		_umbracoContextAccessor = dependencies.UmbracoContextAccessor;
-		_HasUmbracoContext = _umbracoContextAccessor.TryGetUmbracoContext(out _umbracoContext);
-
+	_umbracoHelper = contextAccessor.HttpContext!.RequestServices.GetRequiredService<UmbracoHelper>();
 	}
-
-
-
+	
 	#endregion
 
 	#region Public Props
@@ -294,7 +275,7 @@ public class AuditorInfoService
 					}
 				}
 			}
-			
+
 
 			//Find datatype of property
 			if (IsMediaNode)
@@ -433,7 +414,7 @@ public class AuditorInfoService
 	private string GetRawPropValue(IReadOnlyCollection<IPropertyValue>? PropertyValues)
 	{
 		var rawList = new List<string>();
-		
+
 		if (PropertyValues != null && !PropertyValues.Any())
 		{
 			return "";
@@ -442,11 +423,11 @@ public class AuditorInfoService
 		foreach (var propertyValue in PropertyValues)
 		{
 			var propValue = propertyValue.PublishedValue;
-			var stringData = propValue != null ? propValue.ToString():"";
+			var stringData = propValue != null ? propValue.ToString() : "";
 			rawList.Add(stringData);
 		}
 
-		return string.Join(", ",rawList);
+		return string.Join(", ", rawList);
 	}
 
 	/// <summary>
@@ -696,7 +677,5 @@ public class AuditorInfoService
 
 	#endregion
 
-
-	
 }
 

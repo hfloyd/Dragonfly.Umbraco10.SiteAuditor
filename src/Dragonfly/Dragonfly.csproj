@@ -19,7 +19,7 @@
 
 		<PackageIcon>Dragonfly-SiteAuditor-128.png</PackageIcon>
 		<PackageTags>Umbraco;umbraco-marketplace;Umbraco-10;Umbraco-11;Umbraco-12;Umbraco-13</PackageTags>
-	
+
 	</PropertyGroup>
 
 	<!-- Author Info + Legal-->
@@ -37,22 +37,22 @@
 	<PropertyGroup>
 		<RootNamespace>Dragonfly</RootNamespace>
 		<AssemblyName>Dragonfly.UmbracoSiteAuditor</AssemblyName>
-		<Version>2.10.0</Version>
+		<Version>2.11.0</Version>
 		<AssemblyVersion>$(Version)</AssemblyVersion>
 		<FileVersion>$(Version)</FileVersion>
-		<PackageReleaseNotes>Improving Media listing with addition of "File Name" and "Qty Media w. same File Name" columns</PackageReleaseNotes>
+		<PackageReleaseNotes>Fixing DataTables CDN issues, fixes and enhancements to Logs to better handle oversized files</PackageReleaseNotes>
 
 		<IncludeSymbols>True</IncludeSymbols>
 		<SymbolPackageFormat>symbols.nupkg</SymbolPackageFormat>
 		<Nullable>enable</Nullable>
 	</PropertyGroup>
 
-  <!-- Include Package Items -->
+	<!-- Include Package Items -->
 	<ItemGroup>
-    <None Include="..\..\Dragonfly-SiteAuditor-128.png">
-      <Pack>True</Pack>
-      <PackagePath>\</PackagePath>
-    </None>
+		<None Include="..\..\Dragonfly-SiteAuditor-128.png">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
 		<None Include="..\..\LICENSE.md">
 			<Pack>True</Pack>
 			<PackagePath></PackagePath>
@@ -73,8 +73,8 @@
 		<PackageReference Include="Umbraco.Cms.Web.BackOffice" Version="[10.0.1,14.0.0)" PrivateAssets="All" />
 
 	</ItemGroup>
-	
-		<!--Include App_Plugins & targets file-->
+
+	<!--Include App_Plugins & targets file-->
 	<ItemGroup>
 		<Content Include="App_Plugins\Dragonfly.SiteAuditor\**\*.*">
 			<ExcludeFromSingleFile>true</ExcludeFromSingleFile>
@@ -86,8 +86,8 @@
 			<PackagePath>buildTransitive</PackagePath>
 		</None>
 	</ItemGroup>
-	
-<!-- Included/Excluded Files -->
+
+	<!-- Included/Excluded Files -->
 	<ItemGroup>
 		<Compile Remove="SiteAuditor\Helpers\AuditHelper.cs" />
 	</ItemGroup>
@@ -100,21 +100,21 @@
 		<None Remove="App_Plugins\Dragonfly.SiteAuditor\RazorViews\DataFormats\xxMediaImage.cshtml" />
 	</ItemGroup>
 	<ItemGroup>
-	  <Content Update="App_Plugins\Dragonfly.SiteAuditor\RazorViews\AllMediaAsHtmlTable.cshtml">
-	    <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-	    <CopyToPublishDirectory>Always</CopyToPublishDirectory>
-	    <Pack>True</Pack>
-	  </Content>
+		<Content Update="App_Plugins\Dragonfly.SiteAuditor\RazorViews\AllMediaAsHtmlTable.cshtml">
+			<ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+			<CopyToPublishDirectory>Always</CopyToPublishDirectory>
+			<Pack>True</Pack>
+		</Content>
 	</ItemGroup>
-	
-	
+
+
 
 
 	<Import Project="..\Custom.targets" />
 
-	
+
 
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="REM XCOPY /s /y &quot;$(TargetDir)$(TargetName)*.*&quot; &quot;\bin\&quot;&#xD;&#xA;REM XCOPY /y &quot;$(TargetDir)$(TargetName)*.*&quot; &quot;XXX\bin\&quot;" />
+		<Exec Command="REM XCOPY /s /y &quot;$(TargetDir)$(TargetName)*.*&quot; &quot;\bin\&quot;&#xD;&#xA;REM XCOPY /y &quot;$(TargetDir)$(TargetName)*.*&quot; &quot;XXX\bin\&quot;" />
 	</Target>
 </Project>

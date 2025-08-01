@@ -7,7 +7,7 @@ A collection of tools to extract data about an Umbraco 10 site created by [Heath
 
 
 ## Versions ##
-This package is designed to work with Umbraco 10. [View all available versions](https://DragonflyLibraries.com/umbraco-packages/site-auditor/#Versions).
+This package is designed to work with Umbraco 10+. [View all available versions](https://DragonflyLibraries.com/umbraco-packages/site-auditor/#Versions).
 
 ## Installation ##
 
@@ -22,7 +22,26 @@ dotnet add package Dragonfly.Umbraco10.SiteAuditor
 
 ```
 
+## Configuration ##
 
+Configuration is optional. The default values will work for most use cases. You can, however, control certain aspects of the tool via an appSettings section:
+
+````json
+{
+  "Umbraco": {
+    //...  Umbraco settings
+  },
+  "DragonflySiteAuditor": {
+    "LimitProcessingLogsLargerThanBytes": 314572800, // 300 MB
+    "ExcludeLevelsToManageLargeLogs": [ "Verbose", "Debug", "Information" ],
+    "NeverProcessLogsLargerThanBytes": 1048576000, //1 GB
+    "PluginPath": "~/App_Plugins/Dragonfly.SiteAuditor/",
+    "DataPath": "~/App_Data/DragonflySiteAuditor/"
+  }
+}
+```
+
+the first three settings control the size of the logs that are processed by the tools. In cases where log files have become too large, trying to read them can cause Timeouts or 'Out Of Memory' exceptions. Log files which exceed the `LimitProcessingLogsLargerThanBytes` will be processed, but will exclude the levels specified in `ExcludeLevelsToManageLargeLogs`  If a log file exceeds the `NeverProcessLogsLargerThanBytes`, it will not be processed at all.
 
 ## Usage ##
 The Tools are accessed via the Dashboard added to the back-office Settings section.

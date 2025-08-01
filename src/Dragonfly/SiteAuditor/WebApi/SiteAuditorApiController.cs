@@ -52,7 +52,7 @@ public class SiteAuditorController : UmbracoAuthorizedApiController
 
 	private string RazorFilesPath()
 	{
-		return SiteAuditorService.PluginPath() + "RazorViews/";
+		return _SiteAuditorService.PluginPath() + "RazorViews/";
 	}
 
 	private SiteAuditorService GetSiteAuditorService()
@@ -1296,12 +1296,12 @@ public class SiteAuditorController : UmbracoAuthorizedApiController
 
 	/// /umbraco/backoffice/Dragonfly/SiteAuditor/GetLogs
 	[HttpGet]
-	public IActionResult GetLogs(DateTime? StartDate = null, DateTime? EndDate = null, [FromQuery] string PromotedProperties = "")
+	public IActionResult GetLogs(DateTime? StartDate = null, DateTime? EndDate = null,int BatchBy = 0, [FromQuery] string PromotedProperties = "")
 	{
 		//GET DATA TO DISPLAY
 		if (StartDate is null)
 		{
-			return GetLogDateOptions();
+			return GetLogDateOptions(BatchBy);
 		}
 		else
 		{
@@ -1310,7 +1310,8 @@ public class SiteAuditorController : UmbracoAuthorizedApiController
 		}
 	}
 
-	private IActionResult GetLogDateOptions()
+	
+	private IActionResult GetLogDateOptions(int BatchBy)
 	{
 		//Setup
 		var pvPath = RazorFilesPath() + "LogOptions.cshtml";
@@ -1330,7 +1331,7 @@ public class SiteAuditorController : UmbracoAuthorizedApiController
 		var viewData = new Dictionary<string, object>();
 		viewData.Add("StandardInfo", GetStandardViewInfo());
 		viewData.Add("Status", status);
-		//viewData.Add("PropertyAlias", PropertyAlias);
+		viewData.Add("BatchBy", BatchBy);
 		// viewData.Add("IncludeUnpublished", IncludeUnpublished);
 
 		//RENDER
@@ -1369,7 +1370,7 @@ public class SiteAuditorController : UmbracoAuthorizedApiController
 		IList<SerilogItem> logs = new List<SerilogItem>();
 		if (mappedPath != "")
 		{
-			logs = saService.GetLogsBetweenDates(mappedPath, StartDate, end);
+			logs = saService.GetLogsBetweenDates(mappedPath, StartDate, end,out status);
 		}
 		else
 		{
@@ -1411,7 +1412,6 @@ public class SiteAuditorController : UmbracoAuthorizedApiController
 		if (match.Any())
 		{
 			return match.First();
-
 		}
 		else
 		{

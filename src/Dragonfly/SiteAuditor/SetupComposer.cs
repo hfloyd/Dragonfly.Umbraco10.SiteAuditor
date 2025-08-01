@@ -1,13 +1,12 @@
 ﻿#pragma warning disable 1591
 
-namespace Dragonfly.SiteAuditor.Composers
+namespace Dragonfly.SiteAuditor
 {
-	using Dragonfly.NetHelperServices;
-	using Microsoft.AspNetCore.Builder;
 	using Microsoft.Extensions.DependencyInjection;
-	using SixLabors.ImageSharp.Web.DependencyInjection;
 	using Umbraco.Cms.Core.Composing;
 	using Umbraco.Cms.Core.DependencyInjection;
+
+	using Dragonfly.NetHelperServices;
 
 	public class SetupComposer : IComposer
 	{
@@ -16,16 +15,10 @@ namespace Dragonfly.SiteAuditor.Composers
 			umbBuilder.Services.AddMvcCore().AddRazorViewEngine();
 			umbBuilder.Services.AddControllersWithViews();
 			umbBuilder.Services.AddRazorPages();
-			//builder.Services.AddSingleton<IRazorViewEngine>();
-			//  builder.Services.AddSingleton<ITempDataProvider, CookieTempDataProvider>();
-			// builder.Services.AddScoped<IServiceProvider, ServiceProvider>();
+			
+			umbBuilder.Services.AddSingleton<IViewRenderService, Dragonfly.NetHelperServices.ViewRenderService>();
+			umbBuilder.Services.AddSingleton<Dragonfly.NetHelperServices.FileHelperService>();
 
-		//	umbBuilder.Services.AddHttpContextAccessor();
-
-			umbBuilder.Services.AddScoped<IViewRenderService, Dragonfly.NetHelperServices.ViewRenderService>();
-			umbBuilder.Services.AddScoped<Dragonfly.NetHelperServices.FileHelperService>();
-
-			umbBuilder.Services.AddScoped<Dragonfly.SiteAuditor.Services.DependencyLoader>();
 			umbBuilder.Services.AddScoped<Dragonfly.SiteAuditor.Services.SiteAuditorService>();
 			umbBuilder.Services.AddScoped<Dragonfly.SiteAuditor.Services.AuditorInfoService>();
 

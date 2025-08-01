@@ -20,8 +20,19 @@
 
 	var baseUrl = $"/umbraco/backoffice/Dragonfly/SiteAuditor/GetLogs";
 	var title = Dragonfly.UmbracoHelpers.Mvc.GetSafeViewDataString(ViewData, "Title", $"Get Logs: Select Dates");
+	var paramBatchNum = Dragonfly.UmbracoHelpers.Mvc.GetSafeViewDataInt(ViewData, "BatchBy", 0);
 
 	var initDates = $"{DateTime.Today.AddDays(-1).ToString("d", CultureInfo.InvariantCulture)} - {DateTime.Today.ToString("d", CultureInfo.InvariantCulture)}";
+
+	var batchOptions = new List<int>() { 1, 2, 3, 4, 5, 10 };
+	var batchUrlsDict = new Dictionary<int, string>();
+	foreach (var batchOption in batchOptions)
+	{
+
+		var batchUrl = $"{baseUrl}?BatchBy={batchOption}";
+		batchUrlsDict.Add(batchOption, batchUrl);
+	}
+
 }
 
 @section Head {
@@ -30,20 +41,46 @@
 
 <!--LogOptions-->
 <h1>@title</h1>
+<p>
+	Select a date range to view logs. Be aware that for busy sites, a large range selection will impact performance, and possibly time-out.
+	<br />Optionally, you can batch your query to reduce this issue. Batch By Days:
+	@foreach (var bo in batchUrlsDict)
+	{
+		<span> <a href="@bo.Value">@bo.Key</a> </span>
+	}
+</p>
 <p><strong>Pre-configured Options</strong></p>
 <ol>
 	@foreach (var option in Model)
 	{
 		var url = $"{baseUrl}?StartDate={option.StartDate}&EndDate={option.EndDate}";
 
-		<li><a target="_blank" href="@url">@option.Description</a></li>
+		<li>
+			<a target="_blank" href="@url">@option.Description</a>
+			(<small class="text-muted">@option.StartDate.ToString("d", CultureInfo.InvariantCulture) - @option.EndDate.AddDays(-1).ToString("d", CultureInfo.InvariantCulture)</small>)
+
+			@if (paramBatchNum > 0)
+			{
+				var batchedDates = BatchDates(option.StartDate, option.EndDate, paramBatchNum);
+				var batchDisplayNum = 0;
+
+				<span>Batched: </span>
+				foreach (var batch in batchedDates)
+				{
+					batchDisplayNum++;
+					var batchUrl = $"{baseUrl}?StartDate={batch.First()}&EndDate={batch.Last()}";
+
+					<span> <a target="_blank" href="@batchUrl">@batchDisplayNum</a> </span>
+				}
+			}
+		</li>
 	}
 </ol>
 
-<script type="text/javascript" src="https://cdn.jsdelivr.net/jquery/latest/jquery.min.js"></script>
-<script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
-<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
-<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+<script type="text/javascript" src="//cdn.jsdelivr.net/jquery/latest/jquery.min.js"></script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+<link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
 
 <p><strong>Select a custom date range: </strong></p>
 <p>
@@ -57,7 +94,7 @@
 			opens: 'left'
 		}, function(start, end, label) {
 			var dateRangeText = start.format('MM-DD-YYYY') + ' to ' + end.format('MM-DD-YYYY');
-			
+
 			var startDate = start.format('MM-DD-YYYY');
 			var endDatePlusOne = end.add(1, 'days').format('MM-DD-YYYY');
 			var url = "/umbraco/backoffice/Dragonfly/SiteAuditor/GetLogs?StartDate=" + startDate + "%2012:00:00%20AM&EndDate=" + endDatePlusOne + "%2012:00:00%20AM";
@@ -70,3 +107,37 @@
 		});
 	});
 </script>
+
+@functions
+{
+	static List<List<DateTime>> BatchDates(DateTime Start, DateTime End, int BatchSize)
+	{
+		var allDates = GetAllDatesInRange(Start, End);
+		return BatchDates(allDates, BatchSize);
+	}
+
+
+	static List<DateTime> GetAllDatesInRange(DateTime Start, DateTime End)
+	{
+		var dates = new List<DateTime>();
+		for (var date = Start.Date; date <= End.Date; date = date.AddDays(1))
+		{
+			dates.Add(date);
+		}
+		return dates;
+	}
+
+	static List<List<DateTime>> BatchDates(List<DateTime> AllDates, int BatchSize)
+	{
+		var batches = new List<List<DateTime>>();
+		for (int i = 0; i < AllDates.Count; i += BatchSize)
+		{
+			var thisBatch = AllDates.Skip(i).Take(BatchSize + 1).ToList();
+			if (thisBatch.Count >1)
+			{
+				batches.Add(thisBatch);
+			}
+		}
+		return batches;
+	}
+}

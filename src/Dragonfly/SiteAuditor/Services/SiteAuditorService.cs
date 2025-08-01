@@ -19,6 +19,8 @@ using System.IO;
 using System.Linq;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Hosting;
 using Umbraco.Cms.Core.Models;
@@ -33,6 +35,48 @@ using static Lucene.Net.Store.Lock;
 #pragma warning disable 0168
 public class SiteAuditorService
 {
+	#region CTOR & DI
+
+	private readonly ILogger<SiteAuditorService> _Logger;
+	private readonly IConfiguration _AppSettingsConfig;
+
+	private readonly IUmbracoContextAccessor _UmbracoContextAccessor;
+	private readonly IUmbracoContext? _UmbracoContext;
+	private readonly ServiceContext _Services;
+
+	private readonly AuditorInfoService _AuditorInfoService;
+	private readonly UmbracoHelper _UmbracoHelper;
+	private readonly DragonflySiteAuditorConfig _ConfigOptions;
+
+	private bool _HasUmbracoContext;
+
+
+	public SiteAuditorService(
+		ILogger<SiteAuditorService> logger
+		, IConfiguration appSettingsConfig
+		, IHttpContextAccessor contextAccessor
+		, IUmbracoContextAccessor umbracoContextAccessor
+		, ServiceContext serviceContext
+		, AuditorInfoService auditorInfoService
+		)
+	{
+
+		_Logger = logger;
+		_AppSettingsConfig = appSettingsConfig;
+
+		_Services = serviceContext;
+		_AuditorInfoService = auditorInfoService;
+
+		_UmbracoContextAccessor = umbracoContextAccessor;
+		_HasUmbracoContext = _UmbracoContextAccessor.TryGetUmbracoContext(out _UmbracoContext);
+		
+		_UmbracoHelper = contextAccessor.HttpContext!.RequestServices.GetRequiredService<UmbracoHelper>();
+
+		_ConfigOptions = GetAppDataConfig();
+	}
+
+
+	#endregion
 
 	#region Private & Internal Variables
 
@@ -56,21 +100,50 @@ public class SiteAuditorService
 
 	private IEnumerable<DataTypesWithElements> _AllDataTypesWithElements = new List<DataTypesWithElements>();
 
-	internal static string DataPath()
-	{
-		//var config = Config.GetConfig();
-		//return config.GetDataPath();
 
-		return "/App_Data/DragonflySiteAuditor/";
+	#endregion
+
+	#region Config
+
+	private DragonflySiteAuditorConfig GetAppDataConfig()
+	{
+		var options = new DragonflySiteAuditorConfig();
+
+		var sectionConfig = _AppSettingsConfig.GetSection(DragonflySiteAuditorConfig.DragonflySiteAuditor);
+
+		if (!sectionConfig.Exists())
+		{
+			_Logger.LogWarning($"AppSettings Configuration section '{DragonflySiteAuditorConfig.DragonflySiteAuditor}' does not exist. Default values will be used.");
+			options.SetDefaults();
+		}
+		else
+		{
+			_AppSettingsConfig.GetSection(DragonflySiteAuditorConfig.DragonflySiteAuditor).Bind(options);
+		}
+
+		return options;
 	}
 
-	internal static string PluginPath()
+	public DragonflySiteAuditorConfig ConfigOptions()
+	{
+		return _ConfigOptions;
+	}
+
+	internal string DataPath()
 	{
 		//var config = Config.GetConfig();
-		//return config.GetDataPath();
+		return _ConfigOptions.DataPath;
 
-		return "~/App_Plugins/Dragonfly.SiteAuditor/";
+		//return "~/App_Data/DragonflySiteAuditor/";
 	}
+
+	internal string PluginPath()
+	{
+		return _ConfigOptions.PluginPath;
+
+		//return "~/App_Plugins/Dragonfly.SiteAuditor/";
+	}
+
 
 	#endregion
 
@@ -90,46 +163,6 @@ public class SiteAuditorService
 
 	#endregion
 
-	#region CTOR & DI
-
-	private readonly UmbracoHelper _UmbracoHelper;
-	private readonly ILogger<SiteAuditorService> _Logger;
-	private readonly IUmbracoContextAccessor _UmbracoContextAccessor;
-	private readonly IUmbracoContext? _UmbracoContext;
-	private readonly ServiceContext _Services;
-	//private readonly FileHelperService _FileHelperService;
-	//private readonly HttpContext _Context;
-	//private readonly IHostingEnvironment _HostingEnvironment;
-	//private readonly DependencyLoader _Dependencies;
-
-	private readonly AuditorInfoService _AuditorInfoService;
-
-	private bool _HasUmbracoContext;
-
-
-
-	public SiteAuditorService(
-		DependencyLoader dependencies,
-		ILogger<SiteAuditorService> logger,
-		AuditorInfoService auditorInfoService)
-	{
-		//Services
-	//	_Dependencies = dependencies;
-		//_HostingEnvironment = dependencies.HostingEnvironment;
-		_UmbracoHelper = dependencies.UmbHelper;
-	//	_FileHelperService = dependencies.DragonflyFileHelperService;
-	//	_Context = dependencies.Context;
-		_Logger = logger;
-		_Services = dependencies.Services;
-
-		_UmbracoContextAccessor = dependencies.UmbracoContextAccessor;
-		_HasUmbracoContext = _UmbracoContextAccessor.TryGetUmbracoContext(out _UmbracoContext);
-
-		_AuditorInfoService = auditorInfoService;
-	}
-
-
-	#endregion
 
 	#region All Published Content (IPublishedContent)
 
@@ -864,7 +897,7 @@ public class SiteAuditorService
 			am.WidthPixels = ThisIPubMedia.Value<int>("umbracoWidth");
 			am.HeightPixels = ThisIPubMedia.Value<int>("umbracoHeight");
 			am.FileExtension = iPub.Value<string>("umbracoExtension");
-			
+
 			if (iPub.HasProperty("AltText"))
 			{
 				am.AltText = iPub.Value<string>("AltText");
@@ -894,7 +927,7 @@ public class SiteAuditorService
 			try
 			{
 				var uri = new Uri(am.UmbPublishedNode.Url(mode: UrlMode.Absolute));
-			am.FileName = uri.Segments.Last();
+				am.FileName = uri.Segments.Last();
 			}
 			catch (Exception e)
 			{
@@ -2028,14 +2061,21 @@ public class SiteAuditorService
 	#endregion
 
 	#region Serilog Items
-	
-	internal IList<SerilogItem> GetLogsBetweenDates(string directoryPath, DateTime startDate, DateTime endDate)
+
+	internal IList<SerilogItem> GetLogsBetweenDates(string DirectoryPath, DateTime StartDate, DateTime EndDate, out StatusMessage Status)
 	{
 		var functionName = "SiteAuditorService.GetLogsBetweenDates";
 		var logEntries = new List<SerilogItem>();
 
-		var allFiles = Directory.GetFiles(directoryPath, "*.json");
+		Status = new StatusMessage(true);
+		Status.RunningFunctionName = functionName;
+		Status.Message = $"Reading logs from '{DirectoryPath}' between {StartDate} and {EndDate}";
 
+		//Get all the files in the directory
+		var allFiles = Directory.GetFiles(DirectoryPath, "*.json");
+		Status.DetailedMessages.Add($"Found {allFiles.Length} log files.");
+
+		//Determine the filename and the date for each file
 		var dictLogFiles = new Dictionary<string, DateTime?>(); //Filename, filedate
 		foreach (var file in allFiles)
 		{
@@ -2046,7 +2086,13 @@ public class SiteAuditorService
 
 		dictLogFiles = dictLogFiles.OrderByDescending(f => f.Value).ToDictionary(n => n.Key, n => n.Value);
 
-		_Logger.LogDebug($"{functionName}: All Log files in '{directoryPath}': {string.Join(", ", dictLogFiles.Select(n => n.Key + "=" + n.Value))}");
+		Status.DetailedMessages.Add($"All Log files in '{DirectoryPath}' (Qty: {dictLogFiles.Count()}): {string.Join(" || ", dictLogFiles.Select(n => n.Key + "=" + n.Value))}");
+		_Logger.LogDebug("{FunctionName}: All Log files in '{DirectoryPath}' (Qty: {Quantity}): {DictionaryData}",
+		functionName,
+		DirectoryPath,
+		dictLogFiles.Count(),
+		string.Join(" || ", dictLogFiles.Select(n => n.Key + "=" + n.Value))
+		);
 
 
 		//Always process latest file (since the filedate might be older than startDate)
@@ -2054,29 +2100,107 @@ public class SiteAuditorService
 
 		var latestFileName = latestFile.Key;
 		var latestFileDate = latestFile.Value;
-		var latestFilePath = $"{directoryPath}/{latestFileName}";
-		_Logger.LogDebug($"{functionName}: Processing latest file from directory '{latestFileName}' (Log Files Qty: {dictLogFiles.Count()})");
+		var latestFilePath = $"{DirectoryPath}/{latestFileName}";
 
-		logEntries.AddRange(ReadLogFileToModel(latestFilePath, latestFileName, latestFileDate, startDate, endDate));
+		Status.DetailedMessages.Add($"Processing latest file from directory '{latestFileName}'");
+		_Logger.LogDebug("{FunctionName}: Processing latest file from directory '{FileName}'"
+			, functionName
+			, latestFileName
+			);
 
+		logEntries.AddRange(ReadLogFileToModel(latestFilePath, latestFileName, latestFileDate, StartDate, EndDate));
 
-		foreach (var fileDict in dictLogFiles.Skip(1))
+		//Loop all remaining files, and if the filedate is in range, process the file data
+		try
 		{
-			var fileName = fileDict.Key;
-			var fileDate = fileDict.Value;
-
-			//Test file date against start and end dates before parsing
-			if (fileDate >= startDate && fileDate <= endDate)
+			foreach (var fileDict in dictLogFiles.Skip(1))
 			{
-				var filePath = $"{directoryPath}/{latestFileName}";
-				logEntries.AddRange(ReadLogFileToModel(filePath, fileName, fileDate, startDate, endDate));
+				var fileName = fileDict.Key;
+				var fileDate = fileDict.Value;
+
+				//Test file date against start and end dates before parsing
+				if (fileDate >= StartDate && fileDate <= EndDate)
+				{
+					var filePath = $"{DirectoryPath}/{fileName}";
+
+					//Check the file size
+					var fileInfo = new FileInfo(filePath);
+					long fileSizeInBytes = fileInfo.Length;
+
+					Status.DetailedMessages.Add($"File '{fileName}' - Size: {fileSizeInBytes} bytes");
+					_Logger.LogDebug("{FunctionName}: File '{FileName}' - Size: {FileSize} bytes"
+						, functionName
+						, fileName
+						, fileSizeInBytes
+					);
+
+
+					//Skip if the file is way too large
+					if (fileSizeInBytes > _ConfigOptions.NeverProcessLogsLargerThanBytes)
+					{
+						Status.DetailedMessages.Add(
+							$"File is too large: '{fileName}' ({fileSizeInBytes} bytes), skipping...");
+						Status.Code = "SomeFilesSkipped";
+						_Logger.LogWarning(
+							"{FunctionName}: File '{FileName}' is too large ({FileSize} bytes), skipping...",
+							functionName,
+							fileName,
+							fileSizeInBytes
+						);
+					}
+					else if (fileSizeInBytes > _ConfigOptions.LimitProcessingLogsLargerThanBytes)
+					{
+						var excludeLevels = _ConfigOptions.ExcludeLevelsToManageLargeLogs;
+						Status.ObjectName="SomeFilesLimited";
+						Status.RelatedObject = excludeLevels;
+						Status.DetailedMessages.Add($"File is large, limited processing of file '{fileName}'");
+						_Logger.LogDebug("{FunctionName}: Processing file '{FileName}'"
+							, functionName
+							, fileName
+						);
+
+						var processedLogs = ReadLogFileToModel(filePath, fileName, fileDate, StartDate, EndDate, excludeLevels);
+						Status.DetailedMessages.Add($"File '{fileName}' returned {processedLogs} log entries.");
+						_Logger.LogDebug("{FunctionName}: Processing file '{FileName}'returned {Quantity} log entries."
+							, functionName
+							, fileName
+							, processedLogs
+						);
+
+						logEntries.AddRange(processedLogs);
+					}
+					else
+					{
+						Status.DetailedMessages.Add($"Processing file '{fileName}'");
+						_Logger.LogDebug("{FunctionName}: Processing file '{FileName}'"
+							, functionName
+							, fileName
+						);
+
+						var processedLogs = ReadLogFileToModel(filePath, fileName, fileDate, StartDate, EndDate);
+						Status.DetailedMessages.Add($"File '{fileName}' returned {processedLogs} log entries.");
+						_Logger.LogDebug("{FunctionName}: Processing file '{FileName}'returned {Quantity} log entries."
+							, functionName
+							, fileName
+							, processedLogs
+						);
+
+						logEntries.AddRange(processedLogs);
+					}
+				}
 			}
 		}
+		catch (OutOfMemoryException e)
+		{
+			_Logger.LogCritical($"{functionName}: Terminating application due to OutOfMemoryException...");
+			Environment.FailFast($"{functionName}: Out of Memory: {e.Message}");
+		}
 
-		return logEntries.OrderByDescending(n => n.Timestamp).ToList();
+		return logEntries;
 	}
 
-	private IList<SerilogItem> ReadLogFileToModel(string FilePath, string FileName, DateTime? FileDate, DateTime StartDate, DateTime EndDate)
+	private IList<SerilogItem> ReadLogFileToModel(string FilePath, string FileName, DateTime? FileDate,
+		DateTime StartDate, DateTime EndDate, List<string>? ExcludeLevels = null)
 	{
 		var logEntries = new List<SerilogItem>();
 		using (var stream = System.IO.File.Open(FilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
@@ -2089,14 +2213,37 @@ public class SiteAuditorService
 				var logEntry = new SerilogItem(logEvent);
 				if (logEntry.Timestamp >= StartDate && logEntry.Timestamp <= EndDate)
 				{
-					logEntry.FileName = FileName;
-					logEntry.FileDate = FileDate;
-					logEntries.Add(logEntry);
+					if (ExcludeLevels != null)
+					{
+						if (!ExcludeLevels.Contains(logEntry.Log4NetLevel))
+						{
+							logEntry.FileName = FileName;
+							logEntry.FileDate = FileDate;
+							logEntries.Add(logEntry);
+						}
+					}
+					else
+					{
+						logEntry.FileName = FileName;
+						logEntry.FileDate = FileDate;
+						logEntries.Add(logEntry);
+					}
 				}
 			}
+			reader.Dispose();
 		}
 
+
+
+		//Only sort if the qty is reasonable
+		//if (logEntries.Count < 100000)
+		//{
+		//	return logEntries.OrderByDescending(n => n.Timestamp).ToList();
+		//}
+		//else
+		//{
 		return logEntries;
+		//}
 	}
 
 	private static DateTime? ExtractDateFromSerilogFilename(string Filename)
@@ -2388,7 +2535,7 @@ public class SiteAuditorService
 	#endregion
 
 
-	
+
 }
 
 public class DataTypesWithElements

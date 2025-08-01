@@ -1,0 +1,10 @@
+{
+    "Umbraco": {},
+    "DragonflySiteAuditor": {
+        "LimitProcessingLogsLargerThanBytes": 314572800, // 300 MB
+        "ExcludeLevelsToManageLargeLogs": [ "Verbose", "Debug", "Information" ],
+        "NeverProcessLogsLargerThanBytes": 1048576000, //1 GB
+        "PluginPath": "~/App_Plugins/Dragonfly.SiteAuditor/",
+        "DataPath": "~/App_Data/DragonflySiteAuditor/"
+    }
+}

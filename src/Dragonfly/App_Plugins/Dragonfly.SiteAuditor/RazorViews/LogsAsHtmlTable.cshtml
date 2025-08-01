@@ -24,8 +24,8 @@
 
 	var counter = 0;
 	var cultureFormat = CultureInfo.CurrentCulture.DateTimeFormat;
-	var dateFormat = "D"; //"YYYY-MM-dd";
-	var dateTimeFormat = "G"; //"YYYY-MM-dd h:mm:s ";
+	var dateFormat = "D"; //"yyyy-MM-dd";
+	var dateTimeFormat = "yyyy-MM-dd h:mm:ss.fff tt";// "G";
 
 	var displayEndDate = paramThisDateOption.EndDate.AddDays(-1);
 	var isSingleDay = displayEndDate == paramThisDateOption.StartDate;
@@ -37,7 +37,7 @@
 	<title>
 		@title (@datesText)
 	</title>
-    }
+}
 
 <!--LogsAsHtmlTable-->
 <h1>
@@ -50,6 +50,46 @@
 		}
 	</small>
 </h1>
+
+@if (!paramStatus.Success)
+{
+	<div class="alert alert-danger">
+		<strong>Error:</strong> @paramStatus.Message
+	</div>
+}
+else
+{
+	if (paramStatus.Code == "SomeFilesSkipped")
+	{
+		<div class="alert alert-warning">
+			<p><strong>Warning:</strong> Some files were skipped due to the size of the log file. Please check your logging settings.</p>
+			<ul>
+				@foreach (var message in paramStatus.DetailedMessages.Where(n => n.Contains("File is too large")))
+				{
+					<li>@message</li>
+				}
+			</ul>
+		</div>
+	}
+
+	if (paramStatus.ObjectName == "SomeFilesLimited")
+	{
+		var excludeList = paramStatus.RelatedObject as List<string>;
+		//var excludeList = SiteAuditorService.ConfigOptions().ExcludeLevelsToManageLargeLogs;
+		<div class="alert alert-info">
+			<p>Some files had a size above the "Limiting" threshold.
+				<br />For those files, log entries with levels <strong>@string.Join(", ", excludeList)</strong> were excluded.
+			</p>
+			<ul>
+				@foreach (var message in paramStatus.DetailedMessages.Where(n => n.Contains("File is large, limited processing of file")))
+				{
+					<li>@message</li>
+				}
+			</ul>
+		</div>
+	}
+}
+
 
 <p>Total Logs Returned: @Model.Count()</p>
 
@@ -113,7 +153,10 @@
 				<td>@log.NodeId</td>
 				<td>@log.NodeName</td>
 
+				@* //Has Exception *@
 				<td>@(log.LoggedException != null)</td>
+
+				@* //Exception Info *@
 				<td>
 					@if (log.LoggedException != null)
 					{
@@ -142,8 +185,11 @@
 							}
 						</ul>
 					}
+					else
+					{
+						<text>none</text>
+					}
 				</td>
-
 
 			</tr>
 		}
