@@ -1,6 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<TargetFramework>net6.0</TargetFramework>
+		<TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
+		<!--<TargetFramework>net6.0</TargetFramework>-->
+		<!--<TargetFramework>net8.0</TargetFramework>-->
 		<MvcRazorCompileOnPublish>false</MvcRazorCompileOnPublish>
 		<ContentTargetFolders>content</ContentTargetFolders>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
@@ -37,10 +39,10 @@
 	<PropertyGroup>
 		<RootNamespace>Dragonfly</RootNamespace>
 		<AssemblyName>Dragonfly.UmbracoSiteAuditor</AssemblyName>
-		<Version>2.11.0</Version>
+		<Version>2.12.0</Version>
 		<AssemblyVersion>$(Version)</AssemblyVersion>
 		<FileVersion>$(Version)</FileVersion>
-		<PackageReleaseNotes>Fixing DataTables CDN issues, fixes and enhancements to Logs to better handle oversized files</PackageReleaseNotes>
+		<PackageReleaseNotes>Fix for DataTypes</PackageReleaseNotes>
 
 		<IncludeSymbols>True</IncludeSymbols>
 		<SymbolPackageFormat>symbols.nupkg</SymbolPackageFormat>
@@ -64,14 +66,32 @@
 	</ItemGroup>
 
 	<!-- Packages-->
-	<ItemGroup>
-		<PackageReference Include="Dragonfly.Net6" Version="1.8.0" />
-		<PackageReference Include="Dragonfly.Umbraco10" Version="1.1.0" />
-		<PackageReference Include="Serilog.Formatting.Compact.Reader" Version="4.0.0" />
-		<PackageReference Include="Umbraco.Cms.Core" Version="[10.0.1,14.0.0)" />
-		<PackageReference Include="Umbraco.Cms.Web.Website" Version="[10.0.1,14.0.0)" PrivateAssets="All" />
-		<PackageReference Include="Umbraco.Cms.Web.BackOffice" Version="[10.0.1,14.0.0)" PrivateAssets="All" />
+	<!--Umbraco 10-->
+	<ItemGroup Condition="'$(TargetFramework)' == 'net6.0'">
+		<PackageReference Include="Umbraco.Cms.Core" Version="[10.0.1,11.0.0)" />
+		<PackageReference Include="Umbraco.Cms.Web.BackOffice" Version="[10.0.1,11.0.0)" PrivateAssets="All" />
+		<PackageReference Include="Umbraco.Cms.Web.Website" Version="[10.0.1,11.0.0)" PrivateAssets="All" />
+	</ItemGroup>
 
+	<!--Umbraco 11/12-->
+	<ItemGroup Condition="'$(TargetFramework)' == 'net7.0'">
+		<PackageReference Include="Umbraco.Cms.Core" Version="[11.0.0,13.0.0)" />
+		<PackageReference Include="Umbraco.Cms.Web.BackOffice" Version="[10.0.1,13.0.0)" PrivateAssets="All" />
+		<PackageReference Include="Umbraco.Cms.Web.Website" Version="[10.0.1,13.0.0)" PrivateAssets="All" />
+	</ItemGroup>
+
+	<!--Umbraco 13-->
+	<ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
+		<PackageReference Include="Umbraco.Cms.Core" Version="[13.0.1,14.0.0)" />
+		<PackageReference Include="Umbraco.Cms.Web.BackOffice" Version="[13.0.1,14.0.0)" PrivateAssets="All" />
+		<PackageReference Include="Umbraco.Cms.Web.Website" Version="[13.0.1,14.0.0)" PrivateAssets="All" />
+	</ItemGroup>
+
+	<!--Any Umbraco Version -->
+	<ItemGroup>
+		<PackageReference Include="Dragonfly.Net6" Version="2.0.0" />
+		<PackageReference Include="Dragonfly.Umbraco10" Version="1.2.0" />
+		<PackageReference Include="Serilog.Formatting.Compact.Reader" Version="4.0.0" />
 	</ItemGroup>
 
 	<!--Include App_Plugins & targets file-->

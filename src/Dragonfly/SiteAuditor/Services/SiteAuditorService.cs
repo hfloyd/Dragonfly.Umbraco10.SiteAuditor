@@ -69,7 +69,7 @@ public class SiteAuditorService
 
 		_UmbracoContextAccessor = umbracoContextAccessor;
 		_HasUmbracoContext = _UmbracoContextAccessor.TryGetUmbracoContext(out _UmbracoContext);
-		
+
 		_UmbracoHelper = contextAccessor.HttpContext!.RequestServices.GetRequiredService<UmbracoHelper>();
 
 		_ConfigOptions = GetAppDataConfig();
@@ -1583,18 +1583,22 @@ public class SiteAuditorService
 
 		// Process the element
 		var docType = _Services.ContentTypeService.Get(ElementAlias);
-		var properties = docType.PropertyTypes;
-
-		foreach (var property in properties)
+		if (docType != null)
 		{
-			//var dt = _services.DataTypeService.GetDataType();
-			var dtElements = AllTypes.Where(n => n.DataTypeId == property.DataTypeId).Select(n => n.ElementTypeAlias)
-				.ToList();
-			elementsList.AddRange(dtElements);
+			var properties = docType.PropertyTypes;
 
-			foreach (var element in dtElements)
+			foreach (var property in properties)
 			{
-				elementsList.AddRange(LoopElements(element, AllTypes, VisitedElements));
+				//var dt = _services.DataTypeService.GetDataType();
+				var dtElements = AllTypes.Where(n => n.DataTypeId == property.DataTypeId)
+					.Select(n => n.ElementTypeAlias)
+					.ToList();
+				elementsList.AddRange(dtElements);
+
+				foreach (var element in dtElements)
+				{
+					elementsList.AddRange(LoopElements(element, AllTypes, VisitedElements));
+				}
 			}
 		}
 
@@ -2151,7 +2155,7 @@ public class SiteAuditorService
 					else if (fileSizeInBytes > _ConfigOptions.LimitProcessingLogsLargerThanBytes)
 					{
 						var excludeLevels = _ConfigOptions.ExcludeLevelsToManageLargeLogs;
-						Status.ObjectName="SomeFilesLimited";
+						Status.ObjectName = "SomeFilesLimited";
 						Status.RelatedObject = excludeLevels;
 						Status.DetailedMessages.Add($"File is large, limited processing of file '{fileName}'");
 						_Logger.LogDebug("{FunctionName}: Processing file '{FileName}'"
