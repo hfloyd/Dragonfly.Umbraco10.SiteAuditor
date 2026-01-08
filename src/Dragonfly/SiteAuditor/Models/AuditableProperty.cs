@@ -61,10 +61,10 @@
 
 	}
 
-	public class SiteAuditableProperties
+	public class AuditablePropertiesForDocType
 	{
 		public string PropsForDoctype { get; internal set; }= "";
-		public IEnumerable<AuditableProperty> AllProperties { get; internal set; } = new List<AuditableProperty>();
+		public IList<AuditableProperty> AllProperties { get; internal set; } = new List<AuditableProperty>();
 	}
 
 	public class PropertyDoctypeInfo

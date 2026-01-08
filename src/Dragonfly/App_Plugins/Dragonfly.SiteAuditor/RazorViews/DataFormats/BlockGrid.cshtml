@@ -1,7 +1,6 @@
 @using Umbraco.Cms.Core.Models.Blocks
 
 @inherits UmbracoViewPage<NodePropertyDataTypeInfo>
-
 @{
 	if (Model.Property == null || Model.Property.Values == null || !Model.Property.Values.Any())
 	{
@@ -9,24 +8,22 @@
 		return;
 	}
 	var json = Model.Property != null ? Model.Property.GetValue().ToString() : ""; //Raw JSON string
-	var value = Model.PropertyData; //Should be a blocklist content JSON string
+	var value = Model.PropertyData; //Should be a blockgrid
+
 	if (value != null)
 	{
 		var id = $"{Model.NodeId}_{Model.Property.Alias}";
-
-
-		var blModel = value as BlockListModel;
-		if (blModel != null)
+		var bgModel = value as BlockGridModel;
+		if (bgModel != null)
 		{
 			var blockDataId = $"blockData_{id}";
 			<p>
-				<button class="btn btn-outline-primary btn-sm txt-x-sm" type="button" data-toggle="collapse" data-target="#@blockDataId" aria-expanded="false" aria-controls="@blockDataId">Show/Hide Block List Items</button>
+				<button class="btn btn-outline-primary btn-sm txt-x-sm" type="button" data-toggle="collapse" data-target="#@blockDataId" aria-expanded="false" aria-controls="@blockDataId">Show/Hide Block Grid Content</button>
 				<button class="btn btn-outline-info btn-sm txt-x-sm" type="button" data-toggle="collapse" data-target=".blockDataCollapse" aria-expanded="false" aria-controls="">Toggle All Rows</button>
-
 			</p>
 			<div class="collapse blockDataCollapse" id="@blockDataId">
 				@{
-					LoopBlockListModel(blModel);
+					LoopBlockGridModel(bgModel);
 				}
 			</div>
 		}
@@ -156,7 +153,6 @@
 			<b>@propAlias:</b>
 			@try
 			{
-				var propEditor = Prop.PropertyType.EditorAlias;
 				var propValue = Prop.GetValue();
 
 				@if (propValue == null)
@@ -200,10 +196,6 @@
 				{
 					<span>@link.Name (@link.SafeLinkUrl())</span>
 				}
-				else if (propEditor == "Umbraco.Community.Contentment.CodeEditor")
-				{
-					<textarea rows="4" cols="80" class="txt-x-sm">@propValue</textarea>
-				}
 				else
 				{
 					<span>@propValue</span>
@@ -211,7 +203,7 @@
 			}
 			catch (Exception e)
 			{
-				CurrentLogger.LogWarning(e, "SiteAuditor: Error rendering property value for {Property}", propAlias);
+				CurrentLogger.LogWarning(e,"SiteAuditor: Error rendering property value for {Property}",propAlias);
 				<span class="text-danger">Unable to render property value (@e.Message) <small>See umbracoLog for details</small></span>
 			}
 		</li>

@@ -1142,6 +1142,24 @@ public class SiteAuditorService
 		return list;
 	}
 
+	public AuditableDocType GetAuditableDocType(IContentType ContentType)
+	{
+		return ConvertIContentTypeToAuditableDocType(ContentType);
+	}
+
+	public AuditableDocType? GetAuditableDocTypeByAlias(string ElementTypeAlias)
+	{
+		var ct = GetContentTypeByAlias(ElementTypeAlias);
+		if (ct != null)
+		{
+			return ConvertIContentTypeToAuditableDocType(ct);
+		}
+		else
+		{
+			return null;
+		}
+	}
+
 	private AuditableDocType ConvertIContentTypeToAuditableDocType(IContentType ContentType)
 	{
 		var adt = new AuditableDocType();
@@ -1187,7 +1205,7 @@ public class SiteAuditorService
 
 		adt.HasContentNodes = _Services.ContentTypeService!.HasContentNodes(ContentType.Id);
 
-		adt.FolderPath = GetFolderContainerPath(ContentType);
+		adt.FolderPaths = GetFolderContainerPath(ContentType);
 
 		return adt;
 	}
@@ -1246,9 +1264,9 @@ public class SiteAuditorService
 
 	#region AuditableProperties
 
-	public SiteAuditableProperties AllProperties()
+	public AuditablePropertiesForDocType AllProperties()
 	{
-		var allProps = new SiteAuditableProperties();
+		var allProps = new AuditablePropertiesForDocType();
 		allProps.PropsForDoctype = "[All]";
 		List<AuditableProperty> propertiesList = new List<AuditableProperty>();
 
@@ -1292,9 +1310,9 @@ public class SiteAuditorService
 		return allProps;
 	}
 
-	public SiteAuditableProperties AllPropertiesForDocType(string DocTypeAlias)
+	public AuditablePropertiesForDocType AllPropertiesForDocType(string DocTypeAlias)
 	{
-		var allProps = new SiteAuditableProperties();
+		var allProps = new AuditablePropertiesForDocType();
 		allProps.PropsForDoctype = DocTypeAlias;
 		List<AuditableProperty> propertiesList = new List<AuditableProperty>();
 
@@ -1344,6 +1362,22 @@ public class SiteAuditorService
 		return allProps;
 	}
 
+	public IList<AuditableProperty> AllPropertiesForDataType(AuditableDataType DataType)
+	{
+		var matchingProps= new List<AuditableProperty>();
+
+		var allProps = AllProperties();
+
+		foreach (var prop in allProps.AllProperties)
+		{
+			if (prop.UmbPropertyType != null && prop.UmbPropertyType.DataTypeId == DataType.Id)
+			{
+				matchingProps.Add((AuditableProperty)prop);
+			}
+		}
+
+		return matchingProps.ToList();
+	}
 
 
 	/// <summary>
@@ -1442,12 +1476,12 @@ public class SiteAuditorService
 
 	#region AuditableDataTypes
 
-	public IEnumerable<AuditableDataType> AllDataTypes()
+	public IList<AuditableDataType> AllDataTypes()
 	{
 
 		if (_AllDataTypes.Any())
 		{
-			return _AllDataTypes;
+			return _AllDataTypes.ToList();
 		}
 
 		var list = new List<AuditableDataType>();
@@ -1723,7 +1757,7 @@ public class SiteAuditorService
 
 					break;
 
-				//Current built-in
+				//Built-in (v. 10+)
 				case "Umbraco.BlockList":
 					var blockListConfig =
 						(Umbraco.Cms.Core.PropertyEditors.BlockListConfiguration)dt
@@ -1745,20 +1779,38 @@ public class SiteAuditorService
 
 					break;
 
-				//Current built-in
+				//Built-in (v. 13+)
 				case "Umbraco.BlockGrid":
-					//	var blockGridConfig = (Umbraco.Cms.Core.PropertyEditors.BlockEditorPropertyEditor)dt.Configuration;//JsonSerializer.Deserialize<UmbracoBlockListConfig>(configJson);
-					//if (blockGridConfig != null)
-					//{
-					//}
-					_Logger.LogWarning(
-						$"SiteAuditorService.GetDataTypeElementsList: Unknown Editor '{dt.EditorAlias}' with Config Model {dt.Configuration.ToString()} - needs processing?");
 
+#if NET8_0_OR_GREATER
+					var blockGridConfig = (Umbraco.Cms.Core.PropertyEditors.BlockGridConfiguration)dt.Configuration;//JsonSerializer.Deserialize<UmbracoBlockListConfig>(configJson);
+					if (blockGridConfig != null)
+					{
+						keyGuids.AddRange(blockGridConfig.Blocks.Select(b => b.ContentElementTypeKey));
+						var settingsKeys = blockGridConfig.Blocks.Where(b => b.SettingsElementTypeKey != null)
+							.Select(b => b.SettingsElementTypeKey).ToList();
+
+						if (settingsKeys.Any())
+						{
+							foreach (var guid in settingsKeys)
+							{
+								keyGuids.Add(guid.Value);
+							}
+						}
+					}
+					//_Logger.LogWarning(
+					//	$"SiteAuditorService.GetDataTypeElementsList: Unknown Editor '{dt.EditorAlias}' with Config Model {dt.Configuration.ToString()} - needs processing?");
+#else
+					// Fallback for earlier versions
+					_Logger.LogWarning(
+						$"SiteAuditorService.GetDataTypeElementsList: 'Umbraco.BlockGrid' is not supported in this version of Umbraco");
+									
+#endif
 					break;
 
 				//Packages
 				case "SimpleTreeMenu":
-					JsonNode? stmConfig = JsonConvert.DeserializeObject<JsonNode>(configJson);
+					JsonObject? stmConfig = JsonObject.Parse(configJson)!.AsObject();
 					if (stmConfig != null)
 					{
 						if (stmConfig["doctype"] != null)
@@ -1779,8 +1831,7 @@ public class SiteAuditorService
 							public long Levels { get; set; }
 						}*/
 					//{"doctype":"ElementNavItem", "nameTemplate":"{{$index + 1}}. {{DisplayTitle ? DisplayTitle : Link[0][\"name\"] ? Link[0][\"name\"]: \"NONE\"}}", "levels":3}
-
-
+					
 					break;
 
 				default: //Unknown PropertyEditors, look for clues

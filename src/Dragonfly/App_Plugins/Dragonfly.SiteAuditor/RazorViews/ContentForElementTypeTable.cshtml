@@ -1,0 +1,201 @@
+@using Dragonfly.NetHelpers
+@inherits UmbracoViewPage<IList<KeyValuePair<AuditableProperty, AuditableContent>>>
+@*
+	Expected View Data:
+	-------------------
+	StandardInfo (object - StandardViewInfo)		: Version, Current environment, etc.
+	Status (object - StatusMessage)					: Status of operations
+
+*@
+@{
+	Layout = "_Master.cshtml";
+	var paramStandardInfo = Mvc.GetSafeViewData(ViewData, "StandardInfo", new StandardViewInfo()) as StandardViewInfo;
+	var paramStatus = Mvc.GetSafeViewData(ViewData, "Status", new StatusMessage()) as StatusMessage;
+	var paramPublishedOnly = Dragonfly.UmbracoHelpers.Mvc.GetSafeViewDataBool(ViewData, "PublishedOnly");
+
+	var propsContentList = Model.ToList();
+	var elementTypeAlias = Dragonfly.UmbracoHelpers.Mvc.GetSafeViewDataString(ViewData, "ElementTypeAlias");
+	var elementTypeGuid = Dragonfly.UmbracoHelpers.Mvc.GetSafeViewDataString(ViewData, "ElementTypeGuid");
+
+	var counter = 0;
+	var title = Dragonfly.UmbracoHelpers.Mvc.GetSafeViewDataString(ViewData, "Title", $"Nodes with '{elementTypeAlias}'");
+}
+
+@section Head {
+	<title>@title</title>
+}
+
+<!--ContentWithValuesTable-->
+<h1>@title</h1>
+<p>"@elementTypeAlias" Key is @elementTypeGuid</p>
+
+@if (paramPublishedOnly)
+{
+	<p>Only Published Nodes</p>
+}
+<p>Total Returned: @propsContentList.Count()</p>
+
+<table id="umbracodata" class="table table-striped table-bordered table-hover table-sm" cellspacing="0" style="width: 100%;">
+	<thead>
+		<tr>
+			<th>#</th>
+			<th>Actions</th>
+			<th>Node ID</th>
+			<th>Node Path</th>
+			<th>Is Published?</th>
+			<th>DocType</th>
+			<th>Property Alias</th>
+			<th>Property Data Type</th>
+			<th># of Occurrences in Value</th>
+			<th>Property Value</th>
+		@* 	<th>Date Last Updated</th> *@
+		</tr>
+	</thead>
+	<tbody>
+		@foreach (var kv in propsContentList)
+		{
+			counter++;
+			var property = kv.Key;
+			var propertyAlias = property.UmbPropertyType != null ? property.UmbPropertyType.Alias : "NULL";
+			var node = kv.Value;
+			var dtInfo = paramPublishedOnly ? AuditorInfoService.GetPropertyDataTypeInfo(propertyAlias, node.UmbPublishedNode) : AuditorInfoService.GetPropertyDataTypeInfo(propertyAlias, node.UmbContentNode);
+
+			var countElementOccurrences = CountOccurrences(elementTypeGuid, propertyAlias, node, dtInfo, paramPublishedOnly);
+
+			<tr>
+
+				@*  // #*@
+				<td>@counter</td>
+
+				@*  //Actions*@
+				<td>
+					@{
+						Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/NodeActions.cshtml", node);
+					}
+				</td>
+
+				@*//Node ID*@
+				<td>@node.NodeId</td>
+
+				@*//Node Path*@
+				<td>@node.NodePathAsCustomText()</td>
+
+				@*//Is Published?*@
+				<td>@node.IsPublished</td>
+
+				@*//DocType*@
+				<td>
+					@{
+						Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/DocTypeInfo.cshtml", dtInfo);
+					}
+				</td>
+
+				@*//Property Alias*@
+				<td>@propertyAlias</td>
+
+				@*//Property Data Type*@
+				<td>
+					@{
+						Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/PropertyTypeInfo.cshtml", dtInfo);
+					}
+				</td>
+
+				@*//# of Occurrences in Value*@
+				<td>@countElementOccurrences</td>
+
+				@*//Property Value*@
+				@if (dtInfo.DataType != null)
+				{
+					<td>
+						@{
+							Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/PropertyDataValue.cshtml", dtInfo);
+						}
+					</td>
+
+				}
+				else
+				{
+					var propVal = "";
+					if (paramPublishedOnly)
+					{
+						propVal = node.UmbPublishedNode!.Value<string>(propertyAlias);
+					}
+					else if (node.UmbContentNode != null)
+					{
+						propVal = node.UmbContentNode.GetValue<string>(propertyAlias);
+					}
+
+					<td>@propVal</td>
+				}
+
+				@*//Date Last Updated*@
+				@* <td>
+					@{
+						Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/DateValue.cshtml", node.NodeUpdateDate);
+					}
+				</td> *@
+
+			</tr>
+		}
+
+	</tbody>
+	<tfoot>
+		<tr>
+			<th>#</th>
+			<th>Actions</th>
+			<th>Node ID</th>
+			<th>Node Path</th>
+			<th>Is Published?</th>
+			<th>DocType</th>
+			<th>Property Alias</th>
+			<th>Property Data Type</th>
+			<th># of Occurrences in Value</th>
+			<th>Property Value</th>
+		@* 	<th>Date Last Updated</th> *@
+		</tr>
+	</tfoot>
+</table>
+
+
+@functions {
+
+	int CountOccurrences(string SearchText, string PropertyAlias, AuditableContent Node, NodePropertyDataTypeInfo PropertyDataTypeInfo, bool ParamPublishedOnly)
+	{
+		var data = PropertyValueRawData(PropertyAlias, Node, PropertyDataTypeInfo, ParamPublishedOnly);
+
+		return data.CountStringOccurrences(SearchText);
+	}
+
+	string PropertyValueRawData(string PropertyAlias, AuditableContent Node, NodePropertyDataTypeInfo PropertyDataTypeInfo, bool ParamPublishedOnly)
+	{
+		if (ParamPublishedOnly)
+		{
+			if (Node.UmbPublishedNode.HasPropertyWithValue(PropertyAlias) & PropertyDataTypeInfo.PropertyData != null)
+			{
+				var propValue = PropertyDataTypeInfo.RawPropertyData;
+				return propValue;
+			}
+			else
+			{
+				return "";
+			}
+		}
+		else if (Node.UmbContentNode != null)
+		{
+			if (Node.UmbContentNode.HasPropertyValue(PropertyAlias) & PropertyDataTypeInfo.PropertyData != null)
+			{
+				var propValue = PropertyDataTypeInfo.RawPropertyData;
+				return propValue;
+			}
+			else
+			{
+				return "";
+			}
+		}
+		else
+		{
+			return "";
+		}
+	}
+
+}

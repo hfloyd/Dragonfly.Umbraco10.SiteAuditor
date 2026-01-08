@@ -11,6 +11,7 @@
 
         public int ThumbnailWidth { get; set; }
         public int ThumbnailHeight { get; set; }
-        public string SerilogDirectory { get; set; }
+        public string SerilogDirectory { get; set; } = "";
+	public string DefaultSearchString { get; set; } = "";
     }
 

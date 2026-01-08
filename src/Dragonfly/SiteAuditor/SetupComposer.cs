@@ -15,7 +15,7 @@ namespace Dragonfly.SiteAuditor
 			umbBuilder.Services.AddMvcCore().AddRazorViewEngine();
 			umbBuilder.Services.AddControllersWithViews();
 			umbBuilder.Services.AddRazorPages();
-			
+
 			umbBuilder.Services.AddSingleton<IViewRenderService, Dragonfly.NetHelperServices.ViewRenderService>();
 			umbBuilder.Services.AddSingleton<Dragonfly.NetHelperServices.FileHelperService>();
 

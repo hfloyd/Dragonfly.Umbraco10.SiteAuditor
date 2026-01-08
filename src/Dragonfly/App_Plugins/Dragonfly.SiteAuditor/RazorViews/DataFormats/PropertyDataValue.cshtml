@@ -24,7 +24,17 @@
 		switch (editor)
 		{
 			case "Umbraco.BlockList":
-				Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/BlockList.cshtml", nodePropertyDataTypeInfo.Property, viewDD);
+				Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/BlockList.cshtml", nodePropertyDataTypeInfo, viewDD);
+				renderingDone = true;
+				break;
+
+			case "Umbraco.BlockGrid":
+				Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/BlockGrid.cshtml", nodePropertyDataTypeInfo, viewDD);
+				renderingDone = true;
+				break;
+
+			case "Umbraco.Grid": //Legacy Grid
+				Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/GridRaw.cshtml", nodePropertyDataTypeInfo.Property, viewDD);
 				renderingDone = true;
 				break;
 
@@ -131,10 +141,7 @@
 				renderingDone = true;
 				break;
 
-			case "Umbraco.Grid":
-				Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/GridRaw.cshtml", nodePropertyDataTypeInfo.Property, viewDD);
-				renderingDone = true;
-				break;
+		
 		}
 
 		//If we get here, handle based on DB type

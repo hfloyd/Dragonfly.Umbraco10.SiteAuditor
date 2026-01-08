@@ -39,10 +39,13 @@
 	<PropertyGroup>
 		<RootNamespace>Dragonfly</RootNamespace>
 		<AssemblyName>Dragonfly.UmbracoSiteAuditor</AssemblyName>
-		<Version>2.12.0</Version>
+		<Version>2.13.0</Version>
 		<AssemblyVersion>$(Version)</AssemblyVersion>
 		<FileVersion>$(Version)</FileVersion>
-		<PackageReleaseNotes>Fix for DataTypes</PackageReleaseNotes>
+		<PackageReleaseNotes>
+			Adding support for finding content using Elements Types, 
+			a nicer display of BlockList/BlockGrid property values, 
+			and the ability to add a default Search string to the URLs.</PackageReleaseNotes>
 
 		<IncludeSymbols>True</IncludeSymbols>
 		<SymbolPackageFormat>symbols.nupkg</SymbolPackageFormat>
@@ -90,7 +93,7 @@
 	<!--Any Umbraco Version -->
 	<ItemGroup>
 		<PackageReference Include="Dragonfly.Net6" Version="2.0.0" />
-		<PackageReference Include="Dragonfly.Umbraco10" Version="1.2.0" />
+		<PackageReference Include="Dragonfly.Umbraco10" Version="2.0.0" />
 		<PackageReference Include="Serilog.Formatting.Compact.Reader" Version="4.0.0" />
 	</ItemGroup>
 
