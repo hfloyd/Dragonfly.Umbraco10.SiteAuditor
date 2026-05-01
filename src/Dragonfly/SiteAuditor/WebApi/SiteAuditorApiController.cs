@@ -1679,15 +1679,33 @@ public class SiteAuditorController : UmbracoAuthorizedApiController
 		});
 		dateOptions.Add(new DatesOption()
 		{
+			Description = "Last 7 Days + Today",
+			StartDate = DateTime.Today.AddDays(-7),
+			EndDate = DateTime.Today.AddDays(1)
+		});
+		dateOptions.Add(new DatesOption()
+		{
 			Description = "Last 30 Days",
 			StartDate = DateTime.Today.AddDays(-30),
 			EndDate = DateTime.Today
 		});
 		dateOptions.Add(new DatesOption()
 		{
+			Description = "Last 30 Days + Today",
+			StartDate = DateTime.Today.AddDays(-30),
+			EndDate = DateTime.Today.AddDays(1)
+		});
+		dateOptions.Add(new DatesOption()
+		{
 			Description = "Last 90 Days",
 			StartDate = DateTime.Today.AddDays(-90),
 			EndDate = DateTime.Today
+		});
+		dateOptions.Add(new DatesOption()
+		{
+			Description = "Last 90 Days + Today",
+			StartDate = DateTime.Today.AddDays(-90),
+			EndDate = DateTime.Today.AddDays(1)
 		});
 
 		dateOptions.Add(new DatesOption()

@@ -31,6 +31,8 @@
 	var isSingleDay = displayEndDate == paramThisDateOption.StartDate;
 
 	var datesText = isSingleDay ? paramThisDateOption.StartDate.ToString(dateFormat, cultureFormat) : $"{paramThisDateOption.StartDate.ToString(dateFormat, cultureFormat)} - {displayEndDate.ToString(dateFormat, cultureFormat)}";
+
+	
 }
 
 @section Head {
@@ -109,6 +111,7 @@ else
 
 			<th> NodeId</th>
 			<th> NodeName</th>
+			<th> ViewFile</th>
 
 			<th> Has Exception</th>
 			<th> Exception Info</th>
@@ -127,8 +130,6 @@ else
 			}
 
 			<th>Properties</th>
-
-
 		</tr>
 	</thead>
 	<tbody>
@@ -152,6 +153,14 @@ else
 
 				<td>@log.NodeId</td>
 				<td>@log.NodeName</td>
+				@* // ViewFile //TODO: Make automatic promoted properties configurable *@
+				<td>
+					@if (log.OtherProperties.Any())
+					{
+						var viewNameProperty = log.OtherProperties.FirstOrDefault(p => p.Key == "ViewFile");
+						<text>@viewNameProperty.Value</text>
+					}
+				</td>
 
 				@* //Has Exception *@
 				<td>@(log.LoggedException != null)</td>

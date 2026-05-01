@@ -39,13 +39,12 @@
 	<PropertyGroup>
 		<RootNamespace>Dragonfly</RootNamespace>
 		<AssemblyName>Dragonfly.UmbracoSiteAuditor</AssemblyName>
-		<Version>2.13.0</Version>
+		<Version>2.14.0</Version>
 		<AssemblyVersion>$(Version)</AssemblyVersion>
 		<FileVersion>$(Version)</FileVersion>
 		<PackageReleaseNotes>
-			Adding support for finding content using Elements Types, 
-			a nicer display of BlockList/BlockGrid property values, 
-			and the ability to add a default Search string to the URLs.</PackageReleaseNotes>
+			Log updates - Adding support for: including today in date ranges, ViewFile column.
+		</PackageReleaseNotes>
 
 		<IncludeSymbols>True</IncludeSymbols>
 		<SymbolPackageFormat>symbols.nupkg</SymbolPackageFormat>
