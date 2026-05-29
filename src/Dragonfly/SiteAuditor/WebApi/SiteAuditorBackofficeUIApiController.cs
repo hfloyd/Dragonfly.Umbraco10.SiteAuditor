@@ -1,18 +1,27 @@
 using Asp.Versioning;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Umbraco.Cms.Api.Common.Attributes;
 using Umbraco.Cms.Core.Models.Membership;
 using Umbraco.Cms.Core.Security;
+using Umbraco.Cms.Web.Common.Authorization;
+using Umbraco.Cms.Web.Common.Routing;
 
-namespace Dragonfly.SiteAuditor.WebApi;
+namespace Dragonfly.SiteAuditor;
 
-[ApiVersion("1.0")]
-[ApiExplorerSettings(GroupName = "Dragonfly.SiteAuditor")]
-public class DragonflySiteAuditorApiController : DragonflySiteAuditorApiControllerBase
+
+[ApiController]
+[ApiVersion(SiteAuditorApiConfig.ApiVersion)]
+[MapToApi(SiteAuditorApiConfig.BackofficeUIApiName)]
+[ApiExplorerSettings(GroupName = SiteAuditorApiConfig.ProjectDisplayName)]
+[BackOfficeRoute("dragonflysiteauditorui/api/v{version:apiVersion}")]
+[Authorize(Policy = AuthorizationPolicies.SectionAccessSettings)]
+public class SiteAuditorBackofficeUIApiController : ControllerBase
 {
 	private readonly IBackOfficeSecurityAccessor _backOfficeSecurityAccessor;
 
-	public DragonflySiteAuditorApiController(IBackOfficeSecurityAccessor backOfficeSecurityAccessor)
+	public SiteAuditorBackofficeUIApiController(IBackOfficeSecurityAccessor backOfficeSecurityAccessor)
 	{
 		_backOfficeSecurityAccessor = backOfficeSecurityAccessor;
 	}

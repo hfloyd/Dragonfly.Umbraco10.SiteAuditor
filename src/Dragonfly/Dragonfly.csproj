@@ -34,7 +34,7 @@
 		<Company>Heather Floyd</Company>
     <Copyright>$([System.DateTime]::UtcNow.ToString(`yyyy`)) © Heather Floyd [www.HeatherFloyd.com]</Copyright>
 
-		<PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageReadmeFile>README_nuget.md</PackageReadmeFile>
 		<PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
 		<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
 	</PropertyGroup>
@@ -58,16 +58,20 @@
 	</PropertyGroup>
 
 	<!-- Include Package Items -->
-	<ItemGroup>
-		<None Include="..\..\Dragonfly-SiteAuditor-128.png">
-			<Pack>True</Pack>
-			<PackagePath>\</PackagePath>
-		</None>
-		<None Include="..\..\LICENSE.md">
-			<Pack>True</Pack>
-			<PackagePath></PackagePath>
-		</None>
-	</ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\Dragonfly-SiteAuditor-128.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="..\..\LICENSE.md">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
+    <None Include="..\..\docs\README_nuget.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
 
 	<!-- Packages-->
   <!--Update Versions in \src\Dragonfly\Directory.Packages.props-->

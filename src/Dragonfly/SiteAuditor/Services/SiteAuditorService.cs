@@ -1,17 +1,6 @@
 ﻿namespace Dragonfly.SiteAuditor.Services;
 
-using Dragonfly.NetHelperServices;
-using Dragonfly.NetModels;
-using Dragonfly.SiteAuditor.Models;
-using Dragonfly.UmbracoHelpers;
-using Lucene.Net.Search;
-using Microsoft.AspNetCore.Http;
-//using System.Text.Json;
-//using System.Text.Json.Nodes;
 
-using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using Serilog.Formatting.Compact.Reader;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -19,10 +8,16 @@ using System.IO;
 using System.Linq;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
+
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
+
+using Newtonsoft.Json;
+using Serilog.Formatting.Compact.Reader;
+
 using Umbraco.Cms.Core;
-using Umbraco.Cms.Core.Hosting;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Models.PublishedContent;
 using Umbraco.Cms.Core.PropertyEditors.ValueConverters;
@@ -30,7 +25,12 @@ using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Web;
 using Umbraco.Cms.Web.Common;
 using Umbraco.Extensions;
-using static Lucene.Net.Store.Lock;
+
+using Dragonfly.NetHelperServices;
+using Dragonfly.NetModels;
+using Dragonfly.SiteAuditor.Models;
+using Dragonfly.UmbracoHelpers;
+
 
 #pragma warning disable 0168
 public class SiteAuditorService
@@ -1391,18 +1391,18 @@ public class SiteAuditorService
 
 		ap.DataType = _Services.DataTypeService!.GetDataType(UmbPropertyType.DataTypeId);
 		ap.DataTypeElementTypes = ap.DataType != null ? GetAllDataTypeElementsList(ap.DataType) : new List<string>();
-		ap.DataTypeConfigType = ap.DataType != null && ap.DataType.Configuration != null
-			? ap.DataType.Configuration.GetType()
+		ap.DataTypeConfigType = ap.DataType != null && ap.DataType.ConfigurationObject != null
+			? ap.DataType.ConfigurationObject.GetType()
 			: null;
 		try
 		{
-			var configDict = (Dictionary<string, string>)ap.DataType.Configuration;
+			var configDict = (Dictionary<string, object>)ap.DataType.ConfigurationData;
 			ap.DataTypeConfigDictionary = configDict;
 		}
 		catch (Exception e)
 		{
 			//ignore
-			ap.DataTypeConfigDictionary = new Dictionary<string, string>();
+			ap.DataTypeConfigDictionary = new Dictionary<string, object>();
 		}
 
 		//var  docTypes = AuditHelper.GetDocTypesForProperty(UmbPropertyType.Alias);
@@ -1501,8 +1501,8 @@ public class SiteAuditorService
 			adt.UsesElementsAll = GetAllDataTypeElementsList(dt);
 
 			//adt.ConfigurationJson = dt.Configuration!=null? JsonSerializer.Serialize(dt.Configuration): "";
-			adt.ConfigurationJson = dt.Configuration != null
-				? Newtonsoft.Json.JsonConvert.SerializeObject(dt.Configuration)
+			adt.ConfigurationJson = dt.ConfigurationObject != null
+				? Newtonsoft.Json.JsonConvert.SerializeObject(dt.ConfigurationObject)
 				: "";
 
 			var matchingProps = properties.Where(p => p.Key.DataTypeId == dt.Id);
@@ -1716,14 +1716,14 @@ public class SiteAuditorService
 	{
 		var elementTypesList = new List<string>();
 
-		if (dt.Configuration is null)
+		if (dt.ConfigurationObject is null)
 		{
 			return elementTypesList;
 		}
 
 		try
 		{
-			string configJson = dt.Configuration != null ? JsonConvert.SerializeObject(dt.Configuration) : "";
+			string configJson = dt.ConfigurationObject != null ? JsonConvert.SerializeObject(dt.ConfigurationObject) : "";
 			List<string> keyStrGuids = new List<string>();
 			List<Guid> keyGuids = new List<Guid>();
 
@@ -1744,24 +1744,24 @@ public class SiteAuditorService
 					//}
 					break;
 
-				//Legacy built-in [Obsolete("Nested content is obsolete, will be removed in V13")]
-				case "Umbraco.NestedContent":
-					var nestedContentConfig =
-						(Umbraco.Cms.Core.PropertyEditors.NestedContentConfiguration)dt
-							.Configuration; //JsonSerializer.Deserialize<NestedContentConfig>(configJson);
-					if (nestedContentConfig != null && nestedContentConfig.ContentTypes != null)
-					{
-						var types = nestedContentConfig.ContentTypes.ToList();
-						elementTypesList.AddRange(types.Select(c => c.Alias));
-					}
+				//Legacy built-in [Obsolete("Nested content is obsolete, will be removed in V17")]
+				//case "Umbraco.NestedContent":
+				//	var nestedContentConfig =
+				//		(Umbraco.Cms.Core.PropertyEditors.NestedContentConfiguration)dt
+				//			.Configuration; //JsonSerializer.Deserialize<NestedContentConfig>(configJson);
+				//	if (nestedContentConfig != null && nestedContentConfig.ContentTypes != null)
+				//	{
+				//		var types = nestedContentConfig.ContentTypes.ToList();
+				//		elementTypesList.AddRange(types.Select(c => c.Alias));
+				//	}
 
-					break;
+				//	break;
 
 				//Built-in (v. 10+)
 				case "Umbraco.BlockList":
 					var blockListConfig =
 						(Umbraco.Cms.Core.PropertyEditors.BlockListConfiguration)dt
-							.Configuration; //JsonSerializer.Deserialize<UmbracoBlockListConfig>(configJson);
+							.ConfigurationObject; //JsonSerializer.Deserialize<UmbracoBlockListConfig>(configJson);
 					if (blockListConfig != null)
 					{
 						keyGuids.AddRange(blockListConfig.Blocks.Select(b => b.ContentElementTypeKey));
@@ -1781,9 +1781,7 @@ public class SiteAuditorService
 
 				//Built-in (v. 13+)
 				case "Umbraco.BlockGrid":
-
-#if NET8_0_OR_GREATER
-					var blockGridConfig = (Umbraco.Cms.Core.PropertyEditors.BlockGridConfiguration)dt.Configuration;//JsonSerializer.Deserialize<UmbracoBlockListConfig>(configJson);
+					var blockGridConfig = (Umbraco.Cms.Core.PropertyEditors.BlockGridConfiguration)dt.ConfigurationObject;//JsonSerializer.Deserialize<UmbracoBlockListConfig>(configJson);
 					if (blockGridConfig != null)
 					{
 						keyGuids.AddRange(blockGridConfig.Blocks.Select(b => b.ContentElementTypeKey));
@@ -1800,12 +1798,7 @@ public class SiteAuditorService
 					}
 					//_Logger.LogWarning(
 					//	$"SiteAuditorService.GetDataTypeElementsList: Unknown Editor '{dt.EditorAlias}' with Config Model {dt.Configuration.ToString()} - needs processing?");
-#else
-					// Fallback for earlier versions
-					_Logger.LogWarning(
-						$"SiteAuditorService.GetDataTypeElementsList: 'Umbraco.BlockGrid' is not supported in this version of Umbraco");
-									
-#endif
+
 					break;
 
 				//Packages
@@ -1836,11 +1829,11 @@ public class SiteAuditorService
 
 				default: //Unknown PropertyEditors, look for clues
 
-					if (dt.Configuration is Dictionary<string, object>)
+					if (dt.ConfigurationObject is Dictionary<string, object>)
 					{
 						//If there is a dictionary of config keys, look for doc type-related keys
 
-						var configDict = (Dictionary<string, object>)dt.Configuration;
+						var configDict = dt.ConfigurationData;
 
 						//Check for likely key names
 						var keyFound = false;
@@ -1907,7 +1900,7 @@ public class SiteAuditorService
 						//If not a standard prop editor... or known editor
 
 						_Logger.LogWarning(
-							$"SiteAuditorService.GetDataTypeElementsList: Unknown Editor '{dt.EditorAlias}' with Config Model {dt.Configuration.ToString()} - needs processing?");
+							$"SiteAuditorService.GetDataTypeElementsList: Unknown Editor '{dt.EditorAlias}' with Config Model {dt.ConfigurationObject.ToString()} - needs processing?");
 					}
 
 					break;
@@ -1939,7 +1932,7 @@ public class SiteAuditorService
 		catch (Exception e)
 		{
 			_Logger.LogError(e,
-				$"SiteAuditorService.GetDataTypeElementsList: Error on '{dt.EditorAlias}' with config: {dt.Configuration}");
+				$"SiteAuditorService.GetDataTypeElementsList: Error on '{dt.EditorAlias}' with config: {dt.ConfigurationObject}");
 		}
 
 		return elementTypesList.Distinct();

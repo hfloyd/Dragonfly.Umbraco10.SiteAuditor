@@ -36,7 +36,7 @@
 		public IDataType? DataType { get; internal set; }
 
 		[DataMember]
-		public Dictionary<string, string> DataTypeConfigDictionary { get; internal set; } = new Dictionary<string, string>();
+		public Dictionary<string, object> DataTypeConfigDictionary { get; internal set; } = new Dictionary<string, object>();
 
 		[DataMember]
 		public Type? DataTypeConfigType { get; internal set; }

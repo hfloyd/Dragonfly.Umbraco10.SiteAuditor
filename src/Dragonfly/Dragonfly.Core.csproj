@@ -1,0 +1,202 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<!--<TargetFrameworks>net6.0;net7.0;net8.0;net9.0;net10.0</TargetFrameworks>-->
+		<!--<TargetFramework>net6.0</TargetFramework>-->
+		<!--<TargetFramework>net10.0</TargetFramework>-->
+		<TargetFramework>net8.0</TargetFramework>
+		
+		<MvcRazorCompileOnPublish>false</MvcRazorCompileOnPublish>
+		<ContentTargetFolders>content</ContentTargetFolders>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+	</PropertyGroup>
+
+	<!-- Package Description-->
+	<PropertyGroup>
+		<PackageId>Dragonfly.Umbraco10.SiteAuditor</PackageId>
+		<Title>Dragonfly Umbraco 10 Site Auditor</Title>
+		<Product>Dragonfly Umbraco 10 Site Auditor</Product>
+		<Description>A collection of tools to extract data about an Umbraco 10-17 site.</Description>
+
+		<PackageProjectUrl>https://DragonflyLibraries.com/umbraco-packages/site-auditor/</PackageProjectUrl>
+		<RepositoryType>GIT</RepositoryType>
+		<RepositoryUrl>https://github.com/hfloyd/Dragonfly.Umbraco10.SiteAuditor</RepositoryUrl>
+
+		<PackageIcon>Dragonfly-SiteAuditor-128.png</PackageIcon>
+		<PackageTags>Umbraco;umbraco-marketplace;Umbraco-10;Umbraco-11;Umbraco-12;Umbraco-13;Umbraco-15;Umbraco-16;Umbraco-17</PackageTags>
+
+	</PropertyGroup>
+
+	<!-- Author Info + Legal-->
+	<PropertyGroup>
+		<Authors>HFloyd</Authors>
+		<Company>Heather Floyd</Company>
+		<Copyright>Heather Floyd [www.HeatherFloyd.com]</Copyright>
+
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+		<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+	</PropertyGroup>
+
+	<!-- Assembly Info-->
+	<PropertyGroup>
+		<RootNamespace>Dragonfly</RootNamespace>
+		<AssemblyName>Dragonfly.UmbracoSiteAuditor</AssemblyName>
+		<Version>2.13.3</Version>
+		<AssemblyVersion>$(Version)</AssemblyVersion>
+		<FileVersion>$(Version)</FileVersion>
+		<PackageReleaseNotes>
+			Adding support for versions up to 17
+		</PackageReleaseNotes>
+
+		<IncludeSymbols>True</IncludeSymbols>
+		<SymbolPackageFormat>symbols.nupkg</SymbolPackageFormat>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
+
+	<!-- Include Package Items -->
+	<ItemGroup>
+		<None Include="..\..\Dragonfly-SiteAuditor-128.png">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+		<None Include="..\..\LICENSE.md">
+			<Pack>True</Pack>
+			<PackagePath></PackagePath>
+		</None>
+		<None Include="..\..\README.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+	</ItemGroup>
+
+	<!-- Packages-->
+	<!--Umbraco 10-->
+	<ItemGroup Condition="'$(TargetFramework)' == 'net6.0'">
+		<PackageReference Include="Umbraco.Cms.Core" Version="[10.0.1,11.0.0)" />
+		<PackageReference Include="Umbraco.Cms.Web.Website" Version="[10.0.1,11.0.0)" PrivateAssets="All" />
+		<PackageReference Include="Umbraco.Cms.Web.BackOffice" Version="[10.0.1,11.0.0)" PrivateAssets="All" />
+	</ItemGroup>
+
+	<!--Umbraco 11/12-->
+	<ItemGroup Condition="'$(TargetFramework)' == 'net7.0'">
+		<PackageReference Include="Umbraco.Cms.Core" Version="[11.0.0,13.0.0)" />
+		<PackageReference Include="Umbraco.Cms.Web.Website" Version="[10.0.1,13.0.0)" PrivateAssets="All" />
+		<PackageReference Include="Umbraco.Cms.Web.BackOffice" Version="[10.0.1,13.0.0)" PrivateAssets="All" />
+	</ItemGroup>
+
+	<!--Umbraco 13-->
+	<ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
+		<PackageReference Include="Umbraco.Cms.Core" Version="[13.0.1,15.0.0)" />
+		<PackageReference Include="Umbraco.Cms.Web.Website" Version="[13.0.1,15.0.0)" PrivateAssets="All" />
+		<!--Note: BackOffice package (UmbracoAuthorizedApiController) only goes up to v13 as of 2026-03 -->
+		<PackageReference Include="Umbraco.Cms.Web.BackOffice" Version="[13.0.1,14.0.0)" PrivateAssets="All" />
+	</ItemGroup>
+
+	<!--Umbraco 14: NOT SUPPORTED -->
+
+	<!--Umbraco 15/16-->
+	<ItemGroup Condition="'$(TargetFramework)' == 'net9.0'">
+		<PackageReference Include="Umbraco.Cms.Core" Version="[15.0.0,17.0.0)" />
+		<PackageReference Include="Umbraco.Cms.Web.Website" Version="[15.0.0,17.0.0)" PrivateAssets="All" />
+		<!--Note: BackOffice package (UmbracoAuthorizedApiController) only goes up to v13 as of 2026-03 -->
+	</ItemGroup>
+
+	<!--Umbraco 17-->
+	<ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+		<PackageReference Include="Umbraco.Cms.Core" Version="[17.0.0,18.0.0)" />
+		<PackageReference Include="Umbraco.Cms.Web.Website" Version="[17.0.0,18.0.0)" PrivateAssets="All" />
+		<!--Note: BackOffice package (UmbracoAuthorizedApiController) only goes up to v13 as of 2026-03 -->
+	</ItemGroup>
+
+
+
+	<!--Any Umbraco Version -->
+	<ItemGroup>
+		<PackageReference Include="Dragonfly.Net6" Version="2.2.0" />
+		<PackageReference Include="Dragonfly.Umbraco10" Version="2.0.1" />
+		<PackageReference Include="Serilog.Formatting.Compact.Reader" Version="4.0.0" />
+	</ItemGroup>
+
+
+	<!--Include App_Plugins & targets file-->
+	<!--Any Umbraco Version (Core files) -->
+	<ItemGroup>
+		<Content Include="App_Plugins\Dragonfly.SiteAuditor\**\*.*">
+			<ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+			<CopyToPublishDirectory>Always</CopyToPublishDirectory>
+			<Pack>True</Pack>
+		</Content>
+		<None Include="build\**\*.*">
+			<Pack>True</Pack>
+			<PackagePath>buildTransitive</PackagePath>
+		</None>
+	</ItemGroup>
+
+	<!--TODO: Figure out how to build separate versions?-->
+	<!--Umbraco 10-13 (UI.Umb10) -->
+	<ItemGroup>
+		<!--<ItemGroup Condition="'$(TargetFramework)' == 'net6.0' Or '$(TargetFramework)' == 'net7.0' Or '$(TargetFramework)' == 'net8.0'">-->
+		<Content Include="..\UI.Umb10\App_Plugins\Dragonfly.SiteAuditor\**\*.*">
+			<ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+			<CopyToPublishDirectory>Always</CopyToPublishDirectory>
+			<Pack>True</Pack>
+			<PackagePath>\content\App_Plugins\Dragonfly.SiteAuditor\</PackagePath>
+		</Content>
+	</ItemGroup>
+
+	<!--Umbraco 14+ (UI.Umb14) -->
+	<ItemGroup>
+		<!--<ItemGroup Condition="'$(TargetFramework)' == 'net9.0' Or '$(TargetFramework)' == 'net10.0'">-->
+		<Content Include="..\UI.Umb14\App_Plugins\Dragonfly.SiteAuditor\**\*.*">
+			<ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+			<CopyToPublishDirectory>Always</CopyToPublishDirectory>
+			<Pack>True</Pack>
+			<PackagePath>\content\App_Plugins\Dragonfly.SiteAuditor\</PackagePath>
+		</Content>
+	</ItemGroup>
+	<ItemGroup>
+	  <Content Remove="..\UI.Umb10\App_Plugins\Dragonfly.SiteAuditor\Lang\**" />
+	  <Content Remove="..\UI.Umb14\App_Plugins\Dragonfly.SiteAuditor\Lang\**" />
+	</ItemGroup>
+
+
+	<!-- Included/Excluded Files -->
+	<ItemGroup>
+		<Compile Remove="SiteAuditor\Helpers\AuditHelper.cs" />
+	</ItemGroup>
+	<ItemGroup>
+		<Content Remove="..\UI.Umb10\App_Plugins\Dragonfly.SiteAuditor\Dashboard.html" />
+		<Content Remove="..\UI.Umb10\App_Plugins\Dragonfly.SiteAuditor\Dragonfly-SiteAuditor-128.ico" />
+		<Content Remove="..\UI.Umb10\App_Plugins\Dragonfly.SiteAuditor\Dragonfly-SiteAuditor-128.png" />
+		<Content Remove="..\UI.Umb10\App_Plugins\Dragonfly.SiteAuditor\package.manifest" />
+		<Content Remove="..\UI.Umb14\App_Plugins\Dragonfly.SiteAuditor\Dashboard-14.html" />
+		<Content Remove="..\UI.Umb14\App_Plugins\Dragonfly.SiteAuditor\Dragonfly-SiteAuditor-128.ico" />
+		<Content Remove="..\UI.Umb14\App_Plugins\Dragonfly.SiteAuditor\Dragonfly-SiteAuditor-128.png" />
+		<Content Remove="..\UI.Umb14\App_Plugins\Dragonfly.SiteAuditor\package.manifest" />
+		<Content Remove="App_Plugins\Dragonfly.SiteAuditor\RazorViews\DataFormats\xxMediaImage.cshtml" />
+		<Content Remove="C:\Users\Heather\.nuget\packages\dragonfly.net6\1.4.0\contentFiles\any\net6.0\Dragonfly-NetHelpers-128.png" />
+		<Content Remove="C:\Users\Heather\.nuget\packages\dragonfly.net6\2.1.0\contentFiles\any\net6.0\Dragonfly-NetHelpers-128.png" />
+	</ItemGroup>
+	<ItemGroup>
+		<None Remove="App_Plugins\Dragonfly.SiteAuditor\RazorViews\AllElementContentAsHtmlTable.cshtml" />
+		<None Remove="App_Plugins\Dragonfly.SiteAuditor\RazorViews\DataFormats\xxMediaImage.cshtml" />
+	</ItemGroup>
+	<ItemGroup>
+		<Content Update="App_Plugins\Dragonfly.SiteAuditor\RazorViews\AllMediaAsHtmlTable.cshtml">
+			<ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+			<CopyToPublishDirectory>Always</CopyToPublishDirectory>
+			<Pack>True</Pack>
+		</Content>
+	</ItemGroup>
+
+
+
+
+	<Import Project="..\Custom.targets" />
+
+
+
+	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
+		<Exec Command="REM XCOPY /s /y &quot;$(TargetDir)$(TargetName)*.*&quot; &quot;\bin\&quot;&#xD;&#xA;REM XCOPY /y &quot;$(TargetDir)$(TargetName)*.*&quot; &quot;XXX\bin\&quot;" />
+	</Target>
+</Project>

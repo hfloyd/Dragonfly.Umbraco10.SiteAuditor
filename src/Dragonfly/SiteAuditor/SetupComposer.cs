@@ -44,7 +44,7 @@ namespace Dragonfly.SiteAuditor;
 				// Configure the Swagger generation options
 				// Add in a new Swagger API document solely for our own package that can be browsed via Swagger UI
 				// Along with having a generated swagger JSON file that we can use to auto generate a TypeScript client
-				opt.SwaggerDoc(Constants.ApiName, new OpenApiInfo
+				opt.SwaggerDoc(SiteAuditorApiConfig.BackofficeUIApiName, new OpenApiInfo
 				{
 					Title = "Dragonfly Umbraco 10 SiteAuditor Backoffice API",
 					Version = "1.0",
@@ -67,7 +67,7 @@ namespace Dragonfly.SiteAuditor;
 
 	public class DragonflySiteAuditorOperationSecurityFilter : BackOfficeSecurityRequirementsOperationFilterBase
 	{
-		protected override string ApiName => Constants.ApiName;
+		protected override string ApiName => SiteAuditorApiConfig.BackofficeUIApiName;
 	}
 
 	// This is used to generate nice operation IDs in our swagger json file
@@ -86,4 +86,4 @@ namespace Dragonfly.SiteAuditor;
 
 		public override string Handle(ApiDescription apiDescription) => $"{apiDescription.ActionDescriptor.RouteValues["action"]}";
 	}
-	}
+	
