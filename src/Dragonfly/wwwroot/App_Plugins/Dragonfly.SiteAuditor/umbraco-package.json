@@ -1,0 +1,14 @@
+{
+  "id": "Dragonfly.SiteAuditor",
+  "name": "Dragonfly.SiteAuditor",
+  "version": "0.0.0",
+  "allowTelemetry": true,
+  "extensions": [
+    {
+      "name": "Dragonfly Umbraco 10 SiteAuditor Bundle",
+      "alias": "Dragonfly.SiteAuditor.Bundle",
+      "type": "bundle",
+      "js": "/App_Plugins/Dragonfly.SiteAuditor/dragonfly-umbraco-siteauditor.js"
+    }
+  ]
+}

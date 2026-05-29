@@ -15,7 +15,7 @@
         /// <summary>
         /// Gets the friendly name of the package.
         /// </summary>
-        public const string Name = "Dragonfly Site Auditor (for Umbraco 10)";
+        public const string Name = "Dragonfly Site Auditor (for Umbraco 10+)";
 
         /// <summary>
         /// Gets the version of the package.

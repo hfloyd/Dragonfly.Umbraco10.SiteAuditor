@@ -11,7 +11,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
 using Umbraco.Cms.Web.Common.Attributes;
-using Umbraco.Cms.Web.BackOffice.Controllers;
 using Umbraco.Extensions;
 
 using Dragonfly.NetHelperServices;

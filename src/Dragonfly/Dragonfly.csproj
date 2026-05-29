@@ -1,26 +1,30 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-	<PropertyGroup>
-		<TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
-		<!--<TargetFramework>net6.0</TargetFramework>-->
-		<!--<TargetFramework>net8.0</TargetFramework>-->
-		<MvcRazorCompileOnPublish>false</MvcRazorCompileOnPublish>
-		<ContentTargetFolders>content</ContentTargetFolders>
-		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-	</PropertyGroup>
+﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+
+    <ContentTargetFolders>content</ContentTargetFolders>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <EnableDefaultContentItems>false</EnableDefaultContentItems>
+
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <StaticWebAssetBasePath>/</StaticWebAssetBasePath>
+  </PropertyGroup>
+
 
 	<!-- Package Description-->
 	<PropertyGroup>
 		<PackageId>Dragonfly.Umbraco10.SiteAuditor</PackageId>
-		<Title>Dragonfly Umbraco 10 Site Auditor</Title>
-		<Product>Dragonfly Umbraco 10 Site Auditor</Product>
-		<Description>A collection of tools to extract data about an Umbraco 10-13 site. (min. Umbraco 10.0)</Description>
+		<Title>Dragonfly Umbraco 10+ Site Auditor</Title>
+		<Product>Dragonfly Umbraco 10+ Site Auditor</Product>
+		<Description>A collection of tools to extract data about an Umbraco site.</Description>
 
 		<PackageProjectUrl>https://DragonflyLibraries.com/umbraco-packages/site-auditor/</PackageProjectUrl>
 		<RepositoryType>GIT</RepositoryType>
 		<RepositoryUrl>https://github.com/hfloyd/Dragonfly.Umbraco10.SiteAuditor</RepositoryUrl>
 
 		<PackageIcon>Dragonfly-SiteAuditor-128.png</PackageIcon>
-		<PackageTags>Umbraco;umbraco-marketplace;Umbraco-10;Umbraco-11;Umbraco-12;Umbraco-13</PackageTags>
+		<PackageTags>Umbraco;umbraco-marketplace;Umbraco-17;</PackageTags>
 
 	</PropertyGroup>
 
@@ -28,7 +32,7 @@
 	<PropertyGroup>
 		<Authors>HFloyd</Authors>
 		<Company>Heather Floyd</Company>
-		<Copyright>Heather Floyd [www.HeatherFloyd.com]</Copyright>
+    <Copyright>$([System.DateTime]::UtcNow.ToString(`yyyy`)) © Heather Floyd [www.HeatherFloyd.com]</Copyright>
 
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
@@ -39,12 +43,14 @@
 	<PropertyGroup>
 		<RootNamespace>Dragonfly</RootNamespace>
 		<AssemblyName>Dragonfly.UmbracoSiteAuditor</AssemblyName>
-		<Version>2.15.0</Version>
+		<Version>17.0.0</Version>
 		<AssemblyVersion>$(Version)</AssemblyVersion>
 		<FileVersion>$(Version)</FileVersion>
+    <VersionSuffix Condition="'$(Configuration)'=='Debug'">-prerelease$([System.DateTime]::UtcNow.ToString(`yyyyMMddHHmm`))</VersionSuffix>
 		<PackageReleaseNotes>
-			Log updates - Fixing ViewFile column.
+			Updating to v17
 		</PackageReleaseNotes>
+   
 
 		<IncludeSymbols>True</IncludeSymbols>
 		<SymbolPackageFormat>symbols.nupkg</SymbolPackageFormat>
@@ -61,40 +67,21 @@
 			<Pack>True</Pack>
 			<PackagePath></PackagePath>
 		</None>
-		<None Include="..\..\README.md">
-			<Pack>True</Pack>
-			<PackagePath>\</PackagePath>
-		</None>
 	</ItemGroup>
 
 	<!-- Packages-->
-	<!--Umbraco 10-->
-	<ItemGroup Condition="'$(TargetFramework)' == 'net6.0'">
-		<PackageReference Include="Umbraco.Cms.Core" Version="[10.0.1,11.0.0)" />
-		<PackageReference Include="Umbraco.Cms.Web.BackOffice" Version="[10.0.1,11.0.0)" PrivateAssets="All" />
-		<PackageReference Include="Umbraco.Cms.Web.Website" Version="[10.0.1,11.0.0)" PrivateAssets="All" />
-	</ItemGroup>
+  <!--Update Versions in \src\Dragonfly\Directory.Packages.props-->
+  <ItemGroup>
+    <PackageReference Include="Umbraco.Cms.Core" />
+    <PackageReference Include="Umbraco.Cms.Web.Website" />
+    <PackageReference Include="Umbraco.Cms.Web.Common" />
+    <PackageReference Include="Umbraco.Cms.Api.Common" />
+    <PackageReference Include="Umbraco.Cms.Api.Management" />
+    <PackageReference Include="Dragonfly.Net6" />
+    <PackageReference Include="Dragonfly.Umbraco10" />
+    <PackageReference Include="Serilog.Formatting.Compact.Reader" />
+  </ItemGroup>
 
-	<!--Umbraco 11/12-->
-	<ItemGroup Condition="'$(TargetFramework)' == 'net7.0'">
-		<PackageReference Include="Umbraco.Cms.Core" Version="[11.0.0,13.0.0)" />
-		<PackageReference Include="Umbraco.Cms.Web.BackOffice" Version="[10.0.1,13.0.0)" PrivateAssets="All" />
-		<PackageReference Include="Umbraco.Cms.Web.Website" Version="[10.0.1,13.0.0)" PrivateAssets="All" />
-	</ItemGroup>
-
-	<!--Umbraco 13-->
-	<ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
-		<PackageReference Include="Umbraco.Cms.Core" Version="[13.0.1,14.0.0)" />
-		<PackageReference Include="Umbraco.Cms.Web.BackOffice" Version="[13.0.1,14.0.0)" PrivateAssets="All" />
-		<PackageReference Include="Umbraco.Cms.Web.Website" Version="[13.0.1,14.0.0)" PrivateAssets="All" />
-	</ItemGroup>
-
-	<!--Any Umbraco Version -->
-	<ItemGroup>
-		<PackageReference Include="Dragonfly.Net6" Version="2.3.0" />
-		<PackageReference Include="Dragonfly.Umbraco10" Version="2.1.0" />
-		<PackageReference Include="Serilog.Formatting.Compact.Reader" Version="4.0.0" />
-	</ItemGroup>
 
 	<!--Include App_Plugins & targets file-->
 	<ItemGroup>
@@ -109,32 +96,84 @@
 		</None>
 	</ItemGroup>
 
-	<!-- Included/Excluded Files -->
+  <ItemGroup>
+    <!-- Dont include the client folder as part of packaging nuget build -->
+    <Content Remove="Client\**" />
+
+    <!-- However make the Umbraco-package.json included for dotnet pack or nuget package and visible to the solution -->
+    <None Include="Client\public\umbraco-package.json" Pack="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\docs\README_nuget.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+
+
+
+  <!-- Included/Excluded Files -->
 	<ItemGroup>
 		<Compile Remove="SiteAuditor\Helpers\AuditHelper.cs" />
 	</ItemGroup>
 	<ItemGroup>
-		<Content Remove="App_Plugins\Dragonfly.SiteAuditor\RazorViews\DataFormats\xxMediaImage.cshtml" />
+		<Content Remove="wwwroot\App_Plugins\RazorViews\DataFormats\xxMediaImage.cshtml" />
 		<Content Remove="C:\Users\Heather\.nuget\packages\dragonfly.net6\1.4.0\contentFiles\any\net6.0\Dragonfly-NetHelpers-128.png" />
 	</ItemGroup>
 	<ItemGroup>
-		<None Remove="App_Plugins\Dragonfly.SiteAuditor\RazorViews\AllElementContentAsHtmlTable.cshtml" />
-		<None Remove="App_Plugins\Dragonfly.SiteAuditor\RazorViews\DataFormats\xxMediaImage.cshtml" />
+		<None Remove="wwwroot\App_Plugins\RazorViews\AllElementContentAsHtmlTable.cshtml" />
+		<None Remove="wwwroot\App_Plugins\RazorViews\DataFormats\xxMediaImage.cshtml" />
 	</ItemGroup>
 	<ItemGroup>
-		<Content Update="App_Plugins\Dragonfly.SiteAuditor\RazorViews\AllMediaAsHtmlTable.cshtml">
-			<ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-			<CopyToPublishDirectory>Always</CopyToPublishDirectory>
-			<Pack>True</Pack>
-		</Content>
+	  <Content Include="wwwroot\App_Plugins\Dragonfly-SiteAuditor-128.ico" />
+	  <Content Include="wwwroot\App_Plugins\Dragonfly-SiteAuditor-128.png" />
+	  <Content Include="wwwroot\App_Plugins\RazorViews\AllContentAsHtmlTable.cshtml" />
+	  <Content Include="wwwroot\App_Plugins\RazorViews\AllDataTypesAsHtmlTable.cshtml" />
+	  <Content Include="wwwroot\App_Plugins\RazorViews\AllDocTypesAsHtmlTable.cshtml" />
+	  <Content Include="wwwroot\App_Plugins\RazorViews\AllElementContentAsHtmlTable.cshtml" />
+	  <Content Include="wwwroot\App_Plugins\RazorViews\AllMediaAsHtmlTable.cshtml">
+	    <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+	    <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+	    <Pack>True</Pack>
+	  </Content>
+	  <Content Include="wwwroot\App_Plugins\RazorViews\AllPropertiesAsHtmlTable.cshtml" />
+	  <Content Include="wwwroot\App_Plugins\RazorViews\AllTemplatesAsHtmlTable.cshtml" />
+	  <Content Include="wwwroot\App_Plugins\RazorViews\ContentForElementTypeList.cshtml" />
+	  <Content Include="wwwroot\App_Plugins\RazorViews\ContentForElementTypeTable.cshtml" />
+	  <Content Include="wwwroot\App_Plugins\RazorViews\ContentWithValuesList.cshtml" />
+	  <Content Include="wwwroot\App_Plugins\RazorViews\ContentWithValuesTable.cshtml" />
+	  <Content Include="wwwroot\App_Plugins\RazorViews\DataFormats\BlockGrid.cshtml" />
+	  <Content Include="wwwroot\App_Plugins\RazorViews\DataFormats\BlockList.cshtml" />
+	  <Content Include="wwwroot\App_Plugins\RazorViews\DataFormats\ContentPicker.cshtml" />
+	  <Content Include="wwwroot\App_Plugins\RazorViews\DataFormats\DateValue.cshtml" />
+	  <Content Include="wwwroot\App_Plugins\RazorViews\DataFormats\DocTypeInfo.cshtml" />
+	  <Content Include="wwwroot\App_Plugins\RazorViews\DataFormats\GridRaw.cshtml" />
+	  <Content Include="wwwroot\App_Plugins\RazorViews\DataFormats\MediaIPub.cshtml" />
+	  <Content Include="wwwroot\App_Plugins\RazorViews\DataFormats\MediaNodeActions.cshtml" />
+	  <Content Include="wwwroot\App_Plugins\RazorViews\DataFormats\MediaWithCrops.cshtml" />
+	  <Content Include="wwwroot\App_Plugins\RazorViews\DataFormats\Mntp.cshtml" />
+	  <Content Include="wwwroot\App_Plugins\RazorViews\DataFormats\NestedContent.cshtml" />
+	  <Content Include="wwwroot\App_Plugins\RazorViews\DataFormats\NodeActions.cshtml" />
+	  <Content Include="wwwroot\App_Plugins\RazorViews\DataFormats\PropertyDataValue.cshtml" />
+	  <Content Include="wwwroot\App_Plugins\RazorViews\DataFormats\PropertyTypeInfo.cshtml" />
+	  <Content Include="wwwroot\App_Plugins\RazorViews\DataFormats\SchemaActions.cshtml" />
+	  <Content Include="wwwroot\App_Plugins\RazorViews\DataFormats\Tags.cshtml" />
+	  <Content Include="wwwroot\App_Plugins\RazorViews\DoctypesForContentList.cshtml" />
+	  <Content Include="wwwroot\App_Plugins\RazorViews\DoctypesForPropertiesForDoctypeList.cshtml" />
+	  <Content Include="wwwroot\App_Plugins\RazorViews\LogOptions.cshtml" />
+	  <Content Include="wwwroot\App_Plugins\RazorViews\LogsAsHtmlTable.cshtml" />
+	  <Content Include="wwwroot\App_Plugins\RazorViews\MediaTypesForMediaList.cshtml" />
+	  <Content Include="wwwroot\App_Plugins\RazorViews\MediaWithValuesList.cshtml" />
+	  <Content Include="wwwroot\App_Plugins\RazorViews\MediaWithValuesTable.cshtml" />
+	  <Content Include="wwwroot\App_Plugins\RazorViews\TemplateUsageReport.cshtml" />
+	  <Content Include="wwwroot\App_Plugins\RazorViews\Web.config" />
+	  <Content Include="wwwroot\App_Plugins\RazorViews\_Master.cshtml" />
+	  <Content Include="wwwroot\App_Plugins\RazorViews\_ViewImports.cshtml" />
 	</ItemGroup>
-
-
 
 
 	<Import Project="..\Custom.targets" />
-
-
 
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
 		<Exec Command="REM XCOPY /s /y &quot;$(TargetDir)$(TargetName)*.*&quot; &quot;\bin\&quot;&#xD;&#xA;REM XCOPY /y &quot;$(TargetDir)$(TargetName)*.*&quot; &quot;XXX\bin\&quot;" />

@@ -1,0 +1,31 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <!-- Allow floating versions so extensions can align with the host Umbraco project's package versions -->
+    <CentralPackageFloatingVersionsEnabled>false</CentralPackageFloatingVersionsEnabled>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--Umbraco CMS -->
+
+    <PackageVersion Include="Umbraco.Cms.Core" Version="17.4.2"  />
+    <PackageVersion Include="Umbraco.Cms.Api.Common" Version="17.4.2" />
+    <PackageVersion Include="Umbraco.Cms.Api.Management" Version="17.4.2" />
+    <PackageVersion Include="Umbraco.Cms.Web.Common" Version="17.4.2" />
+    <PackageVersion Include="Umbraco.Cms.Web.Website" Version="17.4.2" />
+    <!--
+    <PackageVersion Include="Umbraco.Cms.Core" Version="[17.0.0,18.0.0)" />
+    <PackageVersion Include="Umbraco.Cms.Web.Website" Version="[17.0.0,18.0.0)"  />
+    <PackageVersion Include="Umbraco.Cms.Web.Common" Version="[17.0.0,18.0.0)"  />
+    <PackageVersion Include="Umbraco.Cms.Api.Common" Version="[17.0.0,18.0.0)" />
+    <PackageVersion Include="Umbraco.Cms.Api.Management" Version="[17.0.0,18.0.0)"  />
+-->
+
+    <!--Other Packages-->
+    <PackageVersion Include="Dragonfly.Net6" Version="2.3.0" />
+    <PackageVersion Include="Dragonfly.Umbraco10" Version="2.1.0" />
+    <PackageVersion Include="Serilog.Formatting.Compact.Reader" Version="4.0.0" />
+
+
+  </ItemGroup>
+</Project>
