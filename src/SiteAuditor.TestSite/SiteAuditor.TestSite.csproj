@@ -23,21 +23,20 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Update="appsettings - Copy.Development.json">
-      <DependentUpon>appsettings.json</DependentUpon>
-    </Content>
+    <Folder Include="bin\" />
   </ItemGroup>
+
 
   <PropertyGroup>
     <!-- Razor files are needed for the backoffice to work correctly -->
     <CopyRazorGenerateFilesToPublishDirectory>true</CopyRazorGenerateFilesToPublishDirectory>
   </PropertyGroup>
 
-  <Target Name="CopyAppPlugins" AfterTargets="Build">
+  <Target Name="CopyAppPlugins" BeforeTargets="Build">
     <ItemGroup>
       <AppPluginsFiles Include="..\Dragonfly\wwwroot\App_Plugins\**\*" />
     </ItemGroup>
-    <Copy SourceFiles="@(AppPluginsFiles)" DestinationFolder="$(OutputPath)wwwroot\App_Plugins\%(RecursiveDir)" />
+    <Copy SourceFiles="@(AppPluginsFiles)" DestinationFolder="$(ProjectFolder)wwwroot\App_Plugins\%(RecursiveDir)" />
   </Target>
 
 </Project>

@@ -8,6 +8,13 @@ builder.CreateUmbracoBuilder()
 
 WebApplication app = builder.Build();
 
+// Show exceptions for Development environment
+if (app.Environment.IsDevelopment()|| app.Environment.EnvironmentName=="Local")
+{
+	app.UseDeveloperExceptionPage();
+}
+
+
 await app.BootUmbracoAsync();
 
 

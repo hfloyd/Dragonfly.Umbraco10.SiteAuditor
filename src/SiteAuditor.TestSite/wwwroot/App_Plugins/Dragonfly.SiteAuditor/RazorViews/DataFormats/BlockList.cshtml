@@ -1,0 +1,219 @@
+@using Umbraco.Cms.Core.Models.Blocks
+
+@inherits UmbracoViewPage<NodePropertyDataTypeInfo>
+
+@{
+	if (Model.Property == null || Model.Property.Values == null || !Model.Property.Values.Any())
+	{
+		<i>(No items added)</i>
+		return;
+	}
+	var json = Model.Property != null ? Model.Property.GetValue().ToString() : ""; //Raw JSON string
+	var value = Model.PropertyData; //Should be a blocklist content JSON string
+	if (value != null)
+	{
+		var id = $"{Model.NodeId}_{Model.Property.Alias}";
+
+
+		var blModel = value as BlockListModel;
+		if (blModel != null)
+		{
+			var blockDataId = $"blockData_{id}";
+			<p>
+				<button class="btn btn-outline-primary btn-sm txt-x-sm" type="button" data-toggle="collapse" data-target="#@blockDataId" aria-expanded="false" aria-controls="@blockDataId">Show/Hide Block List Items</button>
+				<button class="btn btn-outline-info btn-sm txt-x-sm" type="button" data-toggle="collapse" data-target=".blockDataCollapse" aria-expanded="false" aria-controls="">Toggle All Rows</button>
+
+			</p>
+			<div class="collapse blockDataCollapse" id="@blockDataId">
+				@{
+					LoopBlockListModel(blModel);
+				}
+			</div>
+		}
+
+		<p>
+			<small><i>Raw Data</i></small><br />
+			<textarea rows="3" cols="100" class="txt-x-sm">@json</textarea>
+		</p>
+	}
+	else
+	{
+		<i>(No items added)</i>
+	}
+}
+
+@functions
+{
+	void LoopBlockListModel(BlockListModel BlModel)
+	{
+		<ol>
+			@foreach (var item in BlModel)
+			{
+				string name = item.Content.ContentType.Alias; //counter.ToString();// (string)item["name"];
+				var props = item.Content.Properties;
+
+				<li>
+					<b>@name</b>
+					@if (props.Any())
+					{
+						<ul>
+							@foreach (var prop in props)
+							{
+								RenderBlockPropertyValue(prop);
+							}
+						</ul>
+					}
+				</li>
+			}
+		</ol>
+	}
+
+	void LoopBlockGridModel(BlockGridModel BgModel)
+	{
+		<ol>
+			@foreach (var item in BgModel)
+			{
+				if (item.Content != null)
+				{
+					string name = item.Content.ContentType.Alias; //counter.ToString();// (string)item["name"];
+					var props = item.Content.Properties;
+					var areas = item.Areas;
+					<li>
+						<b>@name</b>
+						@if (props.Any())
+						{
+							<ul>
+								@foreach (var prop in props)
+								{
+									RenderBlockPropertyValue(prop);
+								}
+							</ul>
+						}
+						@foreach (var area in areas)
+						{
+							LoopBlockGridArea(area);
+						}
+					</li>
+				}
+				else
+				{
+					<li><i>(Content Is NULL)</i></li>
+				}
+			}
+		</ol>
+	}
+
+	void LoopBlockGridArea(BlockGridArea Area)
+	{
+		var areaLabel = $"{Area.Alias} ({Area.ColumnSpan} x {Area.RowSpan})";
+
+		<div class="card">
+			<div class="card-header">
+				@areaLabel
+			</div>
+			<div class="card-body">
+				@if (Area.Any())
+				{
+					<ul class="list-group list-group-flush">
+						@foreach (var item in Area)
+						{
+							if (item.Content != null)
+							{
+								string name = item.Content.ContentType.Alias; //counter.ToString();// (string)item["name"];
+								var props = item.Content.Properties.ToList();
+								<li class="list-group-item">
+									<b>@name</b>
+									@if (props.Any())
+									{
+										<ul>
+											@foreach (var prop in props)
+											{
+												RenderBlockPropertyValue(prop);
+											}
+										</ul>
+									}
+								</li>
+							}
+							else
+							{
+								<li><i>(Content Is NULL)</i></li>
+							}
+						}
+					</ul>
+				}
+				else
+				{
+					<i>(No content)</i>
+				}
+			</div>
+		</div>
+	}
+
+	void RenderBlockPropertyValue(IPublishedProperty Prop)
+	{
+		var propAlias = Prop.Alias;
+		<li>
+			<b>@propAlias:</b>
+			@try
+			{
+				var propEditor = Prop.PropertyType.EditorAlias;
+				var propValue = Prop.GetValue();
+
+				@if (propValue == null)
+				{
+					<span></span>
+				}
+				else if (propValue.GetType() == typeof(BlockListModel))
+				{
+					LoopBlockListModel(propValue as BlockListModel);
+				}
+				else if (propValue.GetType() == typeof(BlockGridModel))
+				{
+					LoopBlockGridModel(propValue as BlockGridModel);
+				}
+				else if (propValue is IPublishedContent node)
+				{
+					<span>@node.Name (@node.ContentType.Alias) #<small>@node.Id</small></span>
+				}
+				else if ((propValue is IEnumerable<IPublishedContent>) || (propValue is IList<IPublishedContent>))
+				{
+					var list = propValue as List<IPublishedContent>;
+					@if (list != null && list.Any())
+					{
+						<ol>
+							@foreach (var iPub in list)
+							{
+								if (iPub != null)
+								{
+									<li>@iPub.Name (@iPub.ContentType.Alias) #<small>@iPub.Id</small></li>
+								}
+							}
+						</ol>
+					}
+				}
+				else if ((propValue is IEnumerable<string>) || (propValue is IList<string>))
+				{
+					var list = propValue as List<string>;
+					<span>@string.Join(", ", list)</span>
+				}
+				else if (propValue is Umbraco.Cms.Core.Models.Link link)
+				{
+					<span>@link.Name (@link.SafeLinkUrl())</span>
+				}
+				else if (propEditor == "Umbraco.Community.Contentment.CodeEditor")
+				{
+					<textarea rows="4" cols="80" class="txt-x-sm">@propValue</textarea>
+				}
+				else
+				{
+					<span>@propValue</span>
+				}
+			}
+			catch (Exception e)
+			{
+				CurrentLogger.LogWarning(e, "SiteAuditor: Error rendering property value for {Property}", propAlias);
+				<span class="text-danger">Unable to render property value (@e.Message) <small>See umbracoLog for details</small></span>
+			}
+		</li>
+	}
+}

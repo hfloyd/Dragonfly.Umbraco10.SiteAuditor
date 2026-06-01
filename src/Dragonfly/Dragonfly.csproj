@@ -118,63 +118,6 @@
 
 
   <!-- Included/Excluded Files -->
-	<ItemGroup>
-		<Compile Remove="SiteAuditor\Helpers\AuditHelper.cs" />
-	</ItemGroup>
-	<ItemGroup>
-		<Content Remove="wwwroot\App_Plugins\Dragonfly.SiteAuditor\RazorViews\DataFormats\xxMediaImage.cshtml" />
-		<Content Remove="C:\Users\Heather\.nuget\packages\dragonfly.net6\1.4.0\contentFiles\any\net6.0\Dragonfly-NetHelpers-128.png" />
-	</ItemGroup>
-	<ItemGroup>
-		<None Remove="wwwroot\App_Plugins\Dragonfly.SiteAuditor\RazorViews\AllElementContentAsHtmlTable.cshtml" />
-		<None Remove="wwwroot\App_Plugins\Dragonfly.SiteAuditor\RazorViews\DataFormats\xxMediaImage.cshtml" />
-	</ItemGroup>
-	<ItemGroup>
-	  <Content Include="wwwroot\App_Plugins\Dragonfly.SiteAuditor\Dragonfly-SiteAuditor-128.ico" />
-	  <Content Include="wwwroot\App_Plugins\Dragonfly.SiteAuditor\Dragonfly-SiteAuditor-128.png" />
-	  <Content Include="wwwroot\App_Plugins\Dragonfly.SiteAuditor\RazorViews\AllContentAsHtmlTable.cshtml" />
-	  <Content Include="wwwroot\App_Plugins\Dragonfly.SiteAuditor\RazorViews\AllDataTypesAsHtmlTable.cshtml" />
-	  <Content Include="wwwroot\App_Plugins\Dragonfly.SiteAuditor\RazorViews\AllDocTypesAsHtmlTable.cshtml" />
-	  <Content Include="wwwroot\App_Plugins\Dragonfly.SiteAuditor\RazorViews\AllElementContentAsHtmlTable.cshtml" />
-	  <Content Include="wwwroot\App_Plugins\Dragonfly.SiteAuditor\RazorViews\AllMediaAsHtmlTable.cshtml">
-	    <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-	    <CopyToPublishDirectory>Always</CopyToPublishDirectory>
-	    <Pack>True</Pack>
-	  </Content>
-	  <Content Include="wwwroot\App_Plugins\Dragonfly.SiteAuditor\RazorViews\AllPropertiesAsHtmlTable.cshtml" />
-	  <Content Include="wwwroot\App_Plugins\Dragonfly.SiteAuditor\RazorViews\AllTemplatesAsHtmlTable.cshtml" />
-	  <Content Include="wwwroot\App_Plugins\Dragonfly.SiteAuditor\RazorViews\ContentForElementTypeList.cshtml" />
-	  <Content Include="wwwroot\App_Plugins\Dragonfly.SiteAuditor\RazorViews\ContentForElementTypeTable.cshtml" />
-	  <Content Include="wwwroot\App_Plugins\Dragonfly.SiteAuditor\RazorViews\ContentWithValuesList.cshtml" />
-	  <Content Include="wwwroot\App_Plugins\Dragonfly.SiteAuditor\RazorViews\ContentWithValuesTable.cshtml" />
-	  <Content Include="wwwroot\App_Plugins\Dragonfly.SiteAuditor\RazorViews\DataFormats\BlockGrid.cshtml" />
-	  <Content Include="wwwroot\App_Plugins\Dragonfly.SiteAuditor\RazorViews\DataFormats\BlockList.cshtml" />
-	  <Content Include="wwwroot\App_Plugins\Dragonfly.SiteAuditor\RazorViews\DataFormats\ContentPicker.cshtml" />
-	  <Content Include="wwwroot\App_Plugins\Dragonfly.SiteAuditor\RazorViews\DataFormats\DateValue.cshtml" />
-	  <Content Include="wwwroot\App_Plugins\Dragonfly.SiteAuditor\RazorViews\DataFormats\DocTypeInfo.cshtml" />
-	  <Content Include="wwwroot\App_Plugins\Dragonfly.SiteAuditor\RazorViews\DataFormats\GridRaw.cshtml" />
-	  <Content Include="wwwroot\App_Plugins\Dragonfly.SiteAuditor\RazorViews\DataFormats\MediaIPub.cshtml" />
-	  <Content Include="wwwroot\App_Plugins\Dragonfly.SiteAuditor\RazorViews\DataFormats\MediaNodeActions.cshtml" />
-	  <Content Include="wwwroot\App_Plugins\Dragonfly.SiteAuditor\RazorViews\DataFormats\MediaWithCrops.cshtml" />
-	  <Content Include="wwwroot\App_Plugins\Dragonfly.SiteAuditor\RazorViews\DataFormats\Mntp.cshtml" />
-	  <Content Include="wwwroot\App_Plugins\Dragonfly.SiteAuditor\RazorViews\DataFormats\NestedContent.cshtml" />
-	  <Content Include="wwwroot\App_Plugins\Dragonfly.SiteAuditor\RazorViews\DataFormats\NodeActions.cshtml" />
-	  <Content Include="wwwroot\App_Plugins\Dragonfly.SiteAuditor\RazorViews\DataFormats\PropertyDataValue.cshtml" />
-	  <Content Include="wwwroot\App_Plugins\Dragonfly.SiteAuditor\RazorViews\DataFormats\PropertyTypeInfo.cshtml" />
-	  <Content Include="wwwroot\App_Plugins\Dragonfly.SiteAuditor\RazorViews\DataFormats\SchemaActions.cshtml" />
-	  <Content Include="wwwroot\App_Plugins\Dragonfly.SiteAuditor\RazorViews\DataFormats\Tags.cshtml" />
-	  <Content Include="wwwroot\App_Plugins\Dragonfly.SiteAuditor\RazorViews\DoctypesForContentList.cshtml" />
-	  <Content Include="wwwroot\App_Plugins\Dragonfly.SiteAuditor\RazorViews\DoctypesForPropertiesForDoctypeList.cshtml" />
-	  <Content Include="wwwroot\App_Plugins\Dragonfly.SiteAuditor\RazorViews\LogOptions.cshtml" />
-	  <Content Include="wwwroot\App_Plugins\Dragonfly.SiteAuditor\RazorViews\LogsAsHtmlTable.cshtml" />
-	  <Content Include="wwwroot\App_Plugins\Dragonfly.SiteAuditor\RazorViews\MediaTypesForMediaList.cshtml" />
-	  <Content Include="wwwroot\App_Plugins\Dragonfly.SiteAuditor\RazorViews\MediaWithValuesList.cshtml" />
-	  <Content Include="wwwroot\App_Plugins\Dragonfly.SiteAuditor\RazorViews\MediaWithValuesTable.cshtml" />
-	  <Content Include="wwwroot\App_Plugins\Dragonfly.SiteAuditor\RazorViews\TemplateUsageReport.cshtml" />
-	  <Content Include="wwwroot\App_Plugins\Dragonfly.SiteAuditor\RazorViews\Web.config" />
-	  <Content Include="wwwroot\App_Plugins\Dragonfly.SiteAuditor\RazorViews\_Master.cshtml" />
-	  <Content Include="wwwroot\App_Plugins\Dragonfly.SiteAuditor\RazorViews\_ViewImports.cshtml" />
-	</ItemGroup>
 
 
 	<Import Project="..\Custom.targets" />

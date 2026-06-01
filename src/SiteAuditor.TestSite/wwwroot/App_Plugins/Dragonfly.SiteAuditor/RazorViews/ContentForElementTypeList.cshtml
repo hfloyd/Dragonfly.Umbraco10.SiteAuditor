@@ -1,0 +1,56 @@
+@inherits UmbracoViewPage<IList<AuditableDocType>>
+@*
+	Expected View Data:
+	-------------------
+	StandardInfo (object - StandardViewInfo)		: Version, Current environment, etc.
+	Status (object - StatusMessage)					: Status of operations
+
+*@
+@{
+	Layout = "_Master.cshtml";
+	var paramStandardInfo = Mvc.GetSafeViewData(ViewData, "StandardInfo", new StandardViewInfo()) as StandardViewInfo;
+	var paramStatus = Mvc.GetSafeViewData(ViewData, "Status", new StatusMessage()) as StatusMessage;
+
+	//	IEnumerable<AuditableContent> contentList = Model.ToList();
+	//	var propertyAlias = Dragonfly.UmbracoHelpers.Mvc.GetSafeViewDataString(ViewData, "PropertyAlias");
+	// var includeUnpublished = Dragonfly.UmbracoHelpers.Mvc.GetSafeViewDataBool(ViewData, "IncludeUnpublished");
+
+	//	var allElementTypes = Model.OrderBy(n=> n.Alias).ToList();
+	var elements = Model.Where(n => !n.IsComposition).OrderBy(n => n.FolderPathAsText);
+	var elementsInFolders = new GroupingCollection<AuditableDocType>(elements);
+	elementsInFolders.GroupItems(n => n.FolderPathAsText);
+
+	var counter = 0;
+	var Title = Dragonfly.UmbracoHelpers.Mvc.GetSafeViewDataString(ViewData, "Title", $"Get Content For Element Types: Available Elements");
+
+}
+
+@section Head {
+	<title>@Title</title>
+}
+
+<!--ContentForElementsList-->
+<h1>Get Content with ElementTypes</h1>
+<p>NOTE: Choosing the "Only Published" option is faster and less resource-intensive.</p>
+
+<h3>Element Types</h3>
+<ul>
+@foreach (var group in elementsInFolders.Groups)
+{
+		var folderPath = group.GroupName.Values.FirstOrDefault().ToString();
+
+	<li>
+	<h3>@folderPath</h3>
+	<ol>
+		@foreach (var doctype in group.Collection.OrderBy(n=>n.Name))
+		{
+			var url1 = $"/umbraco/backoffice/Dragonfly/SiteAuditor/GetContentForElementType?ElementTypeAlias={doctype.Alias}";
+			var url2 = $"{url1}&PublishedOnly=true";
+
+			<li><b>@doctype.Name</b> <small>@doctype.Alias</small> <a target="_blank" href="@url1">All Content</a> | <a target="_blank" href="@url2">Only Published Content</a></li>
+		}
+	</ol>
+	</li>
+}
+</ul>
+

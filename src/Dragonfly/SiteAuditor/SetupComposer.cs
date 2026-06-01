@@ -14,6 +14,7 @@ namespace Dragonfly.SiteAuditor;
 
 using Dragonfly.NetHelperServices;
 using Dragonfly.SiteAuditor.Services;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Umbraco.Cms.Core.Composing;
 using Umbraco.Cms.Core.DependencyInjection;
@@ -65,7 +66,11 @@ public class SetupComposer : IComposer
 
 		umbBuilder.Services.Configure<RazorViewEngineOptions>(options =>
 		{
+
+			// Try multiple formats for fallback
+			options.ViewLocationFormats.Add("~/App_Plugins/Dragonfly.SiteAuditor/RazorViews/{0}.cshtml");
 			options.ViewLocationFormats.Add("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/{0}.cshtml");
+			options.ViewLocationFormats.Add("App_Plugins/Dragonfly.SiteAuditor/RazorViews/{0}.cshtml");
 		});
 
 	}

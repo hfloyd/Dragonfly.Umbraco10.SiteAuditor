@@ -1,0 +1,40 @@
+@inherits UmbracoViewPage<IList<IMediaType>>
+@*
+	Expected View Data:
+	-------------------
+	StandardInfo (object - StandardViewInfo)		: Version, Current environment, etc.
+	Status (object - StatusMessage)					: Status of operations
+
+*@
+@{
+	Layout = "_Master.cshtml";
+	var paramStandardInfo = Mvc.GetSafeViewData(ViewData, "StandardInfo", new StandardViewInfo()) as StandardViewInfo;
+	var paramStatus = Mvc.GetSafeViewData(ViewData, "Status", new StatusMessage()) as StatusMessage;
+
+	//	IEnumerable<AuditableContent> contentList = Model.ToList();
+	//	var propertyAlias = Dragonfly.UmbracoHelpers.Mvc.GetSafeViewDataString(ViewData, "PropertyAlias");
+	// var includeUnpublished = Dragonfly.UmbracoHelpers.Mvc.GetSafeViewDataBool(ViewData, "IncludeUnpublished");
+
+
+
+	var counter = 0;
+	var title = Dragonfly.UmbracoHelpers.Mvc.GetSafeViewDataString(ViewData, "Title", $"Get Media for a Selected Media Type");
+}
+
+@section Head {
+	<title>@title</title>
+}
+
+<!--MediaTypesForMediaList-->
+<h1>@title</h1>
+
+<ol>
+	@foreach (var type in Model)
+	{
+		var url1 = $"/umbraco/backoffice/Dragonfly/SiteAuditor/GetMediaForTypeHtml?MediaTypeAlias={type.Alias}";
+		var url2 = $"{url1}&ShowImageThumbnails=True";
+		<li>
+			<strong>@type.Alias</strong> <small><a target="_blank" href="@url1">Without Thumbnails</a> or <a target="_blank" href="@url2">With Thumbnails</a></small>
+		</li>
+	}
+</ol>

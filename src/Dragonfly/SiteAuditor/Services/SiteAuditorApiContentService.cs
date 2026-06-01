@@ -1,9 +1,10 @@
 ﻿namespace Dragonfly.SiteAuditor.Services;
 
-using Microsoft.AspNetCore.Http;
 using Dragonfly.NetHelperServices;
 using Dragonfly.NetModels;
 using Dragonfly.SiteAuditor.Models;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
@@ -20,7 +21,8 @@ public class SiteAuditorApiContentService(
 	SiteAuditorService SiteAuditorService,
 	IViewRenderService ViewRenderService,
 	FileHelperService FileHelperService,
-	ServiceContext Services)
+	ServiceContext Services,
+	IWebHostEnvironment WebHostEnvironment)
 {
 
 	#region CTOR & DI
@@ -30,7 +32,7 @@ public class SiteAuditorApiContentService(
 	private readonly ContentService _ContentService = (Services.ContentService as ContentService)!;
 	//	private IWebHostEnvironment _HostingEnvironment;
 
-	private readonly string _RazorFilesPath = SiteAuditorApiConfig.RazorFilesPath(SiteAuditorService);
+	private readonly string _RazorFilesPath = "~/App_Plugins/Dragonfly.SiteAuditor/RazorViews/"; //SiteAuditorApiConfig.RazorFilesPath(SiteAuditorService);
 	private readonly StandardViewInfo _StandardViewInfo = SiteAuditorApiConfig.GetStandardViewInfo();
 
 	#endregion
@@ -582,7 +584,11 @@ public class SiteAuditorApiContentService(
 	internal string GetAllDataTypesAsHtmlTable(HttpContext HttpContext, string Search = "")
 	{
 		//Setup
-		var pvPath = _RazorFilesPath + "AllDataTypesAsHtmlTable.cshtml";
+		var wwwrootPath = WebHostEnvironment.WebRootPath;
+		var pvPath = Path.Combine(wwwrootPath, "App_Plugins", "Dragonfly.SiteAuditor", "RazorViews", "AllDataTypesAsHtmlTable.cshtml");
+
+		//var pvPath = _RazorFilesPath + "AllDataTypesAsHtmlTable.cshtml";
+		//var pvPath ="AllDataTypesAsHtmlTable";
 		var saService = SiteAuditorService;
 
 		//GET DATA TO DISPLAY
