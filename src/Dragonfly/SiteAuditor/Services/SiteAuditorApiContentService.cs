@@ -15,43 +15,23 @@ using System.Text;
 using System.Threading.Tasks;
 using Umbraco.Cms.Core.Services;
 
-public class SiteAuditorApiContentService
+public class SiteAuditorApiContentService(
+	ILogger<SiteAuditorController> Logger,
+	SiteAuditorService SiteAuditorService,
+	IViewRenderService ViewRenderService,
+	FileHelperService FileHelperService,
+	ServiceContext Services)
 {
 
 	#region CTOR & DI
 
-	private readonly ILogger<SiteAuditorController> _Logger;
-	private readonly SiteAuditorService _SiteAuditorService;
-	private readonly IViewRenderService _ViewRenderService;
-	private readonly FileHelperService _FileHelperService;
-	private readonly ServiceContext _Services;
-	private readonly ContentService _ContentService;
+	private readonly ILogger<SiteAuditorController> _Logger = Logger;
+	private readonly ServiceContext _Services = Services;
+	private readonly ContentService _ContentService = (Services.ContentService as ContentService)!;
 	//	private IWebHostEnvironment _HostingEnvironment;
 
-	private readonly string _RazorFilesPath;
-	private readonly StandardViewInfo _StandardViewInfo;
-
-	public SiteAuditorApiContentService(
-		ILogger<SiteAuditorController> logger
-		, SiteAuditorService siteAuditorService
-		, IViewRenderService viewRenderService
-		, FileHelperService fileHelperService
-		, ServiceContext services
-	)
-	{
-		_Logger = logger;
-		_SiteAuditorService = siteAuditorService;
-		_ViewRenderService = viewRenderService;
-		_FileHelperService = fileHelperService;
-		_Services = services;
-
-		_ContentService = services.ContentService as ContentService;
-
-
-		_RazorFilesPath = SiteAuditorApiConfig.RazorFilesPath(siteAuditorService);
-
-		_StandardViewInfo = SiteAuditorApiConfig.GetStandardViewInfo();
-	}
+	private readonly string _RazorFilesPath = SiteAuditorApiConfig.RazorFilesPath(SiteAuditorService);
+	private readonly StandardViewInfo _StandardViewInfo = SiteAuditorApiConfig.GetStandardViewInfo();
 
 	#endregion
 
@@ -60,7 +40,7 @@ public class SiteAuditorApiContentService
 	{
 		//Setup
 		var pvPath = _RazorFilesPath + "AllContentAsHtmlTable.cshtml";
-		var saService = _SiteAuditorService;
+		var saService = SiteAuditorService;
 
 		//GET DATA TO DISPLAY
 		var status = new StatusMessage(true);
@@ -76,7 +56,7 @@ public class SiteAuditorApiContentService
 		viewData.Add("PublishedOnly", PublishedOnly);
 
 		//RENDER
-		var htmlTask = _ViewRenderService.RenderToStringAsync(HttpContext, pvPath, model, viewData);
+		var htmlTask = ViewRenderService.RenderToStringAsync(HttpContext, pvPath, model, viewData);
 		var displayHtml = htmlTask.Result;
 
 		//RETURN HTML
@@ -111,7 +91,7 @@ public class SiteAuditorApiContentService
 	{
 		//Setup
 		var pvPath = _RazorFilesPath + "DoctypesForContentList.cshtml";
-		var saService = _SiteAuditorService;
+		var saService = SiteAuditorService;
 
 		//GET DATA TO DISPLAY
 		var status = new StatusMessage(true);
@@ -131,7 +111,7 @@ public class SiteAuditorApiContentService
 
 
 		//RENDER
-		var htmlTask = _ViewRenderService.RenderToStringAsync(HttpContext, pvPath, model, viewData);
+		var htmlTask = ViewRenderService.RenderToStringAsync(HttpContext, pvPath, model, viewData);
 		var displayHtml = htmlTask.Result;
 
 		//RETURN HTML
@@ -142,7 +122,7 @@ public class SiteAuditorApiContentService
 	{
 		//Setup
 		var pvPath = _RazorFilesPath + "AllContentAsHtmlTable.cshtml";
-		var saService = _SiteAuditorService;
+		var saService = SiteAuditorService;
 
 		//GET DATA TO DISPLAY
 		var status = new StatusMessage(true);
@@ -159,7 +139,7 @@ public class SiteAuditorApiContentService
 		viewData.Add("PublishedOnly", PublishedOnly);
 
 		//RENDER
-		var htmlTask = _ViewRenderService.RenderToStringAsync(HttpContext, pvPath, model, viewData);
+		var htmlTask = ViewRenderService.RenderToStringAsync(HttpContext, pvPath, model, viewData);
 		var displayHtml = htmlTask.Result;
 
 		//RETURN HTML
@@ -170,7 +150,7 @@ public class SiteAuditorApiContentService
 	{
 		//Setup
 		var pvPath = _RazorFilesPath + "AllElementContentAsHtmlTable.cshtml";
-		var saService = _SiteAuditorService;
+		var saService = SiteAuditorService;
 
 		//GET DATA TO DISPLAY
 		var status = new StatusMessage(true);
@@ -187,7 +167,7 @@ public class SiteAuditorApiContentService
 		viewData.Add("PublishedOnly", PublishedOnly);
 
 		//RENDER
-		var htmlTask = _ViewRenderService.RenderToStringAsync(HttpContext, pvPath, model, viewData);
+		var htmlTask = ViewRenderService.RenderToStringAsync(HttpContext, pvPath, model, viewData);
 		var displayHtml = htmlTask.Result;
 
 		//RETURN HTML
@@ -202,7 +182,7 @@ public class SiteAuditorApiContentService
 	{
 		//Setup
 		var pvPath = _RazorFilesPath + "AllMediaAsHtmlTable.cshtml";
-		var saService = _SiteAuditorService;
+		var saService = SiteAuditorService;
 
 		//GET DATA TO DISPLAY
 		var status = new StatusMessage(true);
@@ -216,7 +196,7 @@ public class SiteAuditorApiContentService
 		viewData.Add("ShowImageThumbnails", ShowImageThumbnails);
 
 		//RENDER
-		var htmlTask = _ViewRenderService.RenderToStringAsync(HttpContext, pvPath, model, viewData);
+		var htmlTask = ViewRenderService.RenderToStringAsync(HttpContext, pvPath, model, viewData);
 		var displayHtml = htmlTask.Result;
 
 		//RETURN HTML
@@ -239,7 +219,7 @@ public class SiteAuditorApiContentService
 	{
 		//Setup
 		var pvPath = _RazorFilesPath + "MediaTypesForMediaList.cshtml";
-		var saService = _SiteAuditorService;
+		var saService = SiteAuditorService;
 
 		//GET DATA TO DISPLAY
 		var status = new StatusMessage(true);
@@ -253,7 +233,7 @@ public class SiteAuditorApiContentService
 
 
 		//RENDER
-		var htmlTask = _ViewRenderService.RenderToStringAsync(HttpContext, pvPath, model, viewData);
+		var htmlTask = ViewRenderService.RenderToStringAsync(HttpContext, pvPath, model, viewData);
 		var displayHtml = htmlTask.Result;
 
 		//RETURN HTML
@@ -264,7 +244,7 @@ public class SiteAuditorApiContentService
 	{
 		//Setup
 		var pvPath = _RazorFilesPath + "AllMediaAsHtmlTable.cshtml";
-		var saService = _SiteAuditorService;
+		var saService = SiteAuditorService;
 
 		//GET DATA TO DISPLAY
 		var status = new StatusMessage(true);
@@ -280,7 +260,7 @@ public class SiteAuditorApiContentService
 		viewData.Add("ShowImageThumbnails", ShowImageThumbnails);
 
 		//RENDER
-		var htmlTask = _ViewRenderService.RenderToStringAsync(HttpContext, pvPath, model, viewData);
+		var htmlTask = ViewRenderService.RenderToStringAsync(HttpContext, pvPath, model, viewData);
 		var displayHtml = htmlTask.Result;
 
 		//RETURN HTML
@@ -309,7 +289,7 @@ public class SiteAuditorApiContentService
 	{
 		//Setup
 		var pvPath = _RazorFilesPath + "ContentWithValuesTable.cshtml";
-		var saService = _SiteAuditorService;
+		var saService = SiteAuditorService;
 
 		//GET DATA TO DISPLAY
 		var status = new StatusMessage(true);
@@ -329,7 +309,7 @@ public class SiteAuditorApiContentService
 		viewData.Add("PublishedOnly", PublishedOnly);
 
 		//RENDER
-		var htmlTask = _ViewRenderService.RenderToStringAsync(HttpContext, pvPath, model, viewData);
+		var htmlTask = ViewRenderService.RenderToStringAsync(HttpContext, pvPath, model, viewData);
 		displayHtml = htmlTask.Result;
 
 		//RETURN HTML
@@ -340,7 +320,7 @@ public class SiteAuditorApiContentService
 	{
 		//Setup
 		var pvPath = _RazorFilesPath + "ContentWithValuesList.cshtml";
-		var saService = _SiteAuditorService;
+		var saService = SiteAuditorService;
 
 		//GET DATA TO DISPLAY
 		var status = new StatusMessage(true);
@@ -360,7 +340,7 @@ public class SiteAuditorApiContentService
 		// viewData.Add("IncludeUnpublished", IncludeUnpublished);
 
 		//RENDER
-		var htmlTask = _ViewRenderService.RenderToStringAsync(HttpContext, pvPath, model, viewData);
+		var htmlTask = ViewRenderService.RenderToStringAsync(HttpContext, pvPath, model, viewData);
 		displayHtml = htmlTask.Result;
 
 		//RETURN HTML
@@ -375,7 +355,7 @@ public class SiteAuditorApiContentService
 	private IEnumerable<KeyValuePair<string, AuditableDataType>> ListOfProperties()
 	{
 		//Setup
-		var saService = _SiteAuditorService;
+		var saService = SiteAuditorService;
 
 		//GET DATA
 		var allSiteDocTypes = saService.GetAllDocTypes();
@@ -419,7 +399,7 @@ public class SiteAuditorApiContentService
 	{
 		//Setup
 		var pvPath = _RazorFilesPath + "MediaWithValuesTable.cshtml";
-		var saService = _SiteAuditorService;
+		var saService = SiteAuditorService;
 
 		//GET DATA TO DISPLAY
 		var status = new StatusMessage(true);
@@ -439,7 +419,7 @@ public class SiteAuditorApiContentService
 		// viewData.Add("IncludeUnpublished", IncludeUnpublished);
 
 		//RENDER
-		var htmlTask = _ViewRenderService.RenderToStringAsync(HttpContext, pvPath, model, viewData);
+		var htmlTask = ViewRenderService.RenderToStringAsync(HttpContext, pvPath, model, viewData);
 		displayHtml = htmlTask.Result;
 
 		//RETURN HTML
@@ -450,7 +430,7 @@ public class SiteAuditorApiContentService
 	{
 		//Setup
 		var pvPath = _RazorFilesPath + "MediaWithValuesList.cshtml";
-		var saService = _SiteAuditorService;
+		var saService = SiteAuditorService;
 
 		//GET DATA TO DISPLAY
 		var status = new StatusMessage(true);
@@ -470,7 +450,7 @@ public class SiteAuditorApiContentService
 		// viewData.Add("IncludeUnpublished", IncludeUnpublished);
 
 		//RENDER
-		var htmlTask = _ViewRenderService.RenderToStringAsync(HttpContext, pvPath, model, viewData);
+		var htmlTask = ViewRenderService.RenderToStringAsync(HttpContext, pvPath, model, viewData);
 		displayHtml = htmlTask.Result;
 
 		//RETURN HTML
@@ -480,7 +460,7 @@ public class SiteAuditorApiContentService
 	private IList<string> ListOfMediaProperties()
 	{
 		//Setup
-		var saService = _SiteAuditorService;
+		var saService = SiteAuditorService;
 
 		//GET DATA
 		var allTypes = saService.GetAllMediaTypes();
@@ -499,7 +479,7 @@ public class SiteAuditorApiContentService
 	{
 		//Setup
 		var pvPath = _RazorFilesPath + "AllPropertiesAsHtmlTable.cshtml";
-		var saService = _SiteAuditorService;
+		var saService = SiteAuditorService;
 
 		//GET DATA TO DISPLAY
 		var status = new StatusMessage(true);
@@ -517,7 +497,7 @@ public class SiteAuditorApiContentService
 		viewData.Add("DocTypeAlias", "");
 
 		//RENDER
-		var htmlTask = _ViewRenderService.RenderToStringAsync(HttpContext, pvPath, model, viewData);
+		var htmlTask = ViewRenderService.RenderToStringAsync(HttpContext, pvPath, model, viewData);
 		var displayHtml = htmlTask.Result;
 
 		//RETURN HTML
@@ -540,7 +520,7 @@ public class SiteAuditorApiContentService
 	{
 		//Setup
 		var pvPath = _RazorFilesPath + "AllPropertiesAsHtmlTable.cshtml";
-		var saService = _SiteAuditorService;
+		var saService = SiteAuditorService;
 
 		//GET DATA TO DISPLAY
 		var status = new StatusMessage(true);
@@ -560,7 +540,7 @@ public class SiteAuditorApiContentService
 		viewData.Add("DocTypeAlias", DocTypeAlias);
 
 		//RENDER
-		var htmlTask = _ViewRenderService.RenderToStringAsync(HttpContext, pvPath, model, viewData);
+		var htmlTask = ViewRenderService.RenderToStringAsync(HttpContext, pvPath, model, viewData);
 		var displayHtml = htmlTask.Result;
 
 		//RETURN HTML
@@ -572,7 +552,7 @@ public class SiteAuditorApiContentService
 		//Setup
 		var pvPath = _RazorFilesPath + "DoctypesForPropertiesForDoctypeList.cshtml";
 
-		var saService = _SiteAuditorService;
+		var saService = SiteAuditorService;
 
 		//GET DATA TO DISPLAY
 		var status = new StatusMessage(true);
@@ -587,7 +567,7 @@ public class SiteAuditorApiContentService
 		viewData.Add("Status", status);
 
 		//RENDER
-		var htmlTask = _ViewRenderService.RenderToStringAsync(HttpContext, pvPath, model, viewData);
+		var htmlTask = ViewRenderService.RenderToStringAsync(HttpContext, pvPath, model, viewData);
 		var displayHtml = htmlTask.Result;
 
 		//RETURN HTML
@@ -603,7 +583,7 @@ public class SiteAuditorApiContentService
 	{
 		//Setup
 		var pvPath = _RazorFilesPath + "AllDataTypesAsHtmlTable.cshtml";
-		var saService = _SiteAuditorService;
+		var saService = SiteAuditorService;
 
 		//GET DATA TO DISPLAY
 		var status = new StatusMessage(true);
@@ -619,7 +599,7 @@ public class SiteAuditorApiContentService
 		viewData.Add("Status", status);
 
 		//RENDER
-		var htmlTask = _ViewRenderService.RenderToStringAsync(HttpContext, pvPath, model, viewData);
+		var htmlTask = ViewRenderService.RenderToStringAsync(HttpContext, pvPath, model, viewData);
 		var displayHtml = htmlTask.Result;
 
 		//RETURN AS HTML
@@ -635,7 +615,7 @@ public class SiteAuditorApiContentService
 	{
 		//Setup
 		var pvPath = _RazorFilesPath + "AllDocTypesAsHtmlTable.cshtml";
-		var saService = _SiteAuditorService;
+		var saService = SiteAuditorService;
 
 		//GET DATA TO DISPLAY
 		var status = new StatusMessage(true);
@@ -650,7 +630,7 @@ public class SiteAuditorApiContentService
 		viewData.Add("Status", status);
 
 		//RENDER
-		var htmlTask = _ViewRenderService.RenderToStringAsync(HttpContext, pvPath, model, viewData);
+		var htmlTask = ViewRenderService.RenderToStringAsync(HttpContext, pvPath, model, viewData);
 		var displayHtml = htmlTask.Result;
 
 		//RETURN AS HTML
@@ -699,7 +679,7 @@ public class SiteAuditorApiContentService
 		// viewData.Add("IncludeUnpublished", IncludeUnpublished);
 
 		//RENDER
-		var htmlTask = _ViewRenderService.RenderToStringAsync(HttpContext, pvPath, model, viewData);
+		var htmlTask = ViewRenderService.RenderToStringAsync(HttpContext, pvPath, model, viewData);
 		displayHtml = htmlTask.Result;
 
 		//RETURN HTML
@@ -710,7 +690,7 @@ public class SiteAuditorApiContentService
 	{
 		//Setup
 		var pvPath = _RazorFilesPath + "ContentForElementTypeTable.cshtml";
-		var saService = _SiteAuditorService;
+		var saService = SiteAuditorService;
 
 		//GET DATA TO DISPLAY
 		var status = new StatusMessage(true);
@@ -782,7 +762,7 @@ public class SiteAuditorApiContentService
 			viewData.Add("PublishedOnly", PublishedOnly);
 
 			//RENDER
-			var htmlTask = _ViewRenderService.RenderToStringAsync(HttpContext, pvPath, model, viewData);
+			var htmlTask = ViewRenderService.RenderToStringAsync(HttpContext, pvPath, model, viewData);
 			displayHtml = htmlTask.Result;
 		}
 
@@ -800,7 +780,7 @@ public class SiteAuditorApiContentService
 	private IList<AuditableDocType> ListOfElementTypes()
 	{
 		//Setup
-		var saService = _SiteAuditorService;
+		var saService = SiteAuditorService;
 		var allElementTypes = new List<AuditableDocType>();
 
 		//GET DATA
@@ -830,7 +810,7 @@ public class SiteAuditorApiContentService
 	{
 		//Setup
 		var pvPath = _RazorFilesPath + "AllTemplatesAsHtmlTable.cshtml";
-		var saService = _SiteAuditorService;
+		var saService = SiteAuditorService;
 
 		//GET DATA TO DISPLAY
 		var status = new StatusMessage(true);
@@ -845,7 +825,7 @@ public class SiteAuditorApiContentService
 		viewData.Add("Status", status);
 
 		//RENDER
-		var htmlTask = _ViewRenderService.RenderToStringAsync(HttpContext, pvPath, model, viewData);
+		var htmlTask = ViewRenderService.RenderToStringAsync(HttpContext, pvPath, model, viewData);
 		var displayHtml = htmlTask.Result;
 
 		//RETURN AS HTML
@@ -859,7 +839,7 @@ public class SiteAuditorApiContentService
 	{
 		//Setup
 		var pvPath = _RazorFilesPath + "TemplateUsageReport.cshtml";
-		var saService = _SiteAuditorService;
+		var saService = SiteAuditorService;
 
 		//GET DATA TO DISPLAY
 		var status = new StatusMessage(true);
@@ -873,7 +853,7 @@ public class SiteAuditorApiContentService
 		viewData.Add("TemplatesNotUsedOnContent", saService.TemplatesNotUsedOnContent());
 
 		//RENDER
-		var htmlTask = _ViewRenderService.RenderToStringAsync(HttpContext, pvPath, model, viewData);
+		var htmlTask = ViewRenderService.RenderToStringAsync(HttpContext, pvPath, model, viewData);
 		var displayHtml = htmlTask.Result;
 
 		//RETURN HTML
@@ -903,7 +883,7 @@ public class SiteAuditorApiContentService
 	{
 		//Setup
 		var pvPath = _RazorFilesPath + "LogOptions.cshtml";
-		var saService = _SiteAuditorService;
+		var saService = SiteAuditorService;
 
 		//GET DATA TO DISPLAY
 		var status = new StatusMessage(true);
@@ -923,7 +903,7 @@ public class SiteAuditorApiContentService
 		// viewData.Add("IncludeUnpublished", IncludeUnpublished);
 
 		//RENDER
-		var htmlTask = _ViewRenderService.RenderToStringAsync(HttpContext, pvPath, model, viewData);
+		var htmlTask = ViewRenderService.RenderToStringAsync(HttpContext, pvPath, model, viewData);
 		displayHtml = htmlTask.Result;
 
 		//RETURN HTML
@@ -935,7 +915,7 @@ public class SiteAuditorApiContentService
 	{
 		//Setup
 		var pvPath = _RazorFilesPath + "LogsAsHtmlTable.cshtml";
-		var saService = _SiteAuditorService;
+		var saService = SiteAuditorService;
 
 		//GET DATA TO DISPLAY
 		var status = new StatusMessage(true);
@@ -966,7 +946,7 @@ public class SiteAuditorApiContentService
 		viewData.Add("PromotedProperties", PromotedProperties);
 
 		//RENDER
-		var htmlTask = _ViewRenderService.RenderToStringAsync(HttpContext, pvPath, model, viewData);
+		var htmlTask = ViewRenderService.RenderToStringAsync(HttpContext, pvPath, model, viewData);
 		var displayHtml = htmlTask.Result;
 
 		//RETURN HTML
@@ -1042,7 +1022,7 @@ public class SiteAuditorApiContentService
 	private string GetSerilogMappedDirectory()
 	{
 		var mappedPath = "";
-		var canMapPath = _FileHelperService.TryGetMappedPath(_StandardViewInfo.SerilogDirectory, out mappedPath, true);
+		var canMapPath = FileHelperService.TryGetMappedPath(_StandardViewInfo.SerilogDirectory, out mappedPath, true);
 
 		return mappedPath;
 	}

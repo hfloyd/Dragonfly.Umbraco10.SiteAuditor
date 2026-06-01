@@ -20,48 +20,25 @@ using Dragonfly.SiteAuditor.Services;
 using Microsoft.AspNetCore.Http;
 
 
-[SiteAuditorApiRouteAttribute("AuthorizedApi")]
+[SiteAuditorApiRouteAttribute("Report")]
 public class SiteAuditorController(
 	 ILogger<SiteAuditorController> logger
-	 , ServiceContext services
 	 , IBackofficeUserAccessor backofficeUserAccessor
 	 , SiteAuditorApiContentService siteAuditorApiContentService
 	 , SiteAuditorService siteAuditorService
-	 , IViewRenderService viewRenderService
-	 , FileHelperService fileHelperService
-	 // , IUmbracoContextAccessor umbracoContextAccessor
-	 //	,IWebHostEnvironment hostingEnvironment
-	 ) : SiteAuditorApiControllerBase(backofficeUserAccessor)
+	 ) : DragonflyApiControllerBase(backofficeUserAccessor)
 {
 	#region CTOR/DI/Variables
 
 	private readonly ILogger<SiteAuditorController> _Logger = logger;
-
-	private readonly ServiceContext _Services = services;
-	private readonly ContentService _ContentService = services.ContentService as ContentService;
-
+	
 	private readonly SiteAuditorService _SiteAuditorService = siteAuditorService;
 	private readonly SiteAuditorApiContentService _SiteAuditorApiContentService = siteAuditorApiContentService;
-	private readonly IViewRenderService _ViewRenderService = viewRenderService;
-	private readonly FileHelperService _FileHelperService = fileHelperService;
-
-	//private readonly IUmbracoContextAccessor _umbracoContextAccessor = umbracoContextAccessor;
-	//	private IWebHostEnvironment _HostingEnvironment;
-
-	private readonly string _RazorFilesPath = SiteAuditorApiConfig.RazorFilesPath(siteAuditorService);
 
 	private readonly string _UnauthorizedMessage =
 		"<p class=\"alert alert-danger\">You are not authorized to view this page. Please log in to the Umbraco back-office and try again.</p>";
 
 	#endregion
-
-
-	[Obsolete("This is here due to legacy instantiation. Just use '_SiteAuditorService' directly.")]
-	private SiteAuditorService GetSiteAuditorService()
-	{
-		return _SiteAuditorService;
-		//return new SiteAuditorService(Umbraco, UmbracoContext, Services, Logger<>);
-	}
 
 	#region Content Nodes
 
@@ -107,7 +84,7 @@ public class SiteAuditorController(
 		//RETURN AS HTML
 		return Content(htmlContent, "text/html");
 	}
-	
+
 	#endregion
 
 	#region Media Nodes
@@ -133,7 +110,7 @@ public class SiteAuditorController(
 		var htmlContent = _UnauthorizedMessage;
 		if (IsBackOfficeAuthorized())
 		{
-			htmlContent = _SiteAuditorApiContentService.GetMediaForTypeHtml(this.HttpContext,MediaTypeAlias, ShowImageThumbnails, Search);
+			htmlContent = _SiteAuditorApiContentService.GetMediaForTypeHtml(this.HttpContext, MediaTypeAlias, ShowImageThumbnails, Search);
 		}
 
 		//RETURN AS HTML
@@ -171,7 +148,7 @@ public class SiteAuditorController(
 		var htmlContent = _UnauthorizedMessage;
 		if (IsBackOfficeAuthorized())
 		{
-			htmlContent = _SiteAuditorApiContentService.GetMediaWithValues(this.HttpContext, PropertyAlias,  Search);
+			htmlContent = _SiteAuditorApiContentService.GetMediaWithValues(this.HttpContext, PropertyAlias, Search);
 		}
 
 		//RETURN AS HTML
@@ -193,10 +170,10 @@ public class SiteAuditorController(
 		{
 			htmlContent = _SiteAuditorApiContentService.GetAllPropertiesAsHtmlTable(this.HttpContext, Search);
 		}
-		
+
 		//RETURN AS HTML
 		return Content(htmlContent, "text/html");
-	
+
 	}
 
 	[HttpGet("GetPropertiesForDoctypeHtml")]
@@ -231,7 +208,7 @@ public class SiteAuditorController(
 
 		//RETURN AS HTML
 		return Content(htmlContent, "text/html");
-		
+
 	}
 
 	#endregion
@@ -264,14 +241,14 @@ public class SiteAuditorController(
 		var htmlContent = _UnauthorizedMessage;
 		if (IsBackOfficeAuthorized())
 		{
-			htmlContent = _SiteAuditorApiContentService.GetContentForElementType(this.HttpContext,ElementTypeAlias,PublishedOnly, Search);
+			htmlContent = _SiteAuditorApiContentService.GetContentForElementType(this.HttpContext, ElementTypeAlias, PublishedOnly, Search);
 		}
 
 		//RETURN AS HTML
 		return Content(htmlContent, "text/html");
 
 	}
-	
+
 	#endregion
 
 	#region Templates Info
@@ -283,7 +260,7 @@ public class SiteAuditorController(
 		var htmlContent = _UnauthorizedMessage;
 		if (IsBackOfficeAuthorized())
 		{
-			htmlContent = _SiteAuditorApiContentService.GetAllTemplatesAsHtmlTable(this.HttpContext,  Search);
+			htmlContent = _SiteAuditorApiContentService.GetAllTemplatesAsHtmlTable(this.HttpContext, Search);
 		}
 
 		//RETURN AS HTML
@@ -350,104 +327,83 @@ public class SiteAuditorController(
 
 	#region Tests & Examples
 
-	[HttpGet("Test")]
-	public bool Test()
-	{
-		//LogHelper.Info<PublicApiController>("Test STARTED/ENDED");
-		return true;
-	}
+	//[HttpGet("Test")]
+	//public bool Test()
+	//{
+	//	//LogHelper.Info<PublicApiController>("Test STARTED/ENDED");
+	//	return true;
+	//}
 
-	[HttpGet("SayHello")]
-	[ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
-	public IActionResult SayHello()
-	{
-		if (!IsBackOfficeAuthorized())
-		{
-			return Unauthorized("You must be logged-in to the back-office to use this");
-		}
+	//[HttpGet("SayHello")]
+	//[ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+	//public IActionResult SayHello()
+	//{
+	//	if (!IsBackOfficeAuthorized())
+	//	{
+	//		return Unauthorized("You must be logged-in to the back-office to use this");
+	//	}
 
-		var userInfo = CurrentBackofficeUserName();
+	//	var userInfo = CurrentBackofficeUserName();
 
-		return Ok($"Hello, {userInfo} ");
+	//	return Ok($"Hello, {userInfo} ");
 
-	}
+	//}
 
-	[HttpGet("ExampleReturnHtml")]
-	[ProducesResponseType(typeof(ContentResult), StatusCodes.Status200OK)]
-	public IActionResult ExampleReturnHtml()
-	{
-		var returnSB = new StringBuilder();
+	//[HttpGet("ExampleReturnHtml")]
+	//[ProducesResponseType(typeof(ContentResult), StatusCodes.Status200OK)]
+	//public IActionResult ExampleReturnHtml()
+	//{
+	//	var returnSB = new StringBuilder();
 
-		if (!IsBackOfficeAuthorized())
-		{
-			returnSB.AppendLine("<h1>Hello! This is HTML</h1>");
-		}
-		else
-		{
-			returnSB.AppendLine($"<h1>Hello, {CurrentBackofficeUser().DisplayName}!</h1>");
-		}
+	//	if (!IsBackOfficeAuthorized())
+	//	{
+	//		returnSB.AppendLine("<h1>Hello! This is HTML</h1>");
+	//	}
+	//	else
+	//	{
+	//		returnSB.AppendLine($"<h1>Hello, {CurrentBackofficeUser().DisplayName}!</h1>");
+	//	}
 
-		returnSB.AppendLine($"<p>This is rendering on {DateTime.Today.ToShortDateString()}</p>");
+	//	returnSB.AppendLine($"<p>This is rendering on {DateTime.Today.ToShortDateString()}</p>");
 
-		if (!IsBackOfficeAuthorized())
-		{
-			returnSB.AppendLine($"<p>You are not logged-in</p>");
-		}
-		else
-		{
-			returnSB.AppendLine($"<p>You are logged-in as {CurrentBackofficeUserName()}</p>");
+	//	if (!IsBackOfficeAuthorized())
+	//	{
+	//		returnSB.AppendLine($"<p>You are not logged-in</p>");
+	//	}
+	//	else
+	//	{
+	//		returnSB.AppendLine($"<p>You are logged-in as {CurrentBackofficeUserName()}</p>");
 
-			var user = CurrentBackofficeUser();
+	//		var user = CurrentBackofficeUser();
 
-			returnSB.AppendLine($"<h2>User Object</h2>");
-			returnSB.AppendLine($"<textarea id=\"user\" name=\"user\" rows=\"20\" cols=\"500\">{JsonConvert.SerializeObject(user, Formatting.Indented)}</textarea>");
-
-
-			returnSB.AppendLine($"<h2>Your Claims</h2>");
-			var claims = user.AllClaims;
-			returnSB.AppendLine($"<ol>");
-			foreach (var claim in claims)
-			{
-				returnSB.AppendLine($"<li>{claim.Type} = {claim.Value}</li>");
-			}
-			returnSB.AppendLine($"</ol>");
+	//		returnSB.AppendLine($"<h2>User Object</h2>");
+	//		returnSB.AppendLine($"<textarea id=\"user\" name=\"user\" rows=\"20\" cols=\"500\">{JsonConvert.SerializeObject(user, Formatting.Indented)}</textarea>");
 
 
-		}
+	//		returnSB.AppendLine($"<h2>Your Claims</h2>");
+	//		var claims = user.AllClaims;
+	//		returnSB.AppendLine($"<ol>");
+	//		foreach (var claim in claims)
+	//		{
+	//			returnSB.AppendLine($"<li>{claim.Type} = {claim.Value}</li>");
+	//		}
+	//		returnSB.AppendLine($"</ol>");
 
-		return Content(returnSB.ToString(), "text/html");
-	}
 
-	[HttpGet("ExampleReturnJson")]
-	[ProducesResponseType(typeof(JsonResult), StatusCodes.Status200OK)]
-	public IActionResult ExampleReturnJson()
-	{
-		var testData1 = new TimeSpan(1, 1, 1, 1);
-		//  var testData2= new StatusMessage(true, "This is a test object so you can see JSON!");
+	//	}
 
-		return new JsonResult(testData1);
-	}
+	//	return Content(returnSB.ToString(), "text/html");
+	//}
 
-	/// /umbraco/backoffice/Dragonfly/SiteAuditor/TestData?DocTypeAlias=xxx
-	[HttpGet("TestData")]
-	public List<KeyValuePair<AuditableContent, NodePropertyDataTypeInfo>> TestData(string DocTypeAlias)
-	{
-		_Logger.LogInformation($"SiteAuditor.TestData STARTING...");
+	//[HttpGet("ExampleReturnJson")]
+	//[ProducesResponseType(typeof(JsonResult), StatusCodes.Status200OK)]
+	//public IActionResult ExampleReturnJson()
+	//{
+	//	var testData1 = new TimeSpan(1, 1, 1, 1);
+	//	//  var testData2= new StatusMessage(true, "This is a test object so you can see JSON!");
 
-		//Setup
-		var saService = GetSiteAuditorService();
-
-		//GET DATA TO DISPLAY
-		var status = new StatusMessage(true);
-
-		var contentNodes = saService.GetContentNodesUsingElement(DocTypeAlias, true);
-		status.RelatedObject = contentNodes;
-
-		_Logger.LogInformation($"SiteAuditor.TestData COMPLETED");
-		return contentNodes;
-
-	}
-
+	//	return new JsonResult(testData1);
+	//}
 
 	#endregion
 }

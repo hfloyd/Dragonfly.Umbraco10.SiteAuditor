@@ -11,7 +11,7 @@ using Umbraco.Cms.Api.Common.Attributes;
 [ApiVersion(SiteAuditorApiConfig.ApiVersion)]
 [MapToApi(SiteAuditorApiConfig.ProjectAlias)]
 [ApiExplorerSettings(GroupName = SiteAuditorApiConfig.ProjectDisplayName)]
-public abstract class SiteAuditorApiControllerBase(IBackofficeUserAccessor backofficeUserAccessor) : ControllerBase
+public abstract class DragonflyApiControllerBase(IBackofficeUserAccessor backofficeUserAccessor) : ControllerBase
 {
     protected IBackofficeUserAccessor _backofficeUserAccessor { get; } = backofficeUserAccessor;
 

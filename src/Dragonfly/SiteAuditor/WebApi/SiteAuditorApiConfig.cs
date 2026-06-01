@@ -1,4 +1,6 @@
 ﻿
+using Umbraco.Extensions;
+
 namespace Dragonfly.SiteAuditor;
 
 using Microsoft.Extensions.DependencyInjection;
@@ -31,7 +33,7 @@ internal class SiteAuditorApiConfig
 
 	internal static string RazorFilesPath(SiteAuditorService SiteAuditorService)
 	{
-		return SiteAuditorService.PluginPath() + "RazorViews/";
+		return SiteAuditorService.PluginPath().EnsureEndsWith("/") + "RazorViews/";
 	}
 
 	internal static StandardViewInfo GetStandardViewInfo()
