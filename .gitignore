@@ -6,6 +6,11 @@
 # Project-specific files/folders
 build/
 *lnk
+/src/SiteAuditor.TestSite/appsettings.Local.json
+/src/SiteAuditor.TestSite/web.config
+/src/.github/copilot-instructions.md
+
+
 # User-specific files
 *.rsuser
 *.suo
@@ -364,3 +369,5 @@ src/.idea
 
 # MacOS
 .DS_Store
+
+
