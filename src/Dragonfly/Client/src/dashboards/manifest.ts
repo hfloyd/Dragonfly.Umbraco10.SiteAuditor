@@ -1,17 +1,17 @@
 export const manifests: Array<UmbExtensionManifest> = [
   {
-    name: "Dragonfly Umbraco 10 SiteAuditor Dashboard",
+    name: "Dragonfly Site Auditor Dashboard",
     alias: "Dragonfly.SiteAuditor.Dashboard",
     type: "dashboard",
     js: () => import("./dashboard.element.js"),
     meta: {
-      label: "Example Dashboard",
-      pathname: "example-dashboard",
+      label: "Site Auditor",
+      pathname: "dragonfly-site-auditor",
     },
     conditions: [
       {
         alias: "Umb.Condition.SectionAlias",
-        match: "Umb.Section.Content",
+        match: "Umb.Section.Settings",
       },
     ],
   },

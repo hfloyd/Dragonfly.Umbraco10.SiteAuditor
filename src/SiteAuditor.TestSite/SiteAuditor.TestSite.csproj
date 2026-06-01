@@ -33,10 +33,16 @@
   </PropertyGroup>
 
   <Target Name="CopyAppPlugins" BeforeTargets="Build">
+    <!-- Copy content-root App_Plugins (Razor views, lang, manifests) to TestSite content root -->
     <ItemGroup>
-      <AppPluginsFiles Include="..\Dragonfly\wwwroot\App_Plugins\**\*" />
+      <AppPluginsFiles Include="..\Dragonfly\App_Plugins\**\*" />
     </ItemGroup>
-    <Copy SourceFiles="@(AppPluginsFiles)" DestinationFolder="$(ProjectFolder)wwwroot\App_Plugins\%(RecursiveDir)" />
+    <Copy SourceFiles="@(AppPluginsFiles)" DestinationFolder="$(ProjectDir)App_Plugins\%(RecursiveDir)" />
+    <!-- Copy wwwroot App_Plugins (JS bundles, icons) to TestSite wwwroot so IIS serves them -->
+    <ItemGroup>
+      <WwwrootAppPluginsFiles Include="..\Dragonfly\wwwroot\App_Plugins\**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(WwwrootAppPluginsFiles)" DestinationFolder="$(ProjectDir)wwwroot\App_Plugins\%(RecursiveDir)" />
   </Target>
 
 </Project>

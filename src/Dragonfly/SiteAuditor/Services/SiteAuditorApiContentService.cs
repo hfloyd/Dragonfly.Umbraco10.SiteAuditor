@@ -584,11 +584,7 @@ public class SiteAuditorApiContentService(
 	internal string GetAllDataTypesAsHtmlTable(HttpContext HttpContext, string Search = "")
 	{
 		//Setup
-		var wwwrootPath = WebHostEnvironment.WebRootPath;
-		var pvPath = Path.Combine(wwwrootPath, "App_Plugins", "Dragonfly.SiteAuditor", "RazorViews", "AllDataTypesAsHtmlTable.cshtml");
-
-		//var pvPath = _RazorFilesPath + "AllDataTypesAsHtmlTable.cshtml";
-		//var pvPath ="AllDataTypesAsHtmlTable";
+		var pvPath = _RazorFilesPath + "AllDataTypesAsHtmlTable.cshtml";
 		var saService = SiteAuditorService;
 
 		//GET DATA TO DISPLAY

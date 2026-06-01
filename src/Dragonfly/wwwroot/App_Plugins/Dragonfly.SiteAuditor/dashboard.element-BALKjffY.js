@@ -1,31 +1,22 @@
-import {
-  css,
-  html,
-  customElement,
-} from "@umbraco-cms/backoffice/external/lit";
-import { UmbLitElement } from "@umbraco-cms/backoffice/lit-element";
-
-interface AuditLink {
-  label: string;
-  href: string;
-}
-
-interface AuditSection {
-  heading: string;
-  links: AuditLink[];
-  note?: string;
-}
-
-const AUDIT_SECTIONS: AuditSection[] = [
+import { html as r, css as h, customElement as m } from "@umbraco-cms/backoffice/external/lit";
+import { UmbLitElement as p } from "@umbraco-cms/backoffice/lit-element";
+var g = Object.getOwnPropertyDescriptor, d = (e) => {
+  throw TypeError(e);
+}, y = (e, a, t, s) => {
+  for (var o = s > 1 ? void 0 : s ? g(a, t) : a, n = e.length - 1, c; n >= 0; n--)
+    (c = e[n]) && (o = c(o) || o);
+  return o;
+}, A = (e, a, t) => a.has(e) || d("Cannot " + t), D = (e, a, t) => a.has(e) ? d("Cannot add the same private member more than once") : a instanceof WeakSet ? a.add(e) : a.set(e, t), u = (e, a, t) => (A(e, a, "access private method"), t), l, f, b;
+const v = [
   {
     heading: "Content",
-    note: "Choosing \"Only Published\" is faster and less resource-intensive.",
+    note: 'Choosing "Only Published" is faster and less resource-intensive.',
     links: [
       { label: "All Content Nodes", href: "/umbraco/backoffice/Dragonfly/SiteAuditor/GetAllContentAsHtmlTable" },
       { label: "Only Published", href: "/umbraco/backoffice/Dragonfly/SiteAuditor/GetAllContentAsHtmlTable?PublishedOnly=true" },
       { label: "Content Nodes For Doctype", href: "/umbraco/backoffice/Dragonfly/SiteAuditor/GetContentForDoctypeHtml" },
-      { label: "Content Nodes with Property Data", href: "/umbraco/backoffice/Dragonfly/SiteAuditor/GetContentWithValues" },
-    ],
+      { label: "Content Nodes with Property Data", href: "/umbraco/backoffice/Dragonfly/SiteAuditor/GetContentWithValues" }
+    ]
   },
   {
     heading: "Media",
@@ -33,8 +24,8 @@ const AUDIT_SECTIONS: AuditSection[] = [
       { label: "All Media Nodes", href: "/umbraco/backoffice/Dragonfly/SiteAuditor/GetAllMediaAsHtmlTable" },
       { label: "All Media with Thumbnails", href: "/umbraco/backoffice/Dragonfly/SiteAuditor/GetAllMediaAsHtmlTable?ShowImageThumbnails=true" },
       { label: "Media Nodes For MediaType", href: "/umbraco/backoffice/Dragonfly/SiteAuditor/GetMediaForTypeHtml" },
-      { label: "Media Nodes with Property Data", href: "/umbraco/backoffice/Dragonfly/SiteAuditor/GetMediaWithValues" },
-    ],
+      { label: "Media Nodes with Property Data", href: "/umbraco/backoffice/Dragonfly/SiteAuditor/GetMediaWithValues" }
+    ]
   },
   {
     heading: "Document Types",
@@ -42,56 +33,35 @@ const AUDIT_SECTIONS: AuditSection[] = [
       { label: "All Document Types", href: "/umbraco/backoffice/Dragonfly/SiteAuditor/GetAllDocTypesAsHtmlTable" },
       { label: "All DocType Properties", href: "/umbraco/backoffice/Dragonfly/SiteAuditor/GetAllPropertiesAsHtmlTable" },
       { label: "Single DocType's Properties", href: "/umbraco/backoffice/Dragonfly/SiteAuditor/GetPropertiesForDoctypeHtml" },
-      { label: "Content Using an Element Type", href: "/umbraco/backoffice/Dragonfly/SiteAuditor/GetContentForElementType" },
-    ],
+      { label: "Content Using an Element Type", href: "/umbraco/backoffice/Dragonfly/SiteAuditor/GetContentForElementType" }
+    ]
   },
   {
     heading: "Data Types",
     links: [
-      { label: "All DataTypes", href: "/umbraco/backoffice/Dragonfly/SiteAuditor/GetAllDataTypesAsHtmlTable" },
-    ],
+      { label: "All DataTypes", href: "/umbraco/backoffice/Dragonfly/SiteAuditor/GetAllDataTypesAsHtmlTable" }
+    ]
   },
   {
     heading: "Templates",
     links: [
       { label: "All Templates", href: "/umbraco/backoffice/Dragonfly/SiteAuditor/GetAllTemplatesAsHtmlTable" },
-      { label: "Template Usage Report", href: "/umbraco/backoffice/Dragonfly/SiteAuditor/TemplateUsageReport" },
-    ],
+      { label: "Template Usage Report", href: "/umbraco/backoffice/Dragonfly/SiteAuditor/TemplateUsageReport" }
+    ]
   },
   {
     heading: "Logs",
     links: [
-      { label: "Log Entries", href: "/umbraco/backoffice/Dragonfly/SiteAuditor/GetLogs" },
-    ],
-  },
+      { label: "Log Entries", href: "/umbraco/backoffice/Dragonfly/SiteAuditor/GetLogs" }
+    ]
+  }
 ];
-
-@customElement("dragonfly-site-auditor-dashboard")
-export class DragonflySiteAuditorDashboardElement extends UmbLitElement {
-
-  #renderLink(link: AuditLink) {
-    return html`
-      <li>
-        <a href=${link.href} target="_blank" rel="noopener noreferrer">${link.label}</a>
-      </li>
-    `;
+let i = class extends p {
+  constructor() {
+    super(...arguments), D(this, l);
   }
-
-  #renderSection(section: AuditSection) {
-    return html`
-      <uui-box headline=${section.heading}>
-        ${section.note
-          ? html`<p class="section-note">${section.note}</p>`
-          : ""}
-        <ul class="link-list">
-          ${section.links.map((link) => this.#renderLink(link))}
-        </ul>
-      </uui-box>
-    `;
-  }
-
   render() {
-    return html`
+    return r`
       <div class="dashboard-header">
         <div>
           <h2 class="dashboard-title">Dragonfly Site Auditor</h2>
@@ -102,7 +72,7 @@ export class DragonflySiteAuditorDashboardElement extends UmbLitElement {
       </div>
 
       <div class="sections-grid">
-        ${AUDIT_SECTIONS.map((section) => this.#renderSection(section))}
+        ${v.map((e) => u(this, l, b).call(this, e))}
       </div>
 
       <p class="dashboard-footer">
@@ -115,9 +85,27 @@ export class DragonflySiteAuditorDashboardElement extends UmbLitElement {
       </p>
     `;
   }
-
-  static styles = [
-    css`
+};
+l = /* @__PURE__ */ new WeakSet();
+f = function(e) {
+  return r`
+      <li>
+        <a href=${e.href} target="_blank" rel="noopener noreferrer">${e.label}</a>
+      </li>
+    `;
+};
+b = function(e) {
+  return r`
+      <uui-box headline=${e.heading}>
+        ${e.note ? r`<p class="section-note">${e.note}</p>` : ""}
+        <ul class="link-list">
+          ${e.links.map((a) => u(this, l, f).call(this, a))}
+        </ul>
+      </uui-box>
+    `;
+};
+i.styles = [
+  h`
       :host {
         display: block;
         padding: var(--uui-size-layout-1);
@@ -180,14 +168,14 @@ export class DragonflySiteAuditorDashboardElement extends UmbLitElement {
       .dashboard-footer a {
         color: var(--uui-color-interactive);
       }
-    `,
-  ];
-}
-
-export default DragonflySiteAuditorDashboardElement;
-
-declare global {
-  interface HTMLElementTagNameMap {
-    "dragonfly-site-auditor-dashboard": DragonflySiteAuditorDashboardElement;
-  }
-}
+    `
+];
+i = y([
+  m("dragonfly-site-auditor-dashboard")
+], i);
+const S = i;
+export {
+  i as DragonflySiteAuditorDashboardElement,
+  S as default
+};
+//# sourceMappingURL=dashboard.element-BALKjffY.js.map

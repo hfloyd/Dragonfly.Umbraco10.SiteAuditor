@@ -1,32 +1,32 @@
-const a = [
+const t = [
   {
     name: "Dragonfly Umbraco 10 SiteAuditor Entrypoint",
     alias: "Dragonfly.SiteAuditor.Entrypoint",
     type: "backofficeEntryPoint",
-    js: () => import("./entrypoint-CK4R624y.js")
+    js: () => import("./entrypoint-D2Fke-Xb.js")
   }
-], t = [
+], i = [
   {
-    name: "Dragonfly Umbraco 10 SiteAuditor Dashboard",
+    name: "Dragonfly Site Auditor Dashboard",
     alias: "Dragonfly.SiteAuditor.Dashboard",
     type: "dashboard",
-    js: () => import("./dashboard.element-Cdm0vhRT.js"),
+    js: () => import("./dashboard.element-BALKjffY.js"),
     meta: {
-      label: "Example Dashboard",
-      pathname: "example-dashboard"
+      label: "Site Auditor",
+      pathname: "dragonfly-site-auditor"
     },
     conditions: [
       {
         alias: "Umb.Condition.SectionAlias",
-        match: "Umb.Section.Content"
+        match: "Umb.Section.Settings"
       }
     ]
   }
-], o = [
-  ...a,
-  ...t
+], a = [
+  ...t,
+  ...i
 ];
 export {
-  o as manifests
+  a as manifests
 };
 //# sourceMappingURL=dragonfly-umbraco-siteauditor.js.map

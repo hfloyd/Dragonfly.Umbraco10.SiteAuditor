@@ -13,17 +13,18 @@ src/
   Dragonfly/                     # The NuGet package project
     SiteAuditor/
       Services/                  # Core service layer
-      WebApi/                    # API controllers
+      WebApi/                    # API controllers + config + route attribute
       Models/                    # Auditable* model classes
-    App_Plugins/Dragonfly.SiteAuditor/   # Legacy backoffice assets (Dashboard.html)
+    App_Plugins/Dragonfly.SiteAuditor/   # Backoffice assets (Dashboard.html, lang, package.manifest)
+      RazorViews/                # Razor .cshtml views — compiled into DLL (NOT in wwwroot)
     Client/                      # TypeScript/Vite frontend (new backoffice UI)
       src/
         api/                     # Auto-generated OpenAPI client (*.gen.ts — do not hand-edit)
-        dashboards/              # Lit-based dashboard element
-        entrypoints/             # Backoffice entry point
-    wwwroot/App_Plugins/         # Built frontend output (copied to TestSite on build)
+        dashboards/              # Lit-based dashboard element + manifest
+        entrypoints/             # Backoffice entry point + manifest
+    wwwroot/App_Plugins/         # Built frontend output (JS bundles, icons, umbraco-package.json)
     Directory.Packages.props     # Central NuGet version management for the package
-  SiteAuditor.TestSite/          # Umbraco test site for local development
+  SiteAuditor.TestSite/          # Umbraco test site for local development (IIS, "Local" env)
 ```
 
 ## Commands
@@ -52,9 +53,9 @@ npm run watch         # Watch mode for development
 npm run generate-client
 ```
 
-The `generate-client` script fetches the swagger JSON from the running test site at `https://localhost:44394/umbraco/swagger/dragonflysiteauditor/swagger.json` and runs `@hey-api/openapi-ts`. All files in `src/Dragonfly/Client/src/api/` ending in `.gen.ts` are auto-generated — do not edit them directly.
+The `generate-client` script fetches the swagger JSON from the running test site at `https://localhost:44394/umbraco/swagger/dragonflysiteauditorui/swagger.json` and runs `@hey-api/openapi-ts`. All files in `src/Dragonfly/Client/src/api/` ending in `.gen.ts` are auto-generated — do not edit them directly.
 
-The TestSite `.csproj` has a `CopyAppPlugins` target that copies built frontend assets from `Dragonfly/wwwroot/App_Plugins/` into `SiteAuditor.TestSite/wwwroot/App_Plugins/` before each build.
+The TestSite `.csproj` has a `CopyAppPlugins` target that copies `Dragonfly/App_Plugins/` into `SiteAuditor.TestSite/App_Plugins/` (the content root, **not** wwwroot) before each build. Frontend JS bundles in `Dragonfly/wwwroot/App_Plugins/` are served via ASP.NET Core static web assets and do not need copying.
 
 ## Architecture
 
@@ -68,18 +69,31 @@ Three scoped C# services registered in `SetupComposer.cs`:
 
 ### API Controllers
 
-Two distinct API surfaces:
+Two distinct API surfaces in `WebApi/`:
 
-1. **`SiteAuditorController`** (`WebApi/SiteAuditorApiController.cs`) — the main report API. Uses a custom route attribute (`SiteAuditorApiRouteAttribute`) producing URLs like `/DragonflySiteAuditor/api/v1/Report/GetAllContentAsHtmlTable`. Authorization is checked manually via `IsBackOfficeAuthorized()` (inherited from `DragonflyApiControllerBase`), returning an HTML error snippet rather than an HTTP 401 when not logged in.
+1. **`SiteAuditorController`** (`WebApi/SiteAuditorApiController.cs`) — the main HTML report API. The custom `SiteAuditorApiRouteAttribute` produces a base URL of `/umbraco/backoffice/Dragonfly/SiteAuditor/`. Each action is accessed via `GET /umbraco/backoffice/Dragonfly/SiteAuditor/{ActionName}`, e.g.:
+   - `GetAllContentAsHtmlTable`, `GetContentForDoctypeHtml`, `GetContentForElementHtml`, `GetContentWithValues`
+   - `GetAllMediaAsHtmlTable`, `GetMediaForTypeHtml`, `GetMediaWithValues`
+   - `GetAllDocTypesAsHtmlTable`, `GetAllPropertiesAsHtmlTable`, `GetPropertiesForDoctypeHtml`
+   - `GetContentForElementType`, `GetAllDataTypesAsHtmlTable`
+   - `GetAllTemplatesAsHtmlTable`, `TemplateUsageReport`
+   - `GetLogs`, `GetLogsAsHtmlTable`
 
-2. **`SiteAuditorBackofficeUIApiController`** — the Umbraco-native backoffice UI API. Uses `[BackOfficeRoute]` and `[Authorize(Policy = AuthorizationPolicies.SectionAccessSettings)]`. Exposed under the `dragonflysiteauditorui` Swagger document. This is the API the TypeScript client communicates with.
+   Authorization is checked manually via `IsBackOfficeAuthorized()` (inherited from `DragonflyApiControllerBase`), returning an HTML error snippet rather than an HTTP 401 when not logged in.
 
-### Razor Views in Non-Standard Location
+2. **`SiteAuditorBackofficeUIApiController`** — the Umbraco-native backoffice UI API. Uses `[BackOfficeRoute("dragonflysiteauditorui/api/v{version:apiVersion}")]` and `[Authorize(Policy = AuthorizationPolicies.SectionAccessSettings)]`. Exposed under the `dragonflysiteauditorui` Swagger document. Currently has example endpoints (`ping`, `whatsTheTimeMrWolf`, `whatsMyName`, `whoAmI`). This is the API the TypeScript client communicates with.
 
-Views live in `App_Plugins/Dragonfly.SiteAuditor/RazorViews/` (not the standard `Views/` folder). Because of this:
+A separate `SiteAuditorApiComposer` in `WebApi/SiteAuditorApiConfig.cs` registers the Swagger `SwaggerGenOptions` for the `dragonflysiteauditorui` document.
 
-- `SetupComposer` registers extra `ViewLocationFormats`: `~/App_Plugins/Dragonfly.SiteAuditor/RazorViews/{0}.cshtml`
-- **Always pass the full relative path** to `ViewRenderService.RenderToStringAsync()` — e.g., `"~/App_Plugins/Dragonfly.SiteAuditor/RazorViews/AllContentAsHtmlTable.cshtml"`. Passing just a view name will not resolve even with the location formats configured.
+### Razor Views
+
+Views live in `App_Plugins/Dragonfly.SiteAuditor/RazorViews/` (not in `wwwroot/`, not in the standard `Views/` folder). Critical rules:
+
+- **`<AddRazorSupportForMvc>true</AddRazorSupportForMvc>` in `Dragonfly.csproj`** enables the Razor SDK to compile these views into the DLL. Without this, files in `App_Plugins/` are not compiled (and the Razor SDK emits warning `RAZORSDK1004`).
+- The views are pre-compiled into the assembly, so they work in any environment (including non-Development like the "Local" test site environment) without needing runtime compilation.
+- `SetupComposer` registers extra `ViewLocationFormats` (`~/App_Plugins/Dragonfly.SiteAuditor/RazorViews/{0}.cshtml`) but these only affect `FindView`, not `GetView`.
+- **Always pass the full relative path** to `ViewRenderService.RenderToStringAsync()` — e.g., `"~/App_Plugins/Dragonfly.SiteAuditor/RazorViews/AllContentAsHtmlTable.cshtml"`. The `_RazorFilesPath` field in `SiteAuditorApiContentService` provides the base path.
+- Do NOT move views back to `wwwroot/` — the Razor SDK explicitly excludes `wwwroot/**` from compilation.
 
 ### NuGet Package Versioning
 
@@ -94,6 +108,10 @@ The backoffice UI extension uses:
 
 The entry point (`src/entrypoints/entrypoint.ts`) wires the generated API client to Umbraco's `UMB_AUTH_CONTEXT` so all API calls are authenticated automatically.
 
+Extension manifests are assembled in `src/bundle.manifests.ts` from `src/dashboards/manifest.ts` and `src/entrypoints/manifest.ts`. The bundle is loaded by `umbraco-package.json` in `wwwroot/App_Plugins/Dragonfly.SiteAuditor/`.
+
+The dashboard (`src/dashboards/dashboard.element.ts`) should appear in the Settings section (`Umb.Section.Settings`) since it is an admin/audit tool.
+
 ## Configuration
 
 The package reads an optional `DragonflySiteAuditor` section from `appsettings.json`:
@@ -103,7 +121,6 @@ The package reads an optional `DragonflySiteAuditor` section from `appsettings.j
   "LimitProcessingLogsLargerThanBytes": 314572800,
   "ExcludeLevelsToManageLargeLogs": ["Verbose", "Debug", "Information"],
   "NeverProcessLogsLargerThanBytes": 1048576000,
-  "PluginPath": "~/App_Plugins/Dragonfly.SiteAuditor/",
   "DataPath": "~/App_Data/DragonflySiteAuditor/"
 }
 ```

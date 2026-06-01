@@ -33,7 +33,9 @@ internal class SiteAuditorApiConfig
 
 	internal static string RazorFilesPath(SiteAuditorService SiteAuditorService)
 	{
-		return SiteAuditorService.PluginPath().EnsureEndsWith("/") + "RazorViews/";
+
+		return "~/App_Plugins/Dragonfly.SiteAuditor/RazorViews/"; 
+		//return SiteAuditorService.PluginPath().EnsureEndsWith("/") + "RazorViews/";
 	}
 
 	internal static StandardViewInfo GetStandardViewInfo()
@@ -55,8 +57,8 @@ internal class SiteAuditorApiConfig
 internal class SiteAuditorApiRouteAttribute : RouteAttribute
 {
 	public SiteAuditorApiRouteAttribute(string RoutePath)
-		: base($"{SiteAuditorApiConfig.ProjectAlias}/api/v{SiteAuditorApiConfig.ApiVersion}/{RoutePath.TrimStart('/')}")
-	{ }
+		: base($"/umbraco/backoffice/Dragonfly/{RoutePath.TrimStart('/')}")
+	{ }//"{SiteAuditorApiConfig.ProjectAlias}/api/v{SiteAuditorApiConfig.ApiVersion}/{RoutePath.TrimStart('/')}"
 }
 
 internal class ConfigureSiteAuditorApiSwaggerGenOptions : IConfigureOptions<SwaggerGenOptions>

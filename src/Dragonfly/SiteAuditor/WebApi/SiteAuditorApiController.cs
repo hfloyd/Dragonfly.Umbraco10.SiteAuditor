@@ -20,7 +20,7 @@ using Dragonfly.SiteAuditor.Services;
 using Microsoft.AspNetCore.Http;
 
 
-[SiteAuditorApiRouteAttribute("Report")]
+[SiteAuditorApiRouteAttribute("SiteAuditor")]
 public class SiteAuditorController(
 	 ILogger<SiteAuditorController> logger
 	 , IBackofficeUserAccessor backofficeUserAccessor
