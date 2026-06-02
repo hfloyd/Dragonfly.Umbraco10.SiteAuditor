@@ -10,7 +10,7 @@ const t = [
     name: "Dragonfly Site Auditor Dashboard",
     alias: "Dragonfly.SiteAuditor.Dashboard",
     type: "dashboard",
-    js: () => import("./dashboard.element-BALKjffY.js"),
+    js: () => import("./dashboard.element-DqXKNLAD.js"),
     meta: {
       label: "Site Auditor",
       pathname: "dragonfly-site-auditor"

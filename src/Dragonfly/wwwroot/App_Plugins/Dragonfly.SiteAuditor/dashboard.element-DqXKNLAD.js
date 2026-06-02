@@ -1,12 +1,12 @@
 import { html as r, css as h, customElement as m } from "@umbraco-cms/backoffice/external/lit";
 import { UmbLitElement as p } from "@umbraco-cms/backoffice/lit-element";
-var g = Object.getOwnPropertyDescriptor, d = (e) => {
+var g = Object.getOwnPropertyDescriptor, c = (e) => {
   throw TypeError(e);
 }, y = (e, a, t, s) => {
-  for (var o = s > 1 ? void 0 : s ? g(a, t) : a, n = e.length - 1, c; n >= 0; n--)
-    (c = e[n]) && (o = c(o) || o);
+  for (var o = s > 1 ? void 0 : s ? g(a, t) : a, n = e.length - 1, d; n >= 0; n--)
+    (d = e[n]) && (o = d(o) || o);
   return o;
-}, A = (e, a, t) => a.has(e) || d("Cannot " + t), D = (e, a, t) => a.has(e) ? d("Cannot add the same private member more than once") : a instanceof WeakSet ? a.add(e) : a.set(e, t), u = (e, a, t) => (A(e, a, "access private method"), t), l, f, b;
+}, A = (e, a, t) => a.has(e) || c("Cannot " + t), D = (e, a, t) => a.has(e) ? c("Cannot add the same private member more than once") : a instanceof WeakSet ? a.add(e) : a.set(e, t), u = (e, a, t) => (A(e, a, "access private method"), t), l, f, b;
 const v = [
   {
     heading: "Content",
@@ -69,6 +69,11 @@ let i = class extends p {
             <strong>NOTE:</strong> Some of these will take a long time to run for large sites. Please be patient.
           </p>
         </div>
+        <img
+          src="/App_Plugins/Dragonfly.SiteAuditor/Dragonfly-SiteAuditor-128.png"
+          alt="Dragonfly Site Auditor"
+          class="dashboard-logo"
+        />
       </div>
 
       <div class="sections-grid">
@@ -129,6 +134,12 @@ i.styles = [
         color: var(--uui-color-text-alt);
       }
 
+      .dashboard-logo {
+        width: 80px;
+        height: 80px;
+        flex-shrink: 0;
+      }
+
       .sections-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -173,9 +184,9 @@ i.styles = [
 i = y([
   m("dragonfly-site-auditor-dashboard")
 ], i);
-const S = i;
+const T = i;
 export {
   i as DragonflySiteAuditorDashboardElement,
-  S as default
+  T as default
 };
-//# sourceMappingURL=dashboard.element-BALKjffY.js.map
+//# sourceMappingURL=dashboard.element-DqXKNLAD.js.map

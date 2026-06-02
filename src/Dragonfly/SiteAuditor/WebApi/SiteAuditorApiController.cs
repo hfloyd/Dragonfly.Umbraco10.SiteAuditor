@@ -17,7 +17,6 @@ using Dragonfly.NetHelperServices;
 using Dragonfly.NetModels;
 using Dragonfly.SiteAuditor.Models;
 using Dragonfly.SiteAuditor.Services;
-using Microsoft.AspNetCore.Http;
 
 
 [SiteAuditorApiRouteAttribute("SiteAuditor")]
@@ -31,12 +30,19 @@ public class SiteAuditorController(
 	#region CTOR/DI/Variables
 
 	private readonly ILogger<SiteAuditorController> _Logger = logger;
-	
+
 	private readonly SiteAuditorService _SiteAuditorService = siteAuditorService;
 	private readonly SiteAuditorApiContentService _SiteAuditorApiContentService = siteAuditorApiContentService;
 
 	private readonly string _UnauthorizedMessage =
 		"<p class=\"alert alert-danger\">You are not authorized to view this page. Please log in to the Umbraco back-office and try again.</p>";
+
+	private ContentResult UnauthorizedHtml() => new ContentResult
+	{
+		Content = _UnauthorizedMessage,
+		ContentType = "text/html",
+		StatusCode = StatusCodes.Status401Unauthorized
+	};
 
 	#endregion
 
@@ -44,44 +50,38 @@ public class SiteAuditorController(
 
 	[HttpGet("GetAllContentAsHtmlTable")]
 	[ProducesResponseType(typeof(ContentResult), StatusCodes.Status200OK)]
+	[ProducesResponseType(typeof(ContentResult), StatusCodes.Status401Unauthorized)]
 	public IActionResult GetAllContentAsHtmlTable(bool PublishedOnly = false, string Search = "")
 	{
-		var htmlContent = _UnauthorizedMessage;
-		if (IsBackOfficeAuthorized())
-		{
-			htmlContent = _SiteAuditorApiContentService.GetAllContentAsHtmlTable(this.HttpContext, PublishedOnly, Search);
-		}
+		if (!IsBackOfficeAuthorized())
+			return UnauthorizedHtml();
 
-		//RETURN AS HTML
+		var htmlContent = _SiteAuditorApiContentService.GetAllContentAsHtmlTable(this.HttpContext, PublishedOnly, Search);
 		return Content(htmlContent, "text/html");
 	}
 
 
 	[HttpGet("GetContentForDoctypeHtml")]
 	[ProducesResponseType(typeof(ContentResult), StatusCodes.Status200OK)]
+	[ProducesResponseType(typeof(ContentResult), StatusCodes.Status401Unauthorized)]
 	public IActionResult GetContentForDoctypeHtml(string DocTypeAlias = "", bool PublishedOnly = false, string Search = "")
 	{
-		var htmlContent = _UnauthorizedMessage;
-		if (IsBackOfficeAuthorized())
-		{
-			htmlContent = _SiteAuditorApiContentService.GetContentForDoctypeHtml(this.HttpContext, DocTypeAlias, PublishedOnly, Search);
-		}
+		if (!IsBackOfficeAuthorized())
+			return UnauthorizedHtml();
 
-		//RETURN AS HTML
+		var htmlContent = _SiteAuditorApiContentService.GetContentForDoctypeHtml(this.HttpContext, DocTypeAlias, PublishedOnly, Search);
 		return Content(htmlContent, "text/html");
 	}
 
 	[HttpGet("GetContentForElementHtml")]
 	[ProducesResponseType(typeof(ContentResult), StatusCodes.Status200OK)]
+	[ProducesResponseType(typeof(ContentResult), StatusCodes.Status401Unauthorized)]
 	public IActionResult GetContentForElementHtml(string DocTypeAlias = "", bool PublishedOnly = false, string Search = "")
 	{
-		var htmlContent = _UnauthorizedMessage;
-		if (IsBackOfficeAuthorized())
-		{
-			htmlContent = _SiteAuditorApiContentService.GetContentForElementHtml(this.HttpContext, DocTypeAlias, PublishedOnly, Search);
-		}
+		if (!IsBackOfficeAuthorized())
+			return UnauthorizedHtml();
 
-		//RETURN AS HTML
+		var htmlContent = _SiteAuditorApiContentService.GetContentForElementHtml(this.HttpContext, DocTypeAlias, PublishedOnly, Search);
 		return Content(htmlContent, "text/html");
 	}
 
@@ -91,31 +91,26 @@ public class SiteAuditorController(
 
 	[HttpGet("GetAllMediaAsHtmlTable")]
 	[ProducesResponseType(typeof(ContentResult), StatusCodes.Status200OK)]
+	[ProducesResponseType(typeof(ContentResult), StatusCodes.Status401Unauthorized)]
 	public IActionResult GetAllMediaAsHtmlTable(bool ShowImageThumbnails = false, string Search = "")
 	{
-		var htmlContent = _UnauthorizedMessage;
-		if (IsBackOfficeAuthorized())
-		{
-			htmlContent = _SiteAuditorApiContentService.GetAllMediaAsHtmlTable(this.HttpContext, ShowImageThumbnails, Search);
-		}
+		if (!IsBackOfficeAuthorized())
+			return UnauthorizedHtml();
 
-		//RETURN AS HTML
+		var htmlContent = _SiteAuditorApiContentService.GetAllMediaAsHtmlTable(this.HttpContext, ShowImageThumbnails, Search);
 		return Content(htmlContent, "text/html");
 	}
 
 	[HttpGet("GetMediaForTypeHtml")]
 	[ProducesResponseType(typeof(ContentResult), StatusCodes.Status200OK)]
+	[ProducesResponseType(typeof(ContentResult), StatusCodes.Status401Unauthorized)]
 	public IActionResult GetMediaForTypeHtml(string MediaTypeAlias = "", bool ShowImageThumbnails = false, string Search = "")
 	{
-		var htmlContent = _UnauthorizedMessage;
-		if (IsBackOfficeAuthorized())
-		{
-			htmlContent = _SiteAuditorApiContentService.GetMediaForTypeHtml(this.HttpContext, MediaTypeAlias, ShowImageThumbnails, Search);
-		}
+		if (!IsBackOfficeAuthorized())
+			return UnauthorizedHtml();
 
-		//RETURN AS HTML
+		var htmlContent = _SiteAuditorApiContentService.GetMediaForTypeHtml(this.HttpContext, MediaTypeAlias, ShowImageThumbnails, Search);
 		return Content(htmlContent, "text/html");
-
 	}
 
 	#endregion
@@ -124,17 +119,14 @@ public class SiteAuditorController(
 
 	[HttpGet("GetContentWithValues")]
 	[ProducesResponseType(typeof(ContentResult), StatusCodes.Status200OK)]
+	[ProducesResponseType(typeof(ContentResult), StatusCodes.Status401Unauthorized)]
 	public IActionResult GetContentWithValues(string PropertyAlias = "", bool PublishedOnly = false, string Search = "")
 	{
-		var htmlContent = _UnauthorizedMessage;
-		if (IsBackOfficeAuthorized())
-		{
-			htmlContent = _SiteAuditorApiContentService.GetContentWithValues(this.HttpContext, PropertyAlias, PublishedOnly, Search);
-		}
+		if (!IsBackOfficeAuthorized())
+			return UnauthorizedHtml();
 
-		//RETURN AS HTML
+		var htmlContent = _SiteAuditorApiContentService.GetContentWithValues(this.HttpContext, PropertyAlias, PublishedOnly, Search);
 		return Content(htmlContent, "text/html");
-
 	}
 
 	#endregion
@@ -143,19 +135,15 @@ public class SiteAuditorController(
 
 	[HttpGet("GetMediaWithValues")]
 	[ProducesResponseType(typeof(ContentResult), StatusCodes.Status200OK)]
+	[ProducesResponseType(typeof(ContentResult), StatusCodes.Status401Unauthorized)]
 	public IActionResult GetMediaWithValues(string PropertyAlias = "", string Search = "")
 	{
-		var htmlContent = _UnauthorizedMessage;
-		if (IsBackOfficeAuthorized())
-		{
-			htmlContent = _SiteAuditorApiContentService.GetMediaWithValues(this.HttpContext, PropertyAlias, Search);
-		}
+		if (!IsBackOfficeAuthorized())
+			return UnauthorizedHtml();
 
-		//RETURN AS HTML
+		var htmlContent = _SiteAuditorApiContentService.GetMediaWithValues(this.HttpContext, PropertyAlias, Search);
 		return Content(htmlContent, "text/html");
-
 	}
-
 
 	#endregion
 
@@ -163,34 +151,27 @@ public class SiteAuditorController(
 
 	[HttpGet("GetAllPropertiesAsHtmlTable")]
 	[ProducesResponseType(typeof(ContentResult), StatusCodes.Status200OK)]
+	[ProducesResponseType(typeof(ContentResult), StatusCodes.Status401Unauthorized)]
 	public IActionResult GetAllPropertiesAsHtmlTable(string Search = "")
 	{
-		var htmlContent = _UnauthorizedMessage;
-		if (IsBackOfficeAuthorized())
-		{
-			htmlContent = _SiteAuditorApiContentService.GetAllPropertiesAsHtmlTable(this.HttpContext, Search);
-		}
+		if (!IsBackOfficeAuthorized())
+			return UnauthorizedHtml();
 
-		//RETURN AS HTML
+		var htmlContent = _SiteAuditorApiContentService.GetAllPropertiesAsHtmlTable(this.HttpContext, Search);
 		return Content(htmlContent, "text/html");
-
 	}
 
 	[HttpGet("GetPropertiesForDoctypeHtml")]
 	[ProducesResponseType(typeof(ContentResult), StatusCodes.Status200OK)]
+	[ProducesResponseType(typeof(ContentResult), StatusCodes.Status401Unauthorized)]
 	public IActionResult GetPropertiesForDoctypeHtml(string DocTypeAlias = "", string Search = "")
 	{
-		var htmlContent = _UnauthorizedMessage;
-		if (IsBackOfficeAuthorized())
-		{
-			htmlContent = _SiteAuditorApiContentService.GetPropertiesForDoctypeHtml(this.HttpContext, DocTypeAlias, Search);
-		}
+		if (!IsBackOfficeAuthorized())
+			return UnauthorizedHtml();
 
-		//RETURN AS HTML
+		var htmlContent = _SiteAuditorApiContentService.GetPropertiesForDoctypeHtml(this.HttpContext, DocTypeAlias, Search);
 		return Content(htmlContent, "text/html");
-
 	}
-
 
 	#endregion
 
@@ -198,17 +179,14 @@ public class SiteAuditorController(
 
 	[HttpGet("GetAllDataTypesAsHtmlTable")]
 	[ProducesResponseType(typeof(ContentResult), StatusCodes.Status200OK)]
+	[ProducesResponseType(typeof(ContentResult), StatusCodes.Status401Unauthorized)]
 	public IActionResult GetAllDataTypesAsHtmlTable(string Search = "")
 	{
-		var htmlContent = _UnauthorizedMessage;
-		if (IsBackOfficeAuthorized())
-		{
-			htmlContent = _SiteAuditorApiContentService.GetAllDataTypesAsHtmlTable(this.HttpContext, Search);
-		}
+		if (!IsBackOfficeAuthorized())
+			return UnauthorizedHtml();
 
-		//RETURN AS HTML
+		var htmlContent = _SiteAuditorApiContentService.GetAllDataTypesAsHtmlTable(this.HttpContext, Search);
 		return Content(htmlContent, "text/html");
-
 	}
 
 	#endregion
@@ -217,17 +195,14 @@ public class SiteAuditorController(
 
 	[HttpGet("GetAllDocTypesAsHtmlTable")]
 	[ProducesResponseType(typeof(ContentResult), StatusCodes.Status200OK)]
+	[ProducesResponseType(typeof(ContentResult), StatusCodes.Status401Unauthorized)]
 	public IActionResult GetAllDocTypesAsHtmlTable(string Search = "")
 	{
-		var htmlContent = _UnauthorizedMessage;
-		if (IsBackOfficeAuthorized())
-		{
-			htmlContent = _SiteAuditorApiContentService.GetAllDocTypesAsHtmlTable(this.HttpContext, Search);
-		}
+		if (!IsBackOfficeAuthorized())
+			return UnauthorizedHtml();
 
-		//RETURN AS HTML
+		var htmlContent = _SiteAuditorApiContentService.GetAllDocTypesAsHtmlTable(this.HttpContext, Search);
 		return Content(htmlContent, "text/html");
-
 	}
 
 	#endregion
@@ -236,17 +211,14 @@ public class SiteAuditorController(
 
 	[HttpGet("GetContentForElementType")]
 	[ProducesResponseType(typeof(ContentResult), StatusCodes.Status200OK)]
+	[ProducesResponseType(typeof(ContentResult), StatusCodes.Status401Unauthorized)]
 	public IActionResult GetContentForElementType(string ElementTypeAlias = "", bool PublishedOnly = false, string Search = "")
 	{
-		var htmlContent = _UnauthorizedMessage;
-		if (IsBackOfficeAuthorized())
-		{
-			htmlContent = _SiteAuditorApiContentService.GetContentForElementType(this.HttpContext, ElementTypeAlias, PublishedOnly, Search);
-		}
+		if (!IsBackOfficeAuthorized())
+			return UnauthorizedHtml();
 
-		//RETURN AS HTML
+		var htmlContent = _SiteAuditorApiContentService.GetContentForElementType(this.HttpContext, ElementTypeAlias, PublishedOnly, Search);
 		return Content(htmlContent, "text/html");
-
 	}
 
 	#endregion
@@ -255,19 +227,15 @@ public class SiteAuditorController(
 
 	[HttpGet("GetAllTemplatesAsHtmlTable")]
 	[ProducesResponseType(typeof(ContentResult), StatusCodes.Status200OK)]
+	[ProducesResponseType(typeof(ContentResult), StatusCodes.Status401Unauthorized)]
 	public IActionResult GetAllTemplatesAsHtmlTable(string Search = "")
 	{
-		var htmlContent = _UnauthorizedMessage;
-		if (IsBackOfficeAuthorized())
-		{
-			htmlContent = _SiteAuditorApiContentService.GetAllTemplatesAsHtmlTable(this.HttpContext, Search);
-		}
+		if (!IsBackOfficeAuthorized())
+			return UnauthorizedHtml();
 
-		//RETURN AS HTML
+		var htmlContent = _SiteAuditorApiContentService.GetAllTemplatesAsHtmlTable(this.HttpContext, Search);
 		return Content(htmlContent, "text/html");
-
 	}
-
 
 	#endregion
 
@@ -275,51 +243,42 @@ public class SiteAuditorController(
 
 	[HttpGet("TemplateUsageReport")]
 	[ProducesResponseType(typeof(ContentResult), StatusCodes.Status200OK)]
+	[ProducesResponseType(typeof(ContentResult), StatusCodes.Status401Unauthorized)]
 	public IActionResult TemplateUsageReport()
 	{
-		var htmlContent = _UnauthorizedMessage;
-		if (IsBackOfficeAuthorized())
-		{
-			htmlContent = _SiteAuditorApiContentService.TemplateUsageReport(this.HttpContext);
-		}
+		if (!IsBackOfficeAuthorized())
+			return UnauthorizedHtml();
 
-		//RETURN AS HTML
+		var htmlContent = _SiteAuditorApiContentService.TemplateUsageReport(this.HttpContext);
 		return Content(htmlContent, "text/html");
-
 	}
+
 	#endregion
 
 	#region Logs
 
 	[HttpGet("GetLogs")]
 	[ProducesResponseType(typeof(ContentResult), StatusCodes.Status200OK)]
+	[ProducesResponseType(typeof(ContentResult), StatusCodes.Status401Unauthorized)]
 	public IActionResult GetLogs(DateTime? StartDate = null, DateTime? EndDate = null, int BatchBy = 0, [FromQuery] string PromotedProperties = "")
 	{
-		var htmlContent = _UnauthorizedMessage;
-		if (IsBackOfficeAuthorized())
-		{
-			htmlContent = _SiteAuditorApiContentService.GetLogs(this.HttpContext, StartDate, EndDate, BatchBy, PromotedProperties);
-		}
+		if (!IsBackOfficeAuthorized())
+			return UnauthorizedHtml();
 
-		//RETURN AS HTML
+		var htmlContent = _SiteAuditorApiContentService.GetLogs(this.HttpContext, StartDate, EndDate, BatchBy, PromotedProperties);
 		return Content(htmlContent, "text/html");
-
 	}
-
 
 	[HttpGet("GetLogsAsHtmlTable")]
 	[ProducesResponseType(typeof(ContentResult), StatusCodes.Status200OK)]
+	[ProducesResponseType(typeof(ContentResult), StatusCodes.Status401Unauthorized)]
 	public IActionResult GetLogsAsHtmlTable(DateTime StartDate, DateTime? EndDate = null, string PromotedProperties = "")
 	{
-		var htmlContent = _UnauthorizedMessage;
-		if (IsBackOfficeAuthorized())
-		{
-			htmlContent = _SiteAuditorApiContentService.GetLogsAsHtmlTable(this.HttpContext, StartDate, EndDate, PromotedProperties);
-		}
+		if (!IsBackOfficeAuthorized())
+			return UnauthorizedHtml();
 
-		//RETURN AS HTML
+		var htmlContent = _SiteAuditorApiContentService.GetLogsAsHtmlTable(this.HttpContext, StartDate, EndDate, PromotedProperties);
 		return Content(htmlContent, "text/html");
-
 	}
 
 	#endregion
@@ -407,4 +366,3 @@ public class SiteAuditorController(
 
 	#endregion
 }
-

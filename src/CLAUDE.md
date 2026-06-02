@@ -32,15 +32,17 @@ src/
 ### .NET (run from `src/`)
 
 ```powershell
-# Build the package
-dotnet build Dragonfly/Dragonfly.csproj
+# Build the package (always use Debug — Release triggers automatic nuget push via Custom.targets)
+dotnet build Dragonfly/Dragonfly.csproj -c Debug
 
 # Run the test site (starts Umbraco at https://localhost:44394 by default)
 dotnet run --project SiteAuditor.TestSite/SiteAuditor.TestSite.csproj
 
-# Pack the NuGet package
-dotnet pack Dragonfly/Dragonfly.csproj
+# Pack the NuGet package for testing (Debug adds a -prerelease{timestamp} version suffix)
+dotnet pack Dragonfly/Dragonfly.csproj -c Debug
 ```
+
+> **Warning:** Never run `dotnet build` or `dotnet pack` with `-c Release` unless intentionally publishing to NuGet.org. `Custom.targets` runs `nuget.exe push` to `https://www.nuget.org` automatically after every Release build.
 
 ### TypeScript Client (run from `src/Dragonfly/Client/`)
 
@@ -55,7 +57,9 @@ npm run generate-client
 
 The `generate-client` script fetches the swagger JSON from the running test site at `https://localhost:44394/umbraco/swagger/dragonflysiteauditorui/swagger.json` and runs `@hey-api/openapi-ts`. All files in `src/Dragonfly/Client/src/api/` ending in `.gen.ts` are auto-generated — do not edit them directly.
 
-The TestSite `.csproj` has a `CopyAppPlugins` target that copies `Dragonfly/App_Plugins/` into `SiteAuditor.TestSite/App_Plugins/` (the content root, **not** wwwroot) before each build. Frontend JS bundles in `Dragonfly/wwwroot/App_Plugins/` are served via ASP.NET Core static web assets and do not need copying.
+The TestSite `.csproj` has a `CopyAppPlugins` target that copies both:
+- `Dragonfly/App_Plugins/` → `SiteAuditor.TestSite/App_Plugins/` (Razor views, lang, manifests — content root)
+- `Dragonfly/wwwroot/App_Plugins/` → `SiteAuditor.TestSite/wwwroot/App_Plugins/` (JS bundles, icons, umbraco-package.json)
 
 ## Architecture
 
@@ -94,6 +98,23 @@ Views live in `App_Plugins/Dragonfly.SiteAuditor/RazorViews/` (not in `wwwroot/`
 - `SetupComposer` registers extra `ViewLocationFormats` (`~/App_Plugins/Dragonfly.SiteAuditor/RazorViews/{0}.cshtml`) but these only affect `FindView`, not `GetView`.
 - **Always pass the full relative path** to `ViewRenderService.RenderToStringAsync()` — e.g., `"~/App_Plugins/Dragonfly.SiteAuditor/RazorViews/AllContentAsHtmlTable.cshtml"`. The `_RazorFilesPath` field in `SiteAuditorApiContentService` provides the base path.
 - Do NOT move views back to `wwwroot/` — the Razor SDK explicitly excludes `wwwroot/**` from compilation.
+
+### NuGet Package File Deployment
+
+Consumer sites use `PackageReference` (SDK-style projects). With `PackageReference`, `content/` files from NuGet packages are **NOT** automatically copied to the consumer project — they stay in the NuGet cache. The deployment mechanism is a `buildTransitive` MSBuild targets file.
+
+`build/Dragonfly.Umbraco10.SiteAuditor.targets` (packed into `buildTransitive/` in the `.nupkg`) runs `BeforeTargets="Build"` in every consumer project and copies:
+- `{cache}/content/App_Plugins/Dragonfly.SiteAuditor/**` → `{consumer}/App_Plugins/Dragonfly.SiteAuditor/`
+- `{cache}/content/wwwroot/App_Plugins/Dragonfly.SiteAuditor/**` → `{consumer}/wwwroot/App_Plugins/Dragonfly.SiteAuditor/`
+
+The wwwroot items are packed using `None` items with explicit `PackagePath`:
+```xml
+<None Include="wwwroot\App_Plugins\Dragonfly.SiteAuditor\**\*.*">
+    <Pack>True</Pack>
+    <PackagePath>content\wwwroot\App_Plugins\Dragonfly.SiteAuditor\%(RecursiveDir)%(Filename)%(Extension)</PackagePath>
+</None>
+```
+Using `Content` items would put the files in `staticwebassets/` in the package (which is only served in Development mode), not in `content/wwwroot/`. `None` items with explicit `PackagePath` bypass the static web asset mechanism.
 
 ### NuGet Package Versioning
 
