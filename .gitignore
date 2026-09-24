@@ -5,6 +5,9 @@
 
 # Project-specific files/folders
 build/
+# src/Dragonfly/build holds the MSBuild targets that ship inside the NuGet package, not build output.
+!src/Dragonfly/build/
+!src/Dragonfly/build/**
 *lnk
 /src/SiteAuditor.TestSite/appsettings.Local.json
 /src/SiteAuditor.TestSite/web.config

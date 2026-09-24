@@ -44,12 +44,12 @@
 	<PropertyGroup>
 		<RootNamespace>Dragonfly</RootNamespace>
 		<AssemblyName>Dragonfly.UmbracoSiteAuditor</AssemblyName>
-		<Version>17.1.0</Version>
+		<VersionPrefix>17.2.0</VersionPrefix>
 		<AssemblyVersion>$(Version)</AssemblyVersion>
 		<FileVersion>$(Version)</FileVersion>
     <VersionSuffix Condition="'$(Configuration)'=='Debug'">-prerelease$([System.DateTime]::UtcNow.ToString(`yyyyMMddHHmm`))</VersionSuffix>
 		<PackageReleaseNotes>
-			Updating to v17
+			Small build fix
 		</PackageReleaseNotes>
    
 

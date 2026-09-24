@@ -1,0 +1,52 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+    <!--
+        Runs before ResolveProjectStaticWebAssets, which is where the SDK matches the project's
+        wwwroot Content items against files on disk. On a Rebuild the Content items are evaluated
+        while the previous build's files are still there, Clean then deletes them, and the SDK
+        fails with "No file exists for the asset" unless these files are back before it looks.
+        Build is kept as a hook for projects without the static web assets pipeline.
+    -->
+    <Target Name="CopySiteAuditorAssets" BeforeTargets="ResolveProjectStaticWebAssets;Build">
+        <ItemGroup>
+            <SiteAuditorContentFiles Include="$(MSBuildThisFileDirectory)..\content\App_Plugins\Dragonfly.SiteAuditor\**\*.*" />
+            <SiteAuditorWwwrootFiles Include="$(MSBuildThisFileDirectory)..\content\wwwroot\App_Plugins\Dragonfly.SiteAuditor\**\*.*" />
+        </ItemGroup>
+        <Message Text="Copying Dragonfly.SiteAuditor content files: #@(SiteAuditorContentFiles->Count()) files" Importance="high" />
+        <Copy
+            SourceFiles="@(SiteAuditorContentFiles)"
+            DestinationFiles="@(SiteAuditorContentFiles->'$(MSBuildProjectDirectory)\App_Plugins\Dragonfly.SiteAuditor\%(RecursiveDir)%(Filename)%(Extension)')"
+            SkipUnchangedFiles="true" />
+        <Message Text="Copying Dragonfly.SiteAuditor wwwroot files: #@(SiteAuditorWwwrootFiles->Count()) files" Importance="high" />
+        <Copy
+            SourceFiles="@(SiteAuditorWwwrootFiles)"
+            DestinationFiles="@(SiteAuditorWwwrootFiles->'$(MSBuildProjectDirectory)\wwwroot\App_Plugins\Dragonfly.SiteAuditor\%(RecursiveDir)%(Filename)%(Extension)')"
+            SkipUnchangedFiles="true" />
+    </Target>
+
+    <!--
+        A safety net for the same race: if a wwwroot Content item survives evaluation but its file
+        is gone by the time the SDK resolves static web assets, drop the item instead of letting
+        the build fail on it. The copy above puts the current files back.
+    -->
+    <Target Name="RemoveMissingSiteAuditorAssets" BeforeTargets="ResolveProjectStaticWebAssets" DependsOnTargets="CopySiteAuditorAssets">
+        <ItemGroup>
+            <SiteAuditorMissingContent
+                Include="@(Content)"
+                Condition="$([System.String]::new('%(Content.Identity)').Contains('App_Plugins\Dragonfly.SiteAuditor')) And !Exists('%(Content.FullPath)')" />
+            <Content Remove="@(SiteAuditorMissingContent)" />
+        </ItemGroup>
+        <Message Text="Dropped missing Dragonfly.SiteAuditor content items: @(SiteAuditorMissingContent->Count())" Importance="high" Condition="'@(SiteAuditorMissingContent)' != ''" />
+    </Target>
+
+    <Target Name="ClearSiteAuditorAssets" BeforeTargets="Clean">
+        <ItemGroup>
+            <SiteAuditorDir Include="$(MSBuildProjectDirectory)\App_Plugins\Dragonfly.SiteAuditor\" />
+            <SiteAuditorWwwrootDir Include="$(MSBuildProjectDirectory)\wwwroot\App_Plugins\Dragonfly.SiteAuditor\" />
+        </ItemGroup>
+        <Message Text="Clear old Dragonfly.SiteAuditor files" Importance="high" />
+        <RemoveDir Directories="@(SiteAuditorDir)" />
+        <RemoveDir Directories="@(SiteAuditorWwwrootDir)" />
+    </Target>
+
+</Project>
