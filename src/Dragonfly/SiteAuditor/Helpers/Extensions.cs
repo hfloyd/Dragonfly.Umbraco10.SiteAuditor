@@ -122,6 +122,11 @@ namespace Dragonfly.SiteAuditor.Helpers
 					url = $"/umbraco/section/content/workspace/document/edit/{EntityGuid.ToString()}";
 					break;
 
+				case EntityType.MediaNode:
+					url = $"/umbraco/section/media/workspace/media/edit/{EntityGuid.ToString()}";
+					break;
+				
+
 			}
 
 			return url;

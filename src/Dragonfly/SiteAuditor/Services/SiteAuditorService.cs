@@ -98,7 +98,7 @@ public class SiteAuditorService
 
 	private IEnumerable<AuditableDataType> _AllDataTypes = new List<AuditableDataType>();
 
-	private IEnumerable<DataTypesWithElements> _AllDataTypesWithElements = new List<DataTypesWithElements>();
+	private IEnumerable<DataTypesWithElements>? _AllDataTypesWithElements;
 
 
 	#endregion
@@ -1503,9 +1503,7 @@ public class SiteAuditorService
 			adt.UsesElementsAll = GetAllDataTypeElementsList(dt);
 
 			//adt.ConfigurationJson = dt.Configuration!=null? JsonSerializer.Serialize(dt.Configuration): "";
-			adt.ConfigurationJson = dt.ConfigurationObject != null
-				? Newtonsoft.Json.JsonConvert.SerializeObject(dt.ConfigurationObject)
-				: "";
+			adt.ConfigurationJson = SerializeDataTypeConfiguration(dt);
 
 			var matchingProps = properties.Where(p => p.Key.DataTypeId == dt.Id);
 			adt.UsedOnProperties = matchingProps;
@@ -1521,7 +1519,7 @@ public class SiteAuditorService
 
 	private IEnumerable<DataTypesWithElements> GetAllDataTypesWithElements()
 	{
-		if (_AllDataTypesWithElements.Any())
+		if (_AllDataTypesWithElements != null)
 		{
 			return _AllDataTypesWithElements;
 		}
@@ -1714,6 +1712,17 @@ public class SiteAuditorService
 	}
 
 
+	/// <summary>
+	/// System.Text.Json is used because some package editors store their configuration
+	/// as JsonObject, which Newtonsoft.Json cannot serialize (self-referencing 'Parent').
+	/// </summary>
+	private static string SerializeDataTypeConfiguration(IDataType dt)
+	{
+		return dt.ConfigurationObject != null
+			? System.Text.Json.JsonSerializer.Serialize(dt.ConfigurationObject)
+			: "";
+	}
+
 	private IEnumerable<string> GetDirectElementsForDataType(IDataType dt)
 	{
 		var functionName = "GetDirectElementsForDataType()";
@@ -1726,7 +1735,7 @@ public class SiteAuditorService
 
 		try
 		{
-			string configJson = dt.ConfigurationObject != null ? JsonConvert.SerializeObject(dt.ConfigurationObject) : "";
+			string configJson = SerializeDataTypeConfiguration(dt);
 			List<string> keyStrGuids = new List<string>();
 			List<Guid> keyGuids = new List<Guid>();
 
@@ -2159,7 +2168,32 @@ public class SiteAuditorService
 			, latestFileName
 			);
 
-		logEntries.AddRange(ReadLogFileToModel(latestFilePath, latestFileName, latestFileDate, StartDate, EndDate));
+		//Apply the same size limits as the remaining files
+		var latestFileSize = new FileInfo(latestFilePath).Length;
+		if (latestFileSize > _ConfigOptions.NeverProcessLogsLargerThanBytes)
+		{
+			Status.DetailedMessages.Add(
+				$"File is too large: '{latestFileName}' ({latestFileSize} bytes), skipping...");
+			Status.Code = "SomeFilesSkipped";
+			_Logger.LogWarning(
+				"{FunctionName}: File '{FileName}' is too large ({FileSize} bytes), skipping...",
+				functionName,
+				latestFileName,
+				latestFileSize
+			);
+		}
+		else if (latestFileSize > _ConfigOptions.LimitProcessingLogsLargerThanBytes)
+		{
+			var excludeLevels = _ConfigOptions.ExcludeLevelsToManageLargeLogs;
+			Status.ObjectName = "SomeFilesLimited";
+			Status.RelatedObject = excludeLevels;
+			Status.DetailedMessages.Add($"File is large, limited processing of file '{latestFileName}'");
+			logEntries.AddRange(ReadLogFileToModel(latestFilePath, latestFileName, latestFileDate, StartDate, EndDate, excludeLevels));
+		}
+		else
+		{
+			logEntries.AddRange(ReadLogFileToModel(latestFilePath, latestFileName, latestFileDate, StartDate, EndDate));
+		}
 
 		//Loop all remaining files, and if the filedate is in range, process the file data
 		try
@@ -2243,8 +2277,9 @@ public class SiteAuditorService
 		}
 		catch (OutOfMemoryException e)
 		{
-			_Logger.LogCritical($"{functionName}: Terminating application due to OutOfMemoryException...");
-			Environment.FailFast($"{functionName}: Out of Memory: {e.Message}");
+			_Logger.LogError(e, "{FunctionName}: Out of memory while reading log files, returning partial results", functionName);
+			Status.Code = "SomeFilesSkipped";
+			Status.DetailedMessages.Add("Out of memory while reading log files. Results are incomplete.");
 		}
 
 		return logEntries;

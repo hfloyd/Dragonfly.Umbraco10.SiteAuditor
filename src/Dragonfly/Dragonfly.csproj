@@ -49,7 +49,7 @@
     <VersionPrefix>17.5.0</VersionPrefix>
     <VersionSuffix Condition="'$(Configuration)'=='Debug'">-prerelease$([System.DateTime]::UtcNow.ToString(`yyyy-MM-dd-HH-mm`))</VersionSuffix>
 		<PackageReleaseNotes>
-			Fixing back-office editing URLs for Content
+			Fixing back-office editing URLs for Content and Media
 		</PackageReleaseNotes>
    
 		<IncludeSymbols>True</IncludeSymbols>
@@ -118,10 +118,4 @@
 
   <!-- Included/Excluded Files -->
 
-
-	
-
-	<!--<Target Name="PostBuild" AfterTargets="PostBuildEvent">
-		<Exec Command="REM XCOPY /s /y &quot;$(TargetDir)$(TargetName)*.*&quot; &quot;\bin\&quot;&#xD;&#xA;REM XCOPY /y &quot;$(TargetDir)$(TargetName)*.*&quot; &quot;XXX\bin\&quot;" />
-	</Target>-->
 </Project>
