@@ -91,7 +91,7 @@
 									@docType.DocTypeAlias
 									<small>
 										@{
-											Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/SchemaActions.cshtml", docType.Id,
+											Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/SchemaActions.cshtml", docType.GuidKey,
 											new ViewDataDictionary(ViewData)
 											{
 												{ "EntityType", "DocType" },

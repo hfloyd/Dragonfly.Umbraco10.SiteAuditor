@@ -17,7 +17,7 @@
 		public string Alias { get; set; } = "";
 		public IEnumerable<string> FolderPaths { get; internal set; } = new List<string>();
 
-		public Guid Guid { get; set; }
+		public Guid GuidKey { get; set; }
 		public int Id { get; set; }
 		public string DefaultTemplateName { get; set; } = "";
 		public Dictionary<int, string> AllowedTemplates { get; set; } = new Dictionary<int, string>();

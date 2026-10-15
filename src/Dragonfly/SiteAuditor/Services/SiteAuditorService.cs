@@ -1166,7 +1166,7 @@ public class SiteAuditorService
 		adt.ContentType = ContentType;
 		adt.Name = ContentType.Name != null ? ContentType.Name : "UNKNOWN";
 		adt.Alias = ContentType.Alias;
-		adt.Guid = ContentType.Key;
+		adt.GuidKey = ContentType.Key;
 		adt.Id = ContentType.Id;
 		adt.IsElement = ContentType.IsElement;
 
@@ -1494,7 +1494,7 @@ public class SiteAuditorService
 			var adt = new AuditableDataType();
 			adt.Name = dt.Name ?? "";
 			adt.EditorAlias = dt.EditorAlias;
-			adt.Guid = dt.Key;
+			adt.GuidKey = dt.Key;
 			adt.Id = dt.Id;
 			adt.FolderPath = GetFolderContainerPath(dt);
 			adt.UsesElementsDirectly = GetDirectDataTypeElements(dt);
@@ -2012,7 +2012,7 @@ public class SiteAuditorService
 			var at = new AuditableTemplate();
 			at.Name = temp.Name;
 			at.Alias = temp.Alias;
-			at.Guid = temp.Key;
+			at.GuidKey = temp.Key;
 			at.Id = temp.Id;
 			at.Udi = temp.GetUdi();
 			at.FolderPath = GetFolderContainerPath(temp);

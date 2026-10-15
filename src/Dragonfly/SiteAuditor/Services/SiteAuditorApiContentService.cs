@@ -706,7 +706,7 @@ public class SiteAuditorApiContentService(
 		else
 		{
 			//Get matching data
-			var elementGuid = elementType.Guid;
+			var elementGuid = elementType.GuidKey;
 
 			var allDatatypes = saService.AllDataTypes();
 			var elementDataTypes = allDatatypes.Where(n => n.UsesElementsAll.Contains(ElementTypeAlias));

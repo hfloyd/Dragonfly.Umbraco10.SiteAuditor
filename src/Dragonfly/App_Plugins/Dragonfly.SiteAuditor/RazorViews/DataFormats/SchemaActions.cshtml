@@ -1,7 +1,7 @@
 
-@inherits UmbracoViewPage<Int32>
+@inherits UmbracoViewPage<Guid>
 @{
-    var entityId = Model;
+    var entityKey = Model;
     var type = Mvc.GetSafeViewDataString(this.ViewData,"EntityType");
     var linkTitle = Mvc.GetSafeViewDataString(this.ViewData,"LinkTitle", "Edit");
 
@@ -9,20 +9,20 @@
     switch (type)
     {
         case "DataType":
-            url = $"/umbraco/#/settings/dataTypes/edit/{entityId}";
+            url = Helper.GetBackofficeEntityUrl(Helper.EntityType.DataType, entityKey);
             break;
 
         case "DocType":
-            url = $"/umbraco/#/settings/documentTypes/edit/{entityId}";
+            url = Helper.GetBackofficeEntityUrl(Helper.EntityType.DocType, entityKey);  
             break;
             
         case "Template":
-            url = $"/umbraco/#/settings/templates/edit/{entityId}";
+            url = Helper.GetBackofficeEntityUrl(Helper.EntityType.Template, entityKey);
             break;
     }
     
 }
-@if (entityId != 0)
+@if (entityKey != Guid.Empty)
 {
     <a href="@url" target="_blank">@linkTitle</a>
 }

@@ -44,20 +44,20 @@
 	<PropertyGroup>
 		<RootNamespace>Dragonfly</RootNamespace>
 		<AssemblyName>Dragonfly.UmbracoSiteAuditor</AssemblyName>
-		<VersionPrefix>17.2.0</VersionPrefix>
 		<AssemblyVersion>$(Version)</AssemblyVersion>
 		<FileVersion>$(Version)</FileVersion>
-    <VersionSuffix Condition="'$(Configuration)'=='Debug'">-prerelease$([System.DateTime]::UtcNow.ToString(`yyyyMMddHHmm`))</VersionSuffix>
+    <VersionPrefix>17.4.0</VersionPrefix>
+    <VersionSuffix Condition="'$(Configuration)'=='Debug'">-prerelease$([System.DateTime]::UtcNow.ToString(`yyyy-MM-dd-HH-mm`))</VersionSuffix>
 		<PackageReleaseNotes>
-			Small build fix
+			Fixing back-office editing URLs
 		</PackageReleaseNotes>
    
-
 		<IncludeSymbols>True</IncludeSymbols>
 		<SymbolPackageFormat>symbols.nupkg</SymbolPackageFormat>
 		<Nullable>enable</Nullable>
 	</PropertyGroup>
 
+  <Import Project="..\Custom.targets" Condition="Exists('..\Custom.targets')" />
 
 	<!-- Packages-->
   <!--Update Versions in \src\Dragonfly\Directory.Packages.props-->
@@ -119,7 +119,7 @@
   <!-- Included/Excluded Files -->
 
 
-	<Import Project="..\Custom.targets" />
+	
 
 	<!--<Target Name="PostBuild" AfterTargets="PostBuildEvent">
 		<Exec Command="REM XCOPY /s /y &quot;$(TargetDir)$(TargetName)*.*&quot; &quot;\bin\&quot;&#xD;&#xA;REM XCOPY /y &quot;$(TargetDir)$(TargetName)*.*&quot; &quot;XXX\bin\&quot;" />

@@ -73,8 +73,11 @@
 		{
 			this.Id = DocType.Id;
 			this.DocTypeAlias = DocType.Alias;
+			this.GuidKey = DocType.Key;
 			//this.GroupName = "";
 		}
+
+		public Guid GuidKey { get; set; }
 
 		public int Id { get; set; }
 		public string DocTypeAlias { get; set; }= "";

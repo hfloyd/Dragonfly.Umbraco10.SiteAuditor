@@ -13,7 +13,7 @@
     {
         public string Name { get; set; }= "";
         public string Alias { get; set; }= "";
-        public Guid Guid { get; set; }
+        public Guid GuidKey { get; set; }
         public int Id { get; set; }
         public GuidUdi? Udi { get; set; }
         public List<string> FolderPath { get; set; } = new List<string>();

@@ -9,7 +9,7 @@ public class AuditableDataType
 {
 	public string Name { get; set; } = "";
 	public string EditorAlias { get; set; } = "";
-	public Guid Guid { get; set; }
+	public Guid GuidKey { get; set; }
 	public int Id { get; set; }
 
 	public IEnumerable<KeyValuePair<IPropertyType, string>> UsedOnProperties { get; set; } = new List<KeyValuePair<IPropertyType, string>>();

@@ -59,7 +59,7 @@
 				@*//Actions*@
 				<td>
 					@{
-						Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/SchemaActions.cshtml", temp.Id, new ViewDataDictionary(ViewData)
+						Html.RenderPartial("/App_Plugins/Dragonfly.SiteAuditor/RazorViews/DataFormats/SchemaActions.cshtml", temp.GuidKey, new ViewDataDictionary(ViewData)
 				{
 				{"EntityType", "Template" }
 				});
@@ -112,7 +112,7 @@
 				<td>@temp.Id</td>
 
 				@*// GUID*@
-				<td>@temp.Guid.ToString()</td>
+				<td>@temp.GuidKey.ToString()</td>
 
 				@* //Create Date*@
 				<td>
