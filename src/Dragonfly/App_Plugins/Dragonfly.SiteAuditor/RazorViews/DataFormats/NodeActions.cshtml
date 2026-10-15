@@ -1,9 +1,11 @@
 @inherits UmbracoViewPage<AuditableContent>
 @{
 	AuditableContent content = Model;
+
+	var editUrl = Helper.GetBackofficeEntityUrl(Helper.EntityType.ContentNode, content.GuidKey);
 }
 
-<a href="/umbraco#/content/content/edit/@content.NodeId" target="_blank">Edit</a>
+<a href="@editUrl" target="_blank">Edit</a>
 
 @if (content.IsPublished)
 {

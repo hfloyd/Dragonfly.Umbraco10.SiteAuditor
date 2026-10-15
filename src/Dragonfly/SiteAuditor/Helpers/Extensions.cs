@@ -75,7 +75,9 @@ namespace Dragonfly.SiteAuditor.Helpers
 			DocType,
 			MediaType,
 			MemberType,
-			Template
+			Template,
+			ContentNode,
+			MediaNode,
 		}
 
 		public enum FileEntityType
@@ -114,6 +116,10 @@ namespace Dragonfly.SiteAuditor.Helpers
 				case EntityType.Template:
 					//url = $"/umbraco/#/settings/templates/edit/{EntityGuid}"; v9-13
 					url = $"/umbraco/section/settings/workspace/template/edit/{EntityGuid.ToString()}";
+					break;
+
+				case EntityType.ContentNode:
+					url = $"/umbraco/section/content/workspace/document/edit/{EntityGuid.ToString()}";
 					break;
 
 			}

@@ -37,7 +37,8 @@ public class AuditableContent
 	private int _nodeSortOrder;
 	private DateTime _nodeCreateDate;
 	private DateTime _nodeUpdateDate;
-	private string _nodeUdi;
+	private string _nodeUdi = "";
+	private Guid _guidKey = Guid.Empty;
 
 	#endregion
 
@@ -152,6 +153,13 @@ public class AuditableContent
 		get => _nodeName;
 		set => _nodeName = value;
 	}
+
+	public Guid GuidKey
+	{
+		get => _guidKey;
+		set => _guidKey = value;
+	}
+
 
 	public string NodeContentTypeAlias
 	{

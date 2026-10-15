@@ -632,6 +632,7 @@ public class SiteAuditorService
 		ac.UmbContentNode = ThisIContent;
 		ac.IsPublished = ac.UmbContentNode.Published;
 		ac.NodeId = ThisIContent.Id;
+		ac.GuidKey = ThisIContent.Key;
 		ac.NodeUdi = ThisIContent.GetUdi().ToString();
 		ac.NodeName = ThisIContent.Name ?? "";
 		ac.NodeContentTypeAlias = ThisIContent.ContentType.Alias;
@@ -724,6 +725,7 @@ public class SiteAuditorService
 			ac.IsPublished = true;
 
 			ac.NodeId = content.Id;
+			ac.GuidKey = content.Key;
 			ac.NodeUdi = content.ToUdi().ToString();
 			ac.NodeName = content.Name ?? "";
 			ac.NodeContentTypeAlias = content.ContentType.Alias;
@@ -1714,6 +1716,7 @@ public class SiteAuditorService
 
 	private IEnumerable<string> GetDirectElementsForDataType(IDataType dt)
 	{
+		var functionName = "GetDirectElementsForDataType()";
 		var elementTypesList = new List<string>();
 
 		if (dt.ConfigurationObject is null)
@@ -1797,7 +1800,7 @@ public class SiteAuditorService
 						}
 					}
 					//_Logger.LogWarning(
-					//	$"SiteAuditorService.GetDataTypeElementsList: Unknown Editor '{dt.EditorAlias}' with Config Model {dt.Configuration.ToString()} - needs processing?");
+					//	$"SiteAuditorService.{functionName}: Unknown Editor '{dt.EditorAlias}' with Config Model {dt.Configuration.ToString()} - needs processing?");
 
 					break;
 
@@ -1865,7 +1868,7 @@ public class SiteAuditorService
 								else
 								{
 									_Logger.LogWarning(
-										$"SiteAuditorService.GetDataTypeElementsList: Unknown Editor '{dt.EditorAlias}' includes config key '{keyName}' of unprocessed type {configVal.GetType().ToString()}");
+										$"SiteAuditorService.{functionName}: Unknown Editor '{dt.EditorAlias}' includes config key '{keyName}' of unprocessed type {configVal.GetType().ToString()}");
 								}
 
 								//Lookup any GUIDs
@@ -1890,7 +1893,7 @@ public class SiteAuditorService
 								!PackagePropEditorsWithoutDocTypeConfig().Contains(dt.EditorAlias))
 							{
 								_Logger.LogWarning(
-									$"SiteAuditorService.GetDataTypeElementsList: Unknown Editor '{dt.EditorAlias}' includes unprocessed config keys {string.Join(", ", configDict.Keys)}");
+									$"SiteAuditorService.{functionName}: Unknown Editor '{dt.EditorAlias}' includes unprocessed config keys {string.Join(", ", configDict.Keys)}");
 							}
 						}
 					}
@@ -1900,7 +1903,7 @@ public class SiteAuditorService
 						//If not a standard prop editor... or known editor
 
 						_Logger.LogWarning(
-							$"SiteAuditorService.GetDataTypeElementsList: Unknown Editor '{dt.EditorAlias}' with Config Model {dt.ConfigurationObject.ToString()} - needs processing?");
+							$"SiteAuditorService.{functionName}: Unknown Editor '{dt.EditorAlias}' with Config Model {dt.ConfigurationObject.ToString()} - needs processing?");
 					}
 
 					break;
@@ -1932,7 +1935,7 @@ public class SiteAuditorService
 		catch (Exception e)
 		{
 			_Logger.LogError(e,
-				$"SiteAuditorService.GetDataTypeElementsList: Error on '{dt.EditorAlias}' with config: {dt.ConfigurationObject}");
+				$"SiteAuditorService.{functionName}: Error on '{dt.EditorAlias}' with config: {dt.ConfigurationObject}");
 		}
 
 		return elementTypesList.Distinct();
