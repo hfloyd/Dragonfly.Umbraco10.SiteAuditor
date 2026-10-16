@@ -1,9 +1,10 @@
-﻿<Solution>
+<Solution>
   <Folder Name="/Solution Items/">
     <File Path="../.github/CONTRIBUTING.md" />
     <File Path="../.github/README.md" />
     <File Path="../docs/README_nuget.md" />
     <File Path="Custom.targets" />
+    <File Path="Directory.Packages.props" />
 	 <File Path="example_appSettings.json" />
   </Folder>
     <Project Path="Dragonfly/Dragonfly.csproj" />

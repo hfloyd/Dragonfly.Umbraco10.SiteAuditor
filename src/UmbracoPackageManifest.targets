@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Umbraco appends the manifest's "version" to the bundle's URL (?umb__rnd=<version>) to bust the browser's cache,
+  so a version that never changes leaves sites running a stale bundle after the package is updated.
+  This ships a copy of Client/public/umbraco-package.json with its version set to the package's version,
+  in place of the copy Vite writes into wwwroot.
+-->
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <UmbracoPackageManifestPath>App_Plugins\Dragonfly.UfmComponents\umbraco-package.json</UmbracoPackageManifestPath>
+    <VersionedUmbracoPackageManifest>$(BaseIntermediateOutputPath)umbraco-package.json</VersionedUmbracoPackageManifest>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Remove="wwwroot\$(UmbracoPackageManifestPath)" />
+    <Content Include="$(VersionedUmbracoPackageManifest)" Link="wwwroot\$(UmbracoPackageManifestPath)" />
+  </ItemGroup>
+
+  <Target Name="WriteVersionedUmbracoPackageManifest" BeforeTargets="ResolveStaticWebAssetsInputs;AssignTargetPaths">
+    <PropertyGroup>
+      <UmbracoPackageManifestText>$([System.IO.File]::ReadAllText('$(MSBuildProjectDirectory)\Client\public\umbraco-package.json'))</UmbracoPackageManifestText>
+      <UmbracoPackageManifestText>$([System.Text.RegularExpressions.Regex]::Replace('$(UmbracoPackageManifestText)', '"version":\s*"[^"]*"', '"version": "$(PackageVersion)"'))</UmbracoPackageManifestText>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(VersionedUmbracoPackageManifest)" Lines="$(UmbracoPackageManifestText)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+  </Target>
+</Project>

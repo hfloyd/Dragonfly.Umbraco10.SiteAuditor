@@ -13,60 +13,62 @@
   </PropertyGroup>
 
 
-	<!-- Package Description-->
-	<PropertyGroup>
-		<PackageId>Dragonfly.Umbraco10.SiteAuditor</PackageId>
-		<Title>Dragonfly Umbraco 10+ Site Auditor</Title>
-		<Product>Dragonfly Umbraco 10+ Site Auditor</Product>
-		<Description>A collection of tools to extract data about an Umbraco site.</Description>
+  <!-- Package Description-->
+  <PropertyGroup>
+    <PackageId>Dragonfly.Umbraco10.SiteAuditor</PackageId>
+    <Title>Dragonfly Umbraco 10+ Site Auditor</Title>
+    <Product>Dragonfly Umbraco 10+ Site Auditor</Product>
+    <Description>A collection of tools to extract data about an Umbraco site.</Description>
 
-		<PackageProjectUrl>https://DragonflyLibraries.com/umbraco-packages/site-auditor/</PackageProjectUrl>
-		<RepositoryType>GIT</RepositoryType>
-		<RepositoryUrl>https://github.com/hfloyd/Dragonfly.Umbraco10.SiteAuditor</RepositoryUrl>
+    <PackageProjectUrl>https://DragonflyLibraries.com/umbraco-packages/site-auditor/</PackageProjectUrl>
+    <RepositoryType>GIT</RepositoryType>
+    <RepositoryUrl>https://github.com/hfloyd/Dragonfly.Umbraco10.SiteAuditor</RepositoryUrl>
 
-		<PackageIcon>Dragonfly-SiteAuditor-128.png</PackageIcon>
-		<PackageTags>Umbraco;umbraco-marketplace;Umbraco-17;</PackageTags>
+    <PackageIcon>Dragonfly-SiteAuditor-128.png</PackageIcon>
+    <PackageTags>Umbraco;umbraco-marketplace;Umbraco-17;</PackageTags>
 
-	</PropertyGroup>
+  </PropertyGroup>
 
-	<!-- Author Info + Legal-->
-	<PropertyGroup>
-		<Authors>HFloyd</Authors>
-		<Company>Heather Floyd</Company>
+  <!-- Author Info + Legal-->
+  <PropertyGroup>
+    <Authors>HFloyd</Authors>
+    <Company>Heather Floyd</Company>
     <Copyright>$([System.DateTime]::UtcNow.ToString(`yyyy`)) © Heather Floyd [www.HeatherFloyd.com]</Copyright>
 
     <PackageReadmeFile>README_nuget.md</PackageReadmeFile>
-		<PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-		<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
-	</PropertyGroup>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+  </PropertyGroup>
 
-	<!-- Assembly Info-->
-	<PropertyGroup>
-		<RootNamespace>Dragonfly</RootNamespace>
-		<AssemblyName>Dragonfly.UmbracoSiteAuditor</AssemblyName>
-		<AssemblyVersion>$(Version)</AssemblyVersion>
-		<FileVersion>$(Version)</FileVersion>
+  <!-- Assembly Info-->
+  <PropertyGroup>
+    <RootNamespace>Dragonfly</RootNamespace>
+    <AssemblyName>Dragonfly.UmbracoSiteAuditor</AssemblyName>
+    <AssemblyVersion>$(Version)</AssemblyVersion>
+    <FileVersion>$(Version)</FileVersion>
+
     <VersionPrefix>17.5.0</VersionPrefix>
-    <VersionSuffix Condition="'$(Configuration)'=='Debug'">-prerelease$([System.DateTime]::UtcNow.ToString(`yyyy-MM-dd-HH-mm`))</VersionSuffix>
-		<PackageReleaseNotes>
-			Fixing back-office editing URLs for Content and Media
-		</PackageReleaseNotes>
-   
-		<IncludeSymbols>True</IncludeSymbols>
-		<SymbolPackageFormat>symbols.nupkg</SymbolPackageFormat>
-		<Nullable>enable</Nullable>
-	</PropertyGroup>
+    <VersionSuffix Condition="'$(Configuration)'=='Debug'">prerelease$([System.DateTime]::UtcNow.ToString(`yyyy-MM-dd-HH-mm`))</VersionSuffix>
+    <PackageReleaseNotes>
+      Fixing back-office editing URLs for Content and Media
+    </PackageReleaseNotes>
 
+    <IncludeSymbols>True</IncludeSymbols>
+    <SymbolPackageFormat>symbols.nupkg</SymbolPackageFormat>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <Import Project="..\UmbracoPackageManifest.targets" />
   <Import Project="..\Custom.targets" Condition="Exists('..\Custom.targets')" />
 
-	<!-- Packages-->
+  <!-- Packages-->
   <!--Update Versions in \src\Dragonfly\Directory.Packages.props-->
   <ItemGroup>
     <PackageReference Include="Umbraco.Cms.Core" />
-    <PackageReference Include="Umbraco.Cms.Web.Website" />
-    <PackageReference Include="Umbraco.Cms.Web.Common" />
-    <PackageReference Include="Umbraco.Cms.Api.Common" />
-    <PackageReference Include="Umbraco.Cms.Api.Management" />
+    <PackageReference Include="Umbraco.Cms.Web.Website" PrivateAssets="All"/>
+    <PackageReference Include="Umbraco.Cms.Web.Common" PrivateAssets="All"/>
+    <PackageReference Include="Umbraco.Cms.Api.Common" PrivateAssets="All"/>
+    <PackageReference Include="Umbraco.Cms.Api.Management" PrivateAssets="All"/>
     <PackageReference Include="Dragonfly.Net6" />
     <PackageReference Include="Dragonfly.Umbraco10" />
     <PackageReference Include="Serilog.Formatting.Compact.Reader" />
