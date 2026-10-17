@@ -47,10 +47,10 @@
     <AssemblyVersion>$(Version)</AssemblyVersion>
     <FileVersion>$(Version)</FileVersion>
 
-    <VersionPrefix>17.5.0</VersionPrefix>
+    <VersionPrefix>17.6.0</VersionPrefix>
     <VersionSuffix Condition="'$(Configuration)'=='Debug'">prerelease$([System.DateTime]::UtcNow.ToString(`yyyy-MM-dd-HH-mm`))</VersionSuffix>
     <PackageReleaseNotes>
-      Fixing back-office editing URLs for Content and Media
+      Config cleanup
     </PackageReleaseNotes>
 
     <IncludeSymbols>True</IncludeSymbols>
@@ -58,7 +58,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
-  <Import Project="..\UmbracoPackageManifest.targets" />
+  
   <Import Project="..\Custom.targets" Condition="Exists('..\Custom.targets')" />
 
   <!-- Packages-->
@@ -118,6 +118,6 @@
     <None Include="Client\public\umbraco-package.json" Pack="false" />
   </ItemGroup>
 
-  <!-- Included/Excluded Files -->
 
+  <!-- Included/Excluded Files -->
 </Project>
